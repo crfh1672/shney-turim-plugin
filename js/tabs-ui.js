@@ -226,7 +226,7 @@ function switchTab(index) {
                 document.querySelector('.toolbar:not(#new-book-toolbar)').style.display = '';
                 
                 document.getElementById('column-selector').value = tab.cols || "2";
-                document.getElementById('column-toggle-label').innerText = tab.cols === '1' ? 'טור 1' : tab.cols === '3' ? '3 טורים' : '2 טורים';
+                syncColumnControl(tab.cols || "2");
                 document.documentElement.style.setProperty('--cols', tab.cols || "2");
                 
                 const currentFontSize = tab.fontSize || 14;
@@ -664,7 +664,10 @@ const previewArea = document.getElementById('preview-area');
             const colPopover = document.getElementById('column-popover');
             if (colPopover) colPopover.classList.remove('open');
             const colToggle = document.getElementById('column-toggle');
-            if (colToggle) colToggle.classList.remove('open');
+            if (colToggle) {
+                colToggle.classList.remove('open', 'active');
+                colToggle.setAttribute('aria-expanded', 'false');
+            }
             const moreMenu = document.getElementById('more-menu');
             if (moreMenu) moreMenu.classList.remove('open');
             const moreButton = document.getElementById('btn-more');
@@ -681,8 +684,8 @@ const previewArea = document.getElementById('preview-area');
             }
         }
 
-        function positionViewModeMenu(button, menu) {
-            const anchor = document.getElementById('view-mode-anchor') || button;
+        function positionPopoverMenu(button, menu) {
+            const anchor = button.closest('.popover-anchor') || button;
             const rect = anchor.getBoundingClientRect();
             const menuWidth = menu.offsetWidth;
             const menuHeight = menu.offsetHeight;
@@ -714,14 +717,14 @@ const previewArea = document.getElementById('preview-area');
             const wasOpen = menu.classList.contains('open');
             closeAllPopovers();
             if (!wasOpen) {
-                positionViewModeMenu(button, menu);
+                positionPopoverMenu(button, menu);
                 menu.classList.add('open');
                 button.classList.add('active');
                 button.setAttribute('aria-expanded', 'true');
             }
         }
 
-        // תפריט שלוש הנקודות (בקצה השמאלי של הסרגל): הדפסת מסמך + מספר הטורים
+        // תפריט שלוש הנקודות (בקצה השמאלי של הסרגל): הדפסה ורענון
         function toggleMoreMenu(e) {
             e.stopPropagation();
             const menu = document.getElementById('more-menu');
@@ -738,19 +741,36 @@ const previewArea = document.getElementById('preview-area');
             }
         }
 
-        // פתיחה/סגירה של רשימת בחירת מספר הטורים בתוך התפריט (התפריט עצמו נשאר פתוח)
+        // פתיחה/סגירה של בחירת מספר הטורים
         function toggleColumnPopover(e) {
             e.stopPropagation();
             const popover = document.getElementById('column-popover');
             const toggle = document.getElementById('column-toggle');
-            const willOpen = !popover.classList.contains('open');
-            popover.classList.toggle('open', willOpen);
-            if (toggle) toggle.classList.toggle('open', willOpen);
+            if (!popover || !toggle) return;
+            const wasOpen = popover.classList.contains('open');
+            closeAllPopovers();
+            if (!wasOpen) {
+                positionPopoverMenu(toggle, popover);
+                popover.classList.add('open');
+                toggle.classList.add('active');
+                toggle.setAttribute('aria-expanded', 'true');
+            }
+        }
+
+        function syncColumnControl(value) {
+            const requestedCount = String(value || '2');
+            const columnCount = ['1', '2', '3'].includes(requestedCount) ? requestedCount : '2';
+            const iconName = { '1': 'text_column_one', '2': 'text_column_two', '3': 'text_column_three' }[columnCount];
+            const toggleIcon = document.querySelector('#column-toggle .ui-icon');
+            if (toggleIcon) {
+                toggleIcon.textContent = String.fromCodePoint(fluentIconCodePoint(iconName));
+            }
+            document.querySelectorAll('#column-popover [data-column]').forEach(option => {
+                option.setAttribute('aria-checked', option.dataset.column === columnCount ? 'true' : 'false');
+            });
         }
 
         function selectColumn(value) {
-            const label = value === 1 ? 'טור 1' : value === 3 ? '3 טורים' : '2 טורים';
-            document.getElementById('column-toggle-label').innerText = label;
             document.getElementById('column-selector').value = value;
             document.getElementById('column-selector').dataset.value = value;
             updateColumns(value);
@@ -857,7 +877,7 @@ const previewArea = document.getElementById('preview-area');
 
         function updateColumns(val) {
             document.documentElement.style.setProperty('--cols', val);
-            document.getElementById('column-toggle-label').innerText = val === '1' || val === 1 ? 'טור 1' : val === '3' || val === 3 ? '3 טורים' : '2 טורים';
+            syncColumnControl(val);
             const targetTabIndex = activeTabIndex;
             const currentTab = tabs[targetTabIndex];
             if (currentTab) currentTab.cols = String(val);

@@ -38,7 +38,9 @@
             split_vertical: [0xEB61, 0xEB6A],
             text_bullet_list: [0xF0291, 0xF02A4],
             text_bullet_list_ltr: [0xECDA, 0xECD8],
+            text_column_one: [0xF7C2, 0xF7DA],
             text_column_two: [0xF7C6, 0xF7DE],
+            text_column_three: [0xF7C4, 0xF7DC],
             warning: [0xF86A, 0xF882],
             zoom_in: [0xF8C5, 0xF8DD],
             zoom_out: [0xF8C7, 0xF8DF]

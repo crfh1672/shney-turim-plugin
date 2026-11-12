@@ -74,9 +74,29 @@
             <button class="icon-btn" id="btn-back-to-reader" onclick="returnToNormalReading()" data-tooltip="חזרה לתצוגה הרגילה במסך העיון, באותו מיקום">
                 <i class="ui-icon otzaria-icon" data-otzaria-icon="document_column" aria-hidden="true"></i>
             </button>
-            <button class="icon-btn" id="btn-commentary-toolbar" onclick="toggleCommentaryPanel()" disabled data-tooltip="מפרשים" aria-label="מפרשים">
-                <i class="ui-icon" data-fluent-icon="open" aria-hidden="true"></i>
-            </button>
+            <div class="popover-anchor" id="column-anchor">
+                <button class="icon-btn" id="column-toggle" onclick="toggleColumnPopover(event)"
+                        data-tooltip="מספר הטורים" aria-label="מספר הטורים" aria-haspopup="menu" aria-expanded="false">
+                    <i class="ui-icon" data-fluent-icon="text_column_two" aria-hidden="true"></i>
+                </button>
+                <div class="popover view-mode-menu column-popover" id="column-popover" role="menu" aria-label="בחירת מספר הטורים">
+                    <button type="button" class="popover-item view-mode-option" onclick="selectColumn(1)" role="menuitemradio" aria-checked="false" data-column="1">
+                        <i class="ui-icon" data-fluent-icon="text_column_one" aria-hidden="true"></i>
+                        <span class="view-mode-label">טור 1</span>
+                        <i class="ui-icon view-mode-check" data-fluent-icon="checkmark" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="popover-item view-mode-option" onclick="selectColumn(2)" role="menuitemradio" aria-checked="true" data-column="2">
+                        <i class="ui-icon" data-fluent-icon="text_column_two" aria-hidden="true"></i>
+                        <span class="view-mode-label">2 טורים</span>
+                        <i class="ui-icon view-mode-check" data-fluent-icon="checkmark" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="popover-item view-mode-option" onclick="selectColumn(3)" role="menuitemradio" aria-checked="false" data-column="3">
+                        <i class="ui-icon" data-fluent-icon="text_column_three" aria-hidden="true"></i>
+                        <span class="view-mode-label">3 טורים</span>
+                        <i class="ui-icon view-mode-check" data-fluent-icon="checkmark" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
             <div class="popover-anchor" id="view-mode-anchor">
                 <button class="icon-btn" id="btn-book-toggle" onclick="toggleViewModeMenu(event)" data-tooltip="מצב תצוגה"
                         aria-haspopup="menu" aria-expanded="false">
@@ -131,24 +151,13 @@
                         <i class="ui-icon" data-fluent-icon="arrow_clockwise" aria-hidden="true"></i>
                         <span class="more-menu-text">רענן את הספר הנוכחי</span>
                     </button>
-                    <button type="button" class="popover-item more-menu-item" id="column-toggle" onclick="toggleColumnPopover(event)">
-                        <i class="ui-icon" data-fluent-icon="text_column_two" aria-hidden="true"></i>
-                        <span class="more-menu-text">מספר הטורים</span>
-                        <span class="more-menu-value" id="column-toggle-label">2 טורים</span>
-                        <i class="ui-icon more-menu-chevron" data-fluent-icon="chevron_down" aria-hidden="true"></i>
-                    </button>
-                    <div class="more-menu-sub" id="column-popover">
-                        <div class="popover-item" onclick="selectColumn(1)">טור 1</div>
-                        <div class="popover-item" onclick="selectColumn(2)">2 טורים</div>
-                        <div class="popover-item" onclick="selectColumn(3)">3 טורים</div>
-                    </div>
-                    <select id="column-selector" hidden aria-hidden="true" onchange="updateColumns(this.value)">
-                        <option value="1">טור 1</option>
-                        <option value="2" selected>2 טורים</option>
-                        <option value="3">3 טורים</option>
-                    </select>
                 </div>
             </div>
+            <select id="column-selector" hidden aria-hidden="true" onchange="updateColumns(this.value)">
+                <option value="1">טור 1</option>
+                <option value="2" selected>2 טורים</option>
+                <option value="3">3 טורים</option>
+            </select>
         </div>
     </div>
 

@@ -776,14 +776,9 @@
             display: none;
         }
 
-        .popover.column-popover {
-            width: 100px !important;
-            min-width: 110px !important;
-        }
-
         /* --- פופאובר עמודות --- */
         .popover-anchor { position: relative; display: inline-block; }
-        
+
         .popover {
             position: absolute;
             top: calc(100% + 6px);
@@ -1320,24 +1315,7 @@
         .more-menu-text { flex: 1 1 auto; }
         .more-menu-value { font-size: 14px; color: var(--color-on-surface-subtle); }
         .more-menu-item .ui-icon.more-menu-chevron { width: 18px; font-size: 18px; height: 18px; transition: transform 0.15s; }
-        #column-toggle.open .more-menu-chevron { transform: rotate(180deg); }
         body.app-compact-density .more-menu-item { min-height: 28px; padding-inline: 8px; }
-        .more-menu-sub { display: none; padding: 2px 0 2px 0; }
-        .more-menu-sub.open { display: block; }
-        .more-menu-sub .popover-item {
-            min-height: 36px;
-            box-sizing: border-box;
-            padding: 8px 12px 8px 12px;
-            padding-inline-start: 46px;
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            font-weight: 400;
-            line-height: 20px;
-        }
-        body.app-compact-density .more-menu-sub .popover-item {
-            min-height: 28px;
-            padding-block: 4px;
-        }
 
         /* scrim — מוצג רק כשפאנל ההגדרות פתוח */
         .overlay-scrim {
