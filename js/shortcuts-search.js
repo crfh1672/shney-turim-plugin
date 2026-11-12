@@ -263,6 +263,8 @@ let searchDebounceTimer = null;
             root.style.setProperty('--color-surface', cs.surface);
             root.style.setProperty('--color-on-surface', cs.onSurface);
             root.style.setProperty('--color-on-surface-variant', cs.onSurfaceVariant || cs.onSurface);
+            root.style.setProperty('--color-inverse-surface', cs.inverseSurface || cs.onSurface);
+            root.style.setProperty('--color-on-inverse-surface', cs.onInverseSurface || cs.surface);
     
             root.style.setProperty('--color-surface-container-lowest', cs.surfaceContainerLowest || cs.surface);
             root.style.setProperty('--color-surface-container-low', cs.surfaceContainerLow || cs.surface);

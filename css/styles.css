@@ -3008,6 +3008,65 @@
             scroll-behavior: smooth;
         }
 
+        #preview-area.has-preview-scrollbar {
+            padding-right: 32px;
+            scrollbar-width: none;
+        }
+
+        #preview-area.has-preview-scrollbar::-webkit-scrollbar:vertical {
+            width: 0;
+        }
+
+        .preview-scrollbar {
+            position: absolute;
+            z-index: 25;
+            top: 2px;
+            right: 2px;
+            bottom: 2px;
+            display: none;
+            width: 12px;
+            touch-action: none;
+            cursor: pointer;
+        }
+
+        #preview-area-wrapper.has-preview-scrollbar .preview-scrollbar {
+            display: block;
+        }
+
+        .preview-scrollbar-thumb {
+            position: absolute;
+            top: 0;
+            right: 2px;
+            left: 2px;
+            min-height: 5%;
+            border-radius: 4px;
+            background: color-mix(in srgb, var(--color-on-surface-variant) 40%, transparent);
+        }
+
+        .preview-scrollbar:hover .preview-scrollbar-thumb,
+        .preview-scrollbar.is-dragging .preview-scrollbar-thumb {
+            background: color-mix(in srgb, var(--color-primary) 80%, transparent);
+        }
+
+        .preview-scrollbar-label {
+            position: fixed;
+            z-index: 1000;
+            max-width: 40vw;
+            overflow: hidden;
+            padding: 3px 8px;
+            border-radius: 8px;
+            background: var(--color-inverse-surface, #201b13);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+            color: var(--color-on-inverse-surface, #fff8f4);
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.4;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            pointer-events: none;
+            transform: translateY(-50%);
+        }
+
         /* --- תצוגת שני עמודים בשורה בתוך תצוגת הגלילה הרגילה (לא תצוגת ספר) ---
            בשונה מ"תצוגת ספר דו-עמודי" (המחליפה לגמרי את מנגנון התצוגה בדפדוף בין "עלים" קבועים),
            זו נשארת בדיוק אותה תצוגת גלילה רגילה כמו ברירת המחדל - עם כל מנגנוני הגלילה, דפדוף
