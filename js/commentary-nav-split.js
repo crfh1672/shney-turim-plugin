@@ -1250,16 +1250,20 @@
         const hasBook = Boolean(tab && !tab.isNewBookTab);
 
         // ----- מונה עמודים -----
+        const indicator = document.getElementById('page-indicator');
         const input = document.getElementById('page-indicator-input');
+        const currentEl = document.getElementById('page-indicator-current');
         const totalEl = document.getElementById('page-indicator-total');
-        if (input && totalEl) {
+        if (indicator && input && currentEl && totalEl) {
             const pages = hasBook ? Array.from(previewArea.querySelectorAll('.print-page')) : [];
             const total = pages.length;
             const cur = total ? getNavCurrentPageIndex(pages) + 1 : 0;
+            if (total === 0 && document.activeElement === input) input.blur();
+            indicator.hidden = total === 0;
+            currentEl.textContent = String(cur);
             totalEl.textContent = String(total);
-            input.style.width = (Math.max(String(total).length, 2) + 1) + 'ch';
+            input.placeholder = `1-${total}`;
             if (document.activeElement !== input) input.value = String(cur);
-            input.disabled = total === 0;
         }
 
         // ----- כותרת ניווט -----
@@ -1283,18 +1287,31 @@
         layoutNavCenter();
     }
 
-    // ---- תיבת מספר העמוד ----
+    // ---- מונה ומעבר לעמוד ----
+    function beginPageIndicatorEdit() {
+        const indicator = document.getElementById('page-indicator');
+        const input = document.getElementById('page-indicator-input');
+        if (!indicator || !input || indicator.hidden) return;
+
+        const pages = Array.from(document.querySelectorAll('#preview-area .print-page'));
+        const page = pages.length ? getNavCurrentPageIndex(pages) + 1 : 1;
+        input.value = String(page);
+        indicator.classList.add('is-editing');
+        input.focus();
+        input.select();
+    }
+
     function onPageIndicatorKeydown(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const input = e.target;
-            const previewArea = document.getElementById('preview-area');
-            const total = previewArea.querySelectorAll('.print-page').length;
-            const n = parseInt(String(input.value).replace(/[^0-9]/g, ''), 10);
-            if (!isNaN(n) && total > 0) {
-                goToPageIndex(Math.min(Math.max(n, 1), total) - 1);
+            const value = e.target.value.trim();
+            const pages = document.querySelectorAll('#preview-area .print-page');
+            const total = pages.length;
+            if (/^\d+$/.test(value) && total > 0) {
+                const page = Math.min(Math.max(Number(value), 1), total);
+                goToPageIndex(page - 1);
             }
-            input.blur();
+            e.target.blur();
         } else if (e.key === 'Escape') {
             e.preventDefault();
             e.target.blur();
@@ -1303,7 +1320,8 @@
     }
 
     function onPageIndicatorBlur() {
-        // חזרה להצגת העמוד הנוכחי בפועל (גם אם הוקלד ערך שלא אושר)
+        const indicator = document.getElementById('page-indicator');
+        if (indicator) indicator.classList.remove('is-editing');
         scheduleNavBarUpdate();
         setTimeout(updateNavBar, 120);
     }

@@ -1086,28 +1086,47 @@
         .page-indicator {
             display: inline-flex;
             align-items: center;
-            gap: 3px;
             direction: ltr;
-            font-size: 0.95rem;
-            color: var(--color-on-surface);
-            margin-inline-end: 4px;
             white-space: nowrap;
+            flex: 0 0 auto;
         }
-        .page-indicator input {
-            width: 3ch;
-            text-align: center;
-            font: inherit;
-            color: var(--color-on-surface);
-            background: var(--color-surface);
-            border: 1px solid var(--color-border-subtle);
+        .page-indicator[hidden] { display: none; }
+        .page-indicator-button {
+            min-width: 64px;
+            height: 40px;
+            padding: 0 8px;
+            border: 0;
             border-radius: var(--radius-sm);
-            padding: 3px 4px;
+            background: transparent;
+            color: var(--color-primary);
+            font: 500 0.875rem/1.25rem var(--font-ui);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .page-indicator-button:hover {
+            background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+        }
+        .page-indicator-total { opacity: 0.85; }
+        .page-indicator-input {
+            display: none;
+            box-sizing: border-box;
+            width: 65px;
+            height: auto;
+            padding: 0 4px;
+            text-align: center;
+            font: 600 18px/1.27 var(--font-ui);
+            color: var(--color-on-surface);
+            background: transparent;
+            border: 1px solid var(--color-outline);
+            border-radius: var(--radius-sm);
+        }
+        .page-indicator-input:focus {
             outline: none;
+            border: 2px solid var(--color-primary);
         }
-        .page-indicator input:focus {
-            border-color: var(--color-primary);
-        }
-        .page-indicator-sep, .page-indicator-total { opacity: 0.85; }
+        .page-indicator.is-editing .page-indicator-button { display: none; }
+        .page-indicator.is-editing .page-indicator-input { display: inline-block; }
 
         .toolbar-nav-center {
             position: absolute;

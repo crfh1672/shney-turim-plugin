@@ -56,20 +56,21 @@
             <div class="nav-heading-title-wrap" id="nav-heading-title-wrap">
                 <span class="nav-heading-title" id="nav-heading-title"></span>
             </div>
+            <div class="page-indicator" id="page-indicator" dir="ltr" hidden>
+                <button type="button" class="page-indicator-button" id="page-indicator-button"
+                        onclick="beginPageIndicatorEdit()" data-tooltip="הזן מספר דף">
+                    <span id="page-indicator-current">0</span>/<span class="page-indicator-total" id="page-indicator-total">0</span>
+                </button>
+                <input type="text" class="page-indicator-input" id="page-indicator-input" inputmode="numeric" autocomplete="off"
+                       onkeydown="onPageIndicatorKeydown(event)" onblur="onPageIndicatorBlur()"
+                       aria-label="הזן מספר דף">
+            </div>
             <button class="nav-heading-btn" id="btn-heading-next" onclick="goToAdjacentHeading(1)" disabled data-tooltip="הכותרת הבאה">
                 <i class="ui-icon rotate-90" data-fluent-icon="chevron_down" aria-hidden="true"></i>
             </button>
         </div>
 
         <div class="toolbar-side">
-            <!-- מונה עמודים: X/X - המספר הכללי הוא מספר העמודים שנטענו עד כה; בתיבה אפשר להקליד מספר עמוד ולעבור אליו -->
-            <div class="page-indicator" id="page-indicator" dir="ltr">
-                <input type="text" inputmode="numeric" id="page-indicator-input" autocomplete="off" value="0"
-                       onfocus="this.select()" onkeydown="onPageIndicatorKeydown(event)" onblur="onPageIndicatorBlur()"
-                       data-tooltip="מספר העמוד הנוכחי - הקלד מספר ולחץ Enter למעבר">
-                <span class="page-indicator-sep">/</span>
-                <span class="page-indicator-total" id="page-indicator-total">0</span>
-            </div>
             <!-- לחצן תצוגת ספר/גלילה - ראשון בקבוצת כפתורי העימוד והגופן -->
             <button class="icon-btn" id="btn-book-toggle" onclick="toggleBookView()" data-tooltip="עבור לתצוגת ספר דו-עמודי">
                 <i class="ui-icon" data-fluent-icon="book_open" aria-hidden="true"></i>
