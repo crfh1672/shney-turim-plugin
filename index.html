@@ -71,35 +71,56 @@
         </div>
 
         <div class="toolbar-side">
-            <!-- לחצן תצוגת ספר/גלילה - ראשון בקבוצת כפתורי העימוד והגופן -->
-            <button class="icon-btn" id="btn-book-toggle" onclick="toggleBookView()" data-tooltip="עבור לתצוגת ספר דו-עמודי">
-                <i class="ui-icon" data-fluent-icon="book_open" aria-hidden="true"></i>
+            <button class="icon-btn" id="btn-back-to-reader" onclick="returnToNormalReading()" data-tooltip="חזרה לתצוגה הרגילה במסך העיון, באותו מיקום">
+                <i class="ui-icon otzaria-icon" data-otzaria-icon="document_column" aria-hidden="true"></i>
             </button>
-
-
-            <select id="column-selector" class="compact-select" onchange="updateColumns(this.value)" data-tooltip="בחר את מספר הטורים">
-                <option value="1">טור 1</option>
-                <option value="2" selected>2 טורים</option>
-                <option value="3">3 טורים</option>
-            </select>
-
+            <button class="icon-btn" id="btn-commentary-toolbar" onclick="toggleCommentaryPanel()" disabled data-tooltip="מפרשים" aria-label="מפרשים">
+                <i class="ui-icon" data-fluent-icon="open" aria-hidden="true"></i>
+            </button>
+            <div class="popover-anchor" id="view-mode-anchor">
+                <button class="icon-btn" id="btn-book-toggle" onclick="toggleViewModeMenu(event)" data-tooltip="מצב תצוגה"
+                        aria-haspopup="menu" aria-expanded="false">
+                    <i class="ui-icon otzaria-icon" data-otzaria-icon="book" aria-hidden="true"></i>
+                </button>
+                <div class="popover view-mode-menu" id="view-mode-menu" role="menu" aria-label="מצב תצוגה">
+                    <button type="button" class="popover-item view-mode-option" id="view-mode-regular"
+                            onclick="selectViewMode(false)" role="menuitemradio" aria-checked="true">
+                        <i class="ui-icon otzaria-icon" data-otzaria-icon="book" aria-hidden="true"></i>
+                        <span class="view-mode-label">תצוגה רגילה</span>
+                        <i class="ui-icon view-mode-check" data-fluent-icon="checkmark" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="popover-item view-mode-option" id="view-mode-book"
+                            onclick="selectViewMode(true)" role="menuitemradio" aria-checked="false">
+                        <i class="ui-icon otzaria-icon" data-otzaria-icon="book_open_medium_lines" aria-hidden="true"></i>
+                        <span class="view-mode-label">תצוגת ספר</span>
+                        <i class="ui-icon view-mode-check" data-fluent-icon="checkmark" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+            <button class="icon-btn" id="btn-toolbar-search" onclick="openSearchFromToolbar()" data-tooltip="חיפוש" aria-label="חיפוש">
+                <i class="ui-icon" data-fluent-icon="search" aria-hidden="true"></i>
+            </button>
+            <button class="icon-btn" id="btn-hand-mode" onclick="toggleHandMode()" data-tooltip="מצב יד: גרירה להזזת התצוגה" aria-label="מצב יד" aria-pressed="false">
+                <i class="ui-icon" data-fluent-icon="hand_left" aria-hidden="true"></i>
+            </button>
             <div class="font-size-buttons">
                 <button class="font-size-btn large" id="btn-increase-font" onclick="zoomIn()" data-tooltip="הגדל תצוגת דף (זום)">
-                <i class="ui-icon" data-fluent-icon="zoom_in" aria-hidden="true"></i>
+                    <i class="ui-icon" data-fluent-icon="zoom_in" aria-hidden="true"></i>
                 </button>
                 <button class="font-size-btn small" id="btn-decrease-font" onclick="zoomOut()" data-tooltip="הקטן תצוגת דף (זום)">
-                <i class="ui-icon" data-fluent-icon="zoom_out" aria-hidden="true"></i>
+                    <i class="ui-icon" data-fluent-icon="zoom_out" aria-hidden="true"></i>
                 </button>
-                <button class="font-size-btn" id="btn-fit-width" onclick="fitToScreen('width')" data-tooltip="התאם לרוחב המסך">
-                <i class="ui-icon" data-fluent-icon="arrow_autofit_width" aria-hidden="true"></i>
-                </button>
-                <button class="font-size-btn" id="btn-back-to-reader" onclick="returnToNormalReading()" data-tooltip="חזרה לתצוגה הרגילה במסך העיון, באותו מיקום">
-                <i class="ui-icon otzaria-icon" data-otzaria-icon="document_column" aria-hidden="true"></i>
+                <button class="font-size-btn" id="btn-fit-width" onclick="toggleFitMode()" data-tooltip="התאם לרוחב המסך">
+                    <i class="ui-icon" data-fluent-icon="arrow_autofit_width" aria-hidden="true"></i>
                 </button>
             </div>
+            <button class="icon-btn" id="btn-toolbar-fullscreen" onclick="toggleFullscreen()" data-tooltip="מסך מלא" aria-label="מסך מלא">
+                <i class="ui-icon" data-fluent-icon="full_screen_maximize" aria-hidden="true"></i>
+            </button>
             <div class="popover-anchor" id="more-menu-anchor">
-                <button class="icon-btn" id="btn-more" onclick="toggleMoreMenu(event)" data-tooltip="עוד אפשרויות">
-                    <i class="ui-icon" data-fluent-icon="more_horizontal" aria-hidden="true"></i>
+                <button class="icon-btn" id="btn-more" onclick="toggleMoreMenu(event)" data-tooltip="עוד פעולות"
+                        aria-haspopup="menu" aria-expanded="false">
+                    <i class="ui-icon" data-fluent-icon="more_vertical" aria-hidden="true"></i>
                 </button>
                 <div class="popover more-menu" id="more-menu">
                     <button type="button" class="popover-item more-menu-item" id="btn-print" onclick="closeAllPopovers(); openPrintExportModal();" disabled>
@@ -121,6 +142,11 @@
                         <div class="popover-item" onclick="selectColumn(2)">2 טורים</div>
                         <div class="popover-item" onclick="selectColumn(3)">3 טורים</div>
                     </div>
+                    <select id="column-selector" hidden aria-hidden="true" onchange="updateColumns(this.value)">
+                        <option value="1">טור 1</option>
+                        <option value="2" selected>2 טורים</option>
+                        <option value="3">3 טורים</option>
+                    </select>
                 </div>
             </div>
         </div>

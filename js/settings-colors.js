@@ -1,4 +1,22 @@
-﻿        async function loadSettings() {
+﻿        function updateBookViewModeUI() {
+            const isBookView = Boolean(currentSettings.isBookView);
+            const toggleBtn = document.getElementById('btn-book-toggle');
+            if (toggleBtn) {
+                toggleBtn.innerHTML = otzariaIconHTML(isBookView ? 'book_open_medium_lines' : 'book');
+                toggleBtn.setAttribute('data-tooltip', 'מצב תצוגה');
+            }
+
+            const regularOption = document.getElementById('view-mode-regular');
+            const bookOption = document.getElementById('view-mode-book');
+            if (regularOption) {
+                regularOption.setAttribute('aria-checked', String(!isBookView));
+            }
+            if (bookOption) {
+                bookOption.setAttribute('aria-checked', String(isBookView));
+            }
+        }
+
+        async function loadSettings() {
             loadDrawerState(); // אסינכרוני, אך לא ממתינים לו - יש לו נפילה עצמאית ל-Otzaria storage אם צריך
             const key = getSettingsStorageKey();
             let settingsFoundLocally = false;
@@ -142,16 +160,7 @@
             document.body.classList.toggle('two-column-scroll-active', Boolean(currentSettings.twoColumnScroll));
             const twoColumnScrollCheckbox = document.getElementById('setting-two-column-scroll');
             if (twoColumnScrollCheckbox) twoColumnScrollCheckbox.checked = Boolean(currentSettings.twoColumnScroll);
-            const toggleBtn = document.getElementById('btn-book-toggle');
-            if (toggleBtn) {
-                if (currentSettings.isBookView) {
-                    toggleBtn.setAttribute('data-tooltip', 'עבור לתצוגת גלילה אנכית');
-                    toggleBtn.innerHTML = fluentIconHTML('text_column_two');
-                } else {
-                    toggleBtn.setAttribute('data-tooltip', 'עבור לתצוגת ספר דו-עמודי');
-                    toggleBtn.innerHTML = fluentIconHTML('book_open');
-                }
-            }
+            updateBookViewModeUI();
             // סנכרון הגדרות הצבע המותאמות אישית (רקע/עמוד/כתב) עם ה-CSS ועם ממשק ההגדרות
             initColorPickersOnce();
             applyColorCSSVar('bg');
@@ -580,22 +589,16 @@ function updateBookViewSetting(val) {
             delete previewArea.dataset.searchBaseHtml;
             lastSearchedQuery = null;
 
-            const toggleBtn = document.getElementById('btn-book-toggle');
-            if (toggleBtn) {
-                if (val) {
-                    toggleBtn.setAttribute('data-tooltip', 'עבור לתצוגת גלילה אנכית');
-                    toggleBtn.innerHTML = fluentIconHTML('text_column_two');
-                    buildBookDOM();
-                } else {
-                    toggleBtn.setAttribute('data-tooltip', 'עבור לתצוגת ספר דו-עמודי');
-                    toggleBtn.innerHTML = fluentIconHTML('book_open');
-                    destroyBookDOM();
-                    
-                    // גלילה אוטומטית לעמוד הנכון מיד לאחר פירוק הספר
-                    setTimeout(() => {
-                        scrollToPageInScrollView(targetPageIndex);
-                    }, 50);
-                }
+            updateBookViewModeUI();
+            if (val) {
+                buildBookDOM();
+            } else {
+                destroyBookDOM();
+
+                // גלילה אוטומטית לעמוד הנכון מיד לאחר פירוק הספר
+                setTimeout(() => {
+                    scrollToPageInScrollView(targetPageIndex);
+                }, 50);
             }
         }
 

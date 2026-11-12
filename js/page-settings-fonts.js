@@ -436,6 +436,83 @@
         // שינוי ה-Zoom (Display Scale) של הדפים ללא חלוקה מחדש
         const MAX_PAGE_SCALE = 4.0;
         const MIN_PAGE_SCALE = 0.45;
+        let nextFitMode = 'width';
+
+        function updateFitModeButton() {
+            const button = document.getElementById('btn-fit-width');
+            if (!button) return;
+            const fitsPageNext = nextFitMode === 'page';
+            button.innerHTML = fluentIconHTML(fitsPageNext ? 'arrow_autofit_height' : 'arrow_autofit_width');
+            button.setAttribute('data-tooltip', fitsPageNext ? 'התאם לעמוד שלם' : 'התאם לרוחב המסך');
+        }
+
+        function toggleFitMode() {
+            fitToScreen(nextFitMode);
+        }
+
+        let handModeEnabled = false;
+        let handPointerState = null;
+
+        function toggleHandMode() {
+            handModeEnabled = !handModeEnabled;
+            const previewArea = document.getElementById('preview-area');
+            const button = document.getElementById('btn-hand-mode');
+            if (previewArea) previewArea.classList.toggle('hand-mode', handModeEnabled);
+            if (button) {
+                button.classList.toggle('active', handModeEnabled);
+                button.setAttribute('aria-pressed', String(handModeEnabled));
+                button.innerHTML = fluentIconHTML('hand_left', '', handModeEnabled);
+            }
+        }
+
+        const handPreviewArea = document.getElementById('preview-area');
+        if (handPreviewArea) {
+            handPreviewArea.addEventListener('pointerdown', (event) => {
+                if (!handModeEnabled || event.button !== 0) return;
+                const target = event.target instanceof Element ? event.target : null;
+                if (target && target.closest('button, a, input, select, textarea, [contenteditable="true"]')) return;
+                handPointerState = {
+                    pointerId: event.pointerId,
+                    startX: event.clientX,
+                    startY: event.clientY,
+                    lastX: event.clientX,
+                    lastY: event.clientY
+                };
+                handPreviewArea.setPointerCapture(event.pointerId);
+                event.preventDefault();
+            });
+            handPreviewArea.addEventListener('pointermove', (event) => {
+                if (!handPointerState || handPointerState.pointerId !== event.pointerId) return;
+                const deltaX = event.clientX - handPointerState.lastX;
+                const deltaY = event.clientY - handPointerState.lastY;
+                handPointerState.lastX = event.clientX;
+                handPointerState.lastY = event.clientY;
+                if (currentSettings.isBookView) {
+                    panBookVertically(-deltaY);
+                } else {
+                    handPreviewArea.scrollBy({
+                        left: -deltaX,
+                        top: -deltaY,
+                        behavior: 'instant'
+                    });
+                }
+                event.preventDefault();
+            });
+            const finishHandDrag = (event) => {
+                if (!handPointerState || handPointerState.pointerId !== event.pointerId) return;
+                const deltaX = event.clientX - handPointerState.startX;
+                const deltaY = event.clientY - handPointerState.startY;
+                if (currentSettings.isBookView && Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                    if (deltaX < 0) nextBookPage();
+                    else prevBookPage();
+                }
+                handPointerState = null;
+            };
+            handPreviewArea.addEventListener('pointerup', finishHandDrag);
+            handPreviewArea.addEventListener('pointercancel', () => {
+                handPointerState = null;
+            });
+        }
 
         function zoomIn() {
             if (pageScale >= MAX_PAGE_SCALE) return;
@@ -611,6 +688,10 @@
                 // padding-right בגודל פס הגלילה - אותו רווח ריק בדיוק, בצד שאין בו פס גלילה
                 previewArea.style.paddingLeft = '0px';
                 previewArea.style.paddingRight = scrollbarWidth + 'px';
+            }
+            if (mode === 'width' || mode === 'page') {
+                nextFitMode = mode === 'width' ? 'page' : 'width';
+                updateFitModeButton();
             }
         }
 

@@ -23,11 +23,14 @@
             edit: [0xF3DE, 0xF3DD],
             folder: [0xF419, 0xF41D],
             full_screen_maximize: [0xE685, 0xE692],
+            hand_left: [0xE6DC, 0xE6E9],
             keyboard: [0xF4B9, 0xF4C3],
             line_horizontal_3: [0xF0765, 0xF07E2],
             link: [0xF4E5, 0xF4EF],
             more_horizontal: [0xE825, 0xE833],
+            more_vertical: [0xF557, 0xF561],
             note: [0xF56C, 0xF56C],
+            open: [0xF583, 0xF583],
             pin: [0xF602, 0xF60C],
             print: [0xF62B, 0xF635],
             search: [0xF690, 0xF69A],
@@ -44,6 +47,7 @@
         // Otzaria Icons 0.7.0 glyphs; license and attribution are in fonts/OtzariaIcons-NOTICE.txt.
         const OTZARIA_ICON_GLYPHS = Object.freeze({
             book: [0xE001, 0xE001],
+            book_open_medium_lines: [0xE011, 0xE011],
             document_column: [0xE024, 0xE024],
             links: [0xE027, 0xE027],
             list: [0xE03A, 0xE039],
@@ -73,6 +77,12 @@
             const classes = ['ui-icon', className, filled ? 'ui-icon-filled' : '']
                 .filter(Boolean)
                 .join(' ');
+            return `<i class="${classes}" aria-hidden="true">${glyph}</i>`;
+        }
+
+        function otzariaIconHTML(name, className = '') {
+            const glyph = String.fromCodePoint(otzariaIconCodePoint(name));
+            const classes = ['ui-icon', 'otzaria-icon', className].filter(Boolean).join(' ');
             return `<i class="${classes}" aria-hidden="true">${glyph}</i>`;
         }
 

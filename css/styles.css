@@ -750,6 +750,21 @@
         .font-size-btn:disabled { opacity: 0.4; cursor: not-allowed; }
         .font-size-btn .ui-icon { width: 20px; font-size: 20px; height: 20px; color: currentColor; }
 
+        #preview-area.hand-mode,
+        #preview-area.hand-mode .print-page,
+        #preview-area.hand-mode .book-wrapper { cursor: grab; }
+        #preview-area.hand-mode { user-select: none; }
+        #preview-area.hand-mode:active,
+        #preview-area.hand-mode:active .print-page,
+        #preview-area.hand-mode:active .book-wrapper { cursor: grabbing; }
+
+        @media (max-width: 700px) {
+            #btn-hand-mode { display: none; }
+        }
+        @media (min-width: 701px) {
+            #btn-toolbar-fullscreen { display: none; }
+        }
+
         select.compact-select {
             padding: 6px 12px;
             border-radius: var(--radius-sm);
@@ -806,6 +821,60 @@
         }
         
         .popover-item:hover { background: var(--color-primary-subtle); }
+
+        .view-mode-menu {
+            left: 0;
+            right: auto;
+            top: calc(100% + 4px);
+            width: 168px;
+            max-width: calc(100vw - 16px);
+            background: var(--color-surface-container-high);
+            border: 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+            transform-origin: top left;
+        }
+        .view-mode-menu.opens-left { transform-origin: top right; }
+        .view-mode-menu.opens-above {
+            transform: translateY(6px) scale(0.97);
+            transform-origin: bottom left;
+        }
+        .view-mode-menu.opens-above.open { transform: translateY(0) scale(1); }
+        .view-mode-menu.opens-above.opens-left { transform-origin: bottom right; }
+        .view-mode-option {
+            width: 100%;
+            min-height: 48px;
+            box-sizing: border-box;
+            gap: 0;
+            border: 0;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--color-on-surface);
+            font-family: var(--font-ui);
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 20px;
+            text-align: start;
+        }
+        .view-mode-option > .ui-icon:not(.view-mode-check) { margin-inline-end: 12px; }
+        .view-mode-option:hover { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
+        .view-mode-option .ui-icon {
+            width: 24px;
+            height: 24px;
+            flex: 0 0 24px;
+            font-size: 24px;
+            color: currentColor;
+        }
+        .view-mode-option .view-mode-label { min-width: 0; flex: 1 1 auto; }
+        .view-mode-option .view-mode-check {
+            width: 16px;
+            height: 16px;
+            flex: 0 0 16px;
+            font-size: 16px;
+            visibility: hidden;
+        }
+        .view-mode-option[aria-checked="true"] { color: var(--color-primary); }
+        .view-mode-option[aria-checked="true"] .view-mode-check { visibility: visible; }
 
         /* --- טאב בחירת ספר חדש --- */
         .new-book-tab-content {
@@ -1218,36 +1287,56 @@
 
         /* תפריט "עוד" (שלוש נקודות) בקצה השמאלי של הסרגל */
         .popover.more-menu {
-            width: 230px;
-            padding: 6px;
+            top: calc(100% + 8px);
+            width: 224px;
+            max-width: calc(100vw - 16px);
+            padding: 8px 0;
+            background: var(--color-surface-container-high);
+            border: 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
             transform-origin: top left;
         }
         .more-menu-item {
             width: 100%;
             box-sizing: border-box;
+            min-height: 36px;
             background: transparent;
             border: none;
             border-radius: var(--radius-sm);
             color: var(--color-on-surface);
             font-family: inherit;
-            font-size: 0.95rem;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 20px;
             text-align: start;
-            padding: 10px 12px;
+            white-space: nowrap;
+            padding: 0 12px;
+            gap: 8px;
         }
-        .more-menu-item:disabled { opacity: 0.4; cursor: not-allowed; }
-        .more-menu-item:hover:not(:disabled) { background: var(--color-primary-subtle); }
-        .more-menu-item .ui-icon { width: 22px; font-size: 22px; height: 22px; flex: 0 0 auto; color: currentColor; }
+        .more-menu-item:disabled { opacity: 0.38; cursor: not-allowed; }
+        .more-menu-item:hover:not(:disabled) { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
+        .more-menu-item .ui-icon { width: 18px; font-size: 18px; height: 18px; flex: 0 0 auto; color: currentColor; }
         .more-menu-text { flex: 1 1 auto; }
-        .more-menu-value { font-size: 0.85rem; color: var(--color-on-surface-subtle); }
-        .more-menu-item .ui-icon.more-menu-chevron { width: 16px; font-size: 16px; height: 16px; transition: transform 0.15s; }
+        .more-menu-value { font-size: 14px; color: var(--color-on-surface-subtle); }
+        .more-menu-item .ui-icon.more-menu-chevron { width: 18px; font-size: 18px; height: 18px; transition: transform 0.15s; }
         #column-toggle.open .more-menu-chevron { transform: rotate(180deg); }
+        body.app-compact-density .more-menu-item { min-height: 28px; padding-inline: 8px; }
         .more-menu-sub { display: none; padding: 2px 0 2px 0; }
         .more-menu-sub.open { display: block; }
         .more-menu-sub .popover-item {
+            min-height: 36px;
+            box-sizing: border-box;
             padding: 8px 12px 8px 12px;
             padding-inline-start: 46px;
             border-radius: var(--radius-sm);
-            font-size: 0.92rem;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 20px;
+        }
+        body.app-compact-density .more-menu-sub .popover-item {
+            min-height: 28px;
+            padding-block: 4px;
         }
 
         /* scrim — מוצג רק כשפאנל ההגדרות פתוח */

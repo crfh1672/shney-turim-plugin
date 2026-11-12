@@ -658,6 +658,58 @@ const previewArea = document.getElementById('preview-area');
             if (colToggle) colToggle.classList.remove('open');
             const moreMenu = document.getElementById('more-menu');
             if (moreMenu) moreMenu.classList.remove('open');
+            const moreButton = document.getElementById('btn-more');
+            if (moreButton) {
+                moreButton.classList.remove('active');
+                moreButton.setAttribute('aria-expanded', 'false');
+            }
+            const viewModeMenu = document.getElementById('view-mode-menu');
+            if (viewModeMenu) viewModeMenu.classList.remove('open');
+            const viewModeButton = document.getElementById('btn-book-toggle');
+            if (viewModeButton) {
+                viewModeButton.classList.remove('active');
+                viewModeButton.setAttribute('aria-expanded', 'false');
+            }
+        }
+
+        function positionViewModeMenu(button, menu) {
+            const anchor = document.getElementById('view-mode-anchor') || button;
+            const rect = anchor.getBoundingClientRect();
+            const menuWidth = menu.offsetWidth;
+            const menuHeight = menu.offsetHeight;
+            const spaceLeft = rect.left;
+            const spaceRight = window.innerWidth - rect.right;
+            const opensLeft = spaceLeft > spaceRight ||
+                (spaceLeft === spaceRight && getComputedStyle(button).direction === 'rtl');
+            const spaceAbove = rect.top;
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const opensBelow = spaceBelow >= menuHeight || spaceBelow >= spaceAbove;
+
+            const preferredLeft = opensLeft ? rect.right - menuWidth : rect.left;
+            const preferredTop = opensBelow ? rect.bottom + 4 : rect.top - menuHeight - 4;
+            const maxLeft = Math.max(8, window.innerWidth - 8 - menuWidth);
+            const maxTop = Math.max(8, window.innerHeight - 8 - menuHeight);
+            menu.style.left = `${Math.max(8, Math.min(maxLeft, preferredLeft)) - rect.left}px`;
+            menu.style.right = 'auto';
+            menu.style.top = `${Math.max(8, Math.min(maxTop, preferredTop)) - rect.top}px`;
+            menu.style.bottom = 'auto';
+            menu.classList.toggle('opens-left', opensLeft);
+            menu.classList.toggle('opens-above', !opensBelow);
+        }
+
+        function toggleViewModeMenu(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('view-mode-menu');
+            const button = document.getElementById('btn-book-toggle');
+            if (!menu || !button) return;
+            const wasOpen = menu.classList.contains('open');
+            closeAllPopovers();
+            if (!wasOpen) {
+                positionViewModeMenu(button, menu);
+                menu.classList.add('open');
+                button.classList.add('active');
+                button.setAttribute('aria-expanded', 'true');
+            }
         }
 
         // תפריט שלוש הנקודות (בקצה השמאלי של הסרגל): הדפסת מסמך + מספר הטורים
@@ -667,7 +719,14 @@ const previewArea = document.getElementById('preview-area');
             if (!menu) return;
             const wasOpen = menu.classList.contains('open');
             closeAllPopovers();
-            if (!wasOpen) menu.classList.add('open');
+            if (!wasOpen) {
+                menu.classList.add('open');
+                const button = document.getElementById('btn-more');
+                if (button) {
+                    button.classList.add('active');
+                    button.setAttribute('aria-expanded', 'true');
+                }
+            }
         }
 
         // פתיחה/סגירה של רשימת בחירת מספר הטורים בתוך התפריט (התפריט עצמו נשאר פתוח)
@@ -1061,6 +1120,12 @@ const previewArea = document.getElementById('preview-area');
                 if (document.getElementById('toc-filter').value) filterTOC();
             }
             requestAnimationFrame(updateFloatingTocSearch);
+        }
+
+        function openSearchFromToolbar() {
+            const panel = document.querySelector('.overlay-panel');
+            if (panel && !panel.classList.contains('open')) openDrawer();
+            switchRailTab('search');
         }
 
         function updateNavPaneTitle() {

@@ -126,6 +126,18 @@ function updateBookViewPages(skipPanReset) {
             saveSettings();
         }
 
+        function selectViewMode(isBookView) {
+            if (Boolean(currentSettings.isBookView) === isBookView) {
+                closeAllPopovers();
+                return;
+            }
+            const checkbox = document.getElementById('setting-is-book-view');
+            if (checkbox) checkbox.checked = isBookView;
+            updateBookViewSetting(isBookView);
+            saveSettings();
+            closeAllPopovers();
+        }
+
 function appendPagesToBookDOM(fragment) {
             const previewArea = document.getElementById('preview-area');
             let wrapper = previewArea.querySelector('.book-wrapper');

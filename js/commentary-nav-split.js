@@ -195,11 +195,13 @@
         const tab = getActiveCommentaryTab();
         const panelEl = document.getElementById('commentary-panel');
         const btn = document.getElementById('btn-commentary-panel');
+        const toolbarBtn = document.getElementById('btn-commentary-toolbar');
         if (!tab || !panelEl) return; // אין ספר טעון - שום דבר לעשות
 
         tab.commentaryPanelOpen = !tab.commentaryPanelOpen;
         panelEl.classList.toggle('open', tab.commentaryPanelOpen);
         if (btn) btn.classList.toggle('active', tab.commentaryPanelOpen);
+        if (toolbarBtn) toolbarBtn.classList.toggle('active', tab.commentaryPanelOpen);
         if (tab.commentaryPanelOpen) syncCommentarySubTabButtonsUI(tab);
 
         if (tab.commentaryPanelOpen) {
@@ -220,6 +222,7 @@
     function applyCommentaryPanelStateForActiveTab() {
         const panelEl = document.getElementById('commentary-panel');
         const btn = document.getElementById('btn-commentary-panel');
+        const toolbarBtn = document.getElementById('btn-commentary-toolbar');
         if (!panelEl) return;
         const tab = getActiveCommentaryTab();
         const isOpen = Boolean(tab && tab.commentaryPanelOpen);
@@ -227,6 +230,10 @@
         if (btn) {
             btn.classList.toggle('active', isOpen);
             btn.disabled = !tab; // כמו כפתור ההדפסה - לא רלוונטי בטאב "ספר חדש"/ללא טאב פעיל
+        }
+        if (toolbarBtn) {
+            toolbarBtn.classList.toggle('active', isOpen);
+            toolbarBtn.disabled = !tab;
         }
         if (!tab || !isOpen) return;
         syncCommentarySubTabButtonsUI(tab);
