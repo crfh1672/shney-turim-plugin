@@ -1,0 +1,8 @@
+Otzaria Icons
+Version 0.7.0
+Source revision: 483fec355339f54f9e094994a106dad9a63b82e3
+
+The otzaria_icons.otf font and the original Otzaria icon artwork are from the
+Otzaria Icons project and its contributors.
+
+Licensed under GPL-3.0-only. See OtzariaIcons-LICENSE.txt for the license text.

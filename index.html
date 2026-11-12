@@ -1,0 +1,1034 @@
+﻿<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <title>תצוגת הדפסה מתקדמת</title>
+    <script src="pdf-lib.min.js"></script>
+    <script src="fontkit.umd.min.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app-shell">
+
+    <!-- scrim — מוצג רק כשפאנל ההגדרות פתוח, מכסה את כל המסך -->
+    <div class="overlay-scrim" onclick="closeSettingsOnly()"></div>
+
+    <button class="toolbar-reveal-arrow no-print" onclick="toggleToolbarVisibility()" data-tooltip="הצג/הסתר את סרגל הכלים">
+        <i class="ui-icon" data-fluent-icon="chevron_down" aria-hidden="true"></i>
+    </button>
+
+    <div class="tab-bar-outer no-print">
+        <div class="tab-bar" id="plugin-tabs"></div>
+    </div>
+
+    <div class="toolbar no-print" id="new-book-toolbar" style="display:none;">
+        <div class="toolbar-side">
+            <h2 class="toolbar-title">בחר ספר לפתיחה</h2>
+        </div>
+        <div class="toolbar-side">
+            <button class="icon-btn" onclick="refreshNewBookList()" data-tooltip="רענן את רשימת הספרים הפתוחים">
+                <i class="ui-icon" data-fluent-icon="arrow_clockwise" aria-hidden="true"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="toolbar toolbar-main no-print" id="main-toolbar">
+        <div class="toolbar-side toolbar-side-start">
+            <button type="button" class="icon-btn drawer-toggle-btn" id="btn-drawer-toggle" onclick="toggleDrawer()" aria-expanded="false" data-tooltip="הצג ניווט">
+                <i class="ui-icon otzaria-icon drawer-toggle-icon drawer-toggle-closed" data-otzaria-icon="text_continuous_rtl" aria-hidden="true"></i>
+                <i class="ui-icon otzaria-icon drawer-toggle-icon drawer-toggle-open" data-otzaria-icon="text_continuous_ltr" data-otzaria-weight="filled" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="pin-btn" id="pin-btn" onclick="togglePin()" data-tooltip="נעץ את חלונית הניווט" aria-label="נעץ את חלונית הניווט">
+                <i class="ui-icon pin-icon-outline" data-fluent-icon="pin" aria-hidden="true"></i>
+                <i class="ui-icon pin-icon-filled" data-fluent-icon="pin" data-fluent-weight="filled" aria-hidden="true"></i>
+            </button>
+            <button class="icon-btn" type="button" onclick="openSettings()" data-tooltip="הגדרות">
+                <i class="ui-icon" data-fluent-icon="settings" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <!-- נתיב הספר והכותרת הנוכחית, עם לחצני מעבר לכותרת הקודמת/הבאה - ממורכזים בסרגל
+             ברוחב קבוע (ראו layoutNavCenter). מוסתרים כשהסרגל צר מדי ובתצוגה מפוצלת. -->
+        <div class="toolbar-nav-center" id="toolbar-nav-center">
+            <button class="nav-heading-btn" id="btn-heading-prev" onclick="goToAdjacentHeading(-1)" disabled data-tooltip="הכותרת הקודמת">
+                <i class="ui-icon rotate-270" data-fluent-icon="chevron_down" aria-hidden="true"></i>
+            </button>
+            <div class="nav-heading-title-wrap" id="nav-heading-title-wrap">
+                <span class="nav-heading-title" id="nav-heading-title"></span>
+            </div>
+            <button class="nav-heading-btn" id="btn-heading-next" onclick="goToAdjacentHeading(1)" disabled data-tooltip="הכותרת הבאה">
+                <i class="ui-icon rotate-90" data-fluent-icon="chevron_down" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <div class="toolbar-side">
+            <!-- מונה עמודים: X/X - המספר הכללי הוא מספר העמודים שנטענו עד כה; בתיבה אפשר להקליד מספר עמוד ולעבור אליו -->
+            <div class="page-indicator" id="page-indicator" dir="ltr">
+                <input type="text" inputmode="numeric" id="page-indicator-input" autocomplete="off" value="0"
+                       onfocus="this.select()" onkeydown="onPageIndicatorKeydown(event)" onblur="onPageIndicatorBlur()"
+                       data-tooltip="מספר העמוד הנוכחי - הקלד מספר ולחץ Enter למעבר">
+                <span class="page-indicator-sep">/</span>
+                <span class="page-indicator-total" id="page-indicator-total">0</span>
+            </div>
+            <!-- לחצן תצוגת ספר/גלילה - ראשון בקבוצת כפתורי העימוד והגופן -->
+            <button class="icon-btn" id="btn-book-toggle" onclick="toggleBookView()" data-tooltip="עבור לתצוגת ספר דו-עמודי">
+                <i class="ui-icon" data-fluent-icon="book_open" aria-hidden="true"></i>
+            </button>
+
+
+            <select id="column-selector" class="compact-select" onchange="updateColumns(this.value)" data-tooltip="בחר את מספר הטורים">
+                <option value="1">טור 1</option>
+                <option value="2" selected>2 טורים</option>
+                <option value="3">3 טורים</option>
+            </select>
+
+            <div class="font-size-buttons">
+                <button class="font-size-btn large" id="btn-increase-font" onclick="zoomIn()" data-tooltip="הגדל תצוגת דף (זום)">
+                <i class="ui-icon" data-fluent-icon="zoom_in" aria-hidden="true"></i>
+                </button>
+                <button class="font-size-btn small" id="btn-decrease-font" onclick="zoomOut()" data-tooltip="הקטן תצוגת דף (זום)">
+                <i class="ui-icon" data-fluent-icon="zoom_out" aria-hidden="true"></i>
+                </button>
+                <button class="font-size-btn" id="btn-fit-width" onclick="fitToScreen('width')" data-tooltip="התאם לרוחב המסך">
+                <i class="ui-icon" data-fluent-icon="arrow_autofit_width" aria-hidden="true"></i>
+                </button>
+                <button class="font-size-btn" id="btn-back-to-reader" onclick="returnToNormalReading()" data-tooltip="חזרה לתצוגה הרגילה במסך העיון, באותו מיקום">
+                <i class="ui-icon" data-fluent-icon="arrow_reset" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="popover-anchor" id="more-menu-anchor">
+                <button class="icon-btn" id="btn-more" onclick="toggleMoreMenu(event)" data-tooltip="עוד אפשרויות">
+                    <i class="ui-icon" data-fluent-icon="more_horizontal" aria-hidden="true"></i>
+                </button>
+                <div class="popover more-menu" id="more-menu">
+                    <button type="button" class="popover-item more-menu-item" id="btn-print" onclick="closeAllPopovers(); openPrintExportModal();" disabled>
+                        <i class="ui-icon" data-fluent-icon="print" aria-hidden="true"></i>
+                        <span class="more-menu-text">הדפסת מסמך</span>
+                    </button>
+                    <button type="button" class="popover-item more-menu-item" id="btn-refresh-tab" onclick="closeAllPopovers(); refreshCurrentTab();">
+                        <i class="ui-icon" data-fluent-icon="arrow_clockwise" aria-hidden="true"></i>
+                        <span class="more-menu-text">רענן את הספר הנוכחי</span>
+                    </button>
+                    <button type="button" class="popover-item more-menu-item" id="column-toggle" onclick="toggleColumnPopover(event)">
+                        <i class="ui-icon" data-fluent-icon="text_column_two" aria-hidden="true"></i>
+                        <span class="more-menu-text">מספר הטורים</span>
+                        <span class="more-menu-value" id="column-toggle-label">2 טורים</span>
+                        <i class="ui-icon more-menu-chevron" data-fluent-icon="chevron_down" aria-hidden="true"></i>
+                    </button>
+                    <div class="more-menu-sub" id="column-popover">
+                        <div class="popover-item" onclick="selectColumn(1)">טור 1</div>
+                        <div class="popover-item" onclick="selectColumn(2)">2 טורים</div>
+                        <div class="popover-item" onclick="selectColumn(3)">3 טורים</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pagination-banner">
+        <i class="ui-icon" data-fluent-icon="warning" aria-hidden="true"></i>
+        <span>מסדר עמודים...</span>
+        <button id="pagination-banner-close" onclick="document.getElementById('pagination-banner').classList.remove('visible')" data-tooltip="סגור הודעה">
+            <i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i>
+        </button>
+    </div>
+
+
+    <!-- פאנל הגדרות שמאלי -->
+        <div class="settings-panel">
+            <div class="settings-panel-header">
+                <p class="settings-panel-kicker">הגדרות</p>
+                <button type="button" class="settings-panel-close-btn" onclick="closeSettings()" data-tooltip="סגור הגדרות">
+                    <i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="nav-subtabs" style="padding: 10px 16px 0;">
+                <button type="button" class="nav-subtab-btn active" id="settings-tab-btn-general" onclick="switchSettingsTab('general')">כללי</button>
+                <button type="button" class="nav-subtab-btn" id="settings-tab-btn-notes" onclick="switchSettingsTab('notes')">הערות</button>
+                <button type="button" class="nav-subtab-btn" id="settings-tab-btn-shortcuts" onclick="switchSettingsTab('shortcuts')">קיצורים</button>
+            </div>
+            <div style="flex: 1; overflow-y: auto; padding: 16px;">
+                <div class="settings-tab-pane active" id="settings-pane-general">
+                
+                <div class="settings-section-title">הגדרות גופן</div>
+                <div class="settings-group">
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label>גופן הספר</label>
+                            <button type="button" class="font-picker-trigger" id="font-picker-trigger-book" onclick="toggleFontPickerInline('book')" data-tooltip="בחר גופן">
+                                <span id="font-picker-current-name-book">גופן תוכנה</span>
+                                <i class="ui-icon" data-fluent-icon="chevron_down" aria-hidden="true"></i>
+                            </button>
+                            <div class="font-picker-inline" id="font-picker-inline-book">
+                                <div class="font-picker-search-wrapper">
+                                    <input type="text" id="font-picker-search-book" placeholder="חיפוש או הקלדת שם גופן..." oninput="filterFontPickerList('book')" onkeydown="handleFontPickerKeydown(event, 'book')">
+                                </div>
+                                <div class="font-picker-list" id="font-picker-list-book"></div>
+                            </div>
+                            <input type="file" id="font-picker-file-input-book" accept=".ttf,.otf" style="display:none;" onchange="onFontPickerFileChosen(event, 'book')">
+                            <button type="button" class="btn-secondary font-picker-app-font-btn" id="font-picker-app-font-btn-book" onclick="useAppFont('book')" data-tooltip="חזרה למשיכת הגופן אוטומטית מהתוכנה">
+                                גופן תוכנה
+                            </button>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label for="setting-font-size">גודל גופן הספר (pt)</label>
+                            <div class="settings-slider-wrapper">
+                                <input type="range" id="setting-font-size" min="10" max="28" step="1" value="14" oninput="updateFontSizeSetting(this.value)" onchange="saveSettings()">
+                                <span class="settings-value-indicator" id="setting-font-size-val">14pt</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label for="setting-line-height">מרווח בין שורות</label>
+                            <div class="settings-slider-wrapper">
+                                <input type="range" id="setting-line-height" min="1.0" max="2.5" step="0.1" value="1.5" oninput="updateLineHeightValue(this.value)" onchange="saveSettings()">
+                                <span class="settings-value-indicator" id="setting-line-height-val">1.50</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label for="setting-paragraph-spacing">מרווח בין פסקאות (em)</label>
+                            <div class="settings-slider-wrapper">
+                                <input type="range" id="setting-paragraph-spacing" min="0.1" max="1.5" step="0.1" value="0.3" oninput="updateParagraphSpacingValue(this.value)" onchange="saveSettings()">
+                                <span class="settings-value-indicator" id="setting-paragraph-spacing-val">0.30em</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+<div class="settings-section-title">הגדרות פריסה</div>
+                <div class="settings-group">
+
+                    <!-- תיבה 0: גודל עמוד (לא זום - שינוי הממדים האמיתיים של העמוד) -->
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label for="setting-page-size-preset">גודל עמוד</label>
+                            <select id="setting-page-size-preset" class="settings-select" onchange="onPageSizePresetChange(this.value)">
+                                <option value="a4">A4 (210×297 מ"מ)</option>
+                                <option value="a5">A5 (148×210 מ"מ)</option>
+                                <option value="letter">Letter (216×279 מ"מ)</option>
+                                <option value="legal">Legal (216×356 מ"מ)</option>
+                                <option value="custom">מותאם אישית...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-card" id="page-size-custom-card" style="display:none;">
+                        <div class="settings-control-group">
+                            <label>מידות מותאמות אישית (מ"מ, רוחב × גובה)</label>
+                            <div class="page-size-custom-row">
+                                <input type="number" id="setting-page-width-mm" min="60" max="1000" step="1" value="210" onchange="updateCustomPageSize()">
+                                <span>×</span>
+                                <input type="number" id="setting-page-height-mm" min="60" max="1000" step="1" value="297" onchange="updateCustomPageSize()">
+                            </div>
+                            <button type="button" class="btn-secondary" style="width:100%; margin-top:8px;" onclick="fitPageSizeToScreen()">
+                                התאם אוטומטית לגודל המסך שלי (בלי רווחים בצדדים)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- תיבה 1: קו מפריד עם כפתור הזזה Fluent -->
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>הצג קו מפריד בין הטורים</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-show-column-rule" onchange="updateColumnRuleSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- תיבה: סרגל כלים מצומצם -->
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>סרגל כלים מצומצם</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-compact-toolbar" onchange="updateCompactToolbarSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- תיבה 2: כותרת עליונה עם כפתור הזזה Fluent -->
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>הצג כותרת עליונה ומספר עמוד</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-show-header" onchange="updateHeaderSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+<!-- תיבה 3: תצוגת ספר דו-עמודי עם כפתור הזזה Fluent -->
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>תצוגת ספר דו-עמודי</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-is-book-view" onclick="updateBookViewSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+<!-- תיבה 3ב: שני עמודים בשורה בתצוגת גלילה (לא תצוגת ספר) עם כפתור הזזה Fluent -->
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>שני עמודים בשורה בתצוגת גלילה</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-two-column-scroll" onclick="updateTwoColumnScrollSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- תיבה 4: שוליים צדדיים -->
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label for="setting-margin">שוליים צדדיים (מ"מ)</label>
+                            <div class="settings-slider-wrapper">
+                                <input type="range" id="setting-margin" min="5" max="45" step="1" value="20" oninput="updateMarginValue(this.value)" onchange="saveSettings()">
+                                <span class="settings-value-indicator" id="setting-margin-val">20 מ"מ</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- תיבה 5: מרווח בין טורים -->
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label for="setting-column-gap">מרווח בין טורים (מ"מ)</label>
+                            <div class="settings-slider-wrapper">
+                                <input type="range" id="setting-column-gap" min="4" max="25" step="1" value="12" oninput="updateColumnGapValue(this.value)" onchange="saveSettings()">
+                                <span class="settings-value-indicator" id="setting-column-gap-val">12 מ"מ</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div> <!-- סגירת קבוצת הפריסה -->
+
+                <div class="settings-section-title">ניקוד ופיסוק</div>
+                <div class="settings-group">
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>הסתר ניקוד</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-hide-nikud" onchange="updateHideNikudSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>הסתר טעמי מקרא</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-hide-teamim" onchange="updateHideTeamimSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>הסתר סימני פיסוק ‎(?!:-_*)‎</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-hide-punctuation" onchange="updateHidePunctuationSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section-title">שמות קדושים</div>
+                <div class="settings-group">
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label for="setting-holy-names-filter">סינון שמות קדושים בטקסט המוצג</label>
+                            <select id="setting-holy-names-filter" class="settings-select" onchange="updateHolyNamesFilterSetting(this.value); saveSettings();">
+                                <option value="none">ללא סינון - הצג ככתבו</option>
+                                <option value="havaya" selected>רק שם הוי"ה המפורש</option>
+                                <option value="all">כל שמות הקדושה (אלקים, א-דני, ש-די ו...)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-card" id="holy-names-display-card">
+                        <div class="settings-control-group">
+                            <label for="setting-holy-names-display">אופן ההצגה (כשהסינון פעיל)</label>
+                            <select id="setting-holy-names-display" class="settings-select" onchange="updateHolyNamesDisplaySetting(this.value); saveSettings();">
+                                <option value="hyphen" selected>מקף (י-ה-ו-ה)</option>
+                                <option value="kinuy">כינוי (יקוק / ה' / אלוקים...)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-card" id="holy-names-yy-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>שם הוי"ה יופיע כ-י"י</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-holy-names-yy" onchange="updateHolyNamesYYSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>הסתרת שם "א-ל" אגרסיבית (גם ללא ניקוד כלל)</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-aggressive-alef" onchange="updateAggressiveAlefSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section-title">הגדרות צבע</div>
+                <div class="settings-group">
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label>צבע הרקע (מאחורי העמוד)</label>
+                            <button type="button" class="color-picker-trigger" id="color-picker-trigger-bg" onclick="toggleColorPickerInline('bg')" data-tooltip="בחר צבע רקע">
+                                <span class="color-picker-swatch" id="color-picker-swatch-bg"></span>
+                                <span class="color-picker-current-label" id="color-picker-label-bg">ברירת מחדל</span>
+                                <i class="ui-icon color-picker-chevron" data-fluent-icon="chevron_down" id="color-picker-chevron-bg" aria-hidden="true"></i>
+                            </button>
+                            <div class="color-picker-inline" id="color-picker-inline-bg">
+                                <div class="color-picker-presets" id="color-picker-presets-bg"></div>
+                                <button type="button" class="color-picker-custom-toggle" id="color-picker-custom-toggle-bg" onclick="toggleColorPickerCustom('bg')">התאמה אישית...</button>
+                                <div class="color-picker-custom" id="color-picker-custom-bg">
+                                    <div class="color-picker-sv" id="color-picker-sv-bg">
+                                        <div class="color-picker-sv-white"></div>
+                                        <div class="color-picker-sv-black"></div>
+                                        <div class="color-picker-sv-cursor" id="color-picker-sv-cursor-bg"></div>
+                                    </div>
+                                    <div class="color-picker-hue" id="color-picker-hue-bg">
+                                        <div class="color-picker-hue-cursor" id="color-picker-hue-cursor-bg"></div>
+                                    </div>
+                                    <div class="color-picker-fields">
+                                        <div class="color-picker-field"><label>R</label><input type="number" min="0" max="255" id="color-picker-r-bg"></div>
+                                        <div class="color-picker-field"><label>G</label><input type="number" min="0" max="255" id="color-picker-g-bg"></div>
+                                        <div class="color-picker-field"><label>B</label><input type="number" min="0" max="255" id="color-picker-b-bg"></div>
+                                        <div class="color-picker-field color-picker-hex-field"><label>HEX</label><input type="text" id="color-picker-hex-bg" maxlength="7"></div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-secondary color-picker-reset-btn" onclick="resetColorSetting('bg')">איפוס לברירת המחדל</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label>צבע העמוד</label>
+                            <button type="button" class="color-picker-trigger" id="color-picker-trigger-page" onclick="toggleColorPickerInline('page')" data-tooltip="בחר צבע עמוד">
+                                <span class="color-picker-swatch" id="color-picker-swatch-page"></span>
+                                <span class="color-picker-current-label" id="color-picker-label-page">ברירת מחדל</span>
+                                <i class="ui-icon color-picker-chevron" data-fluent-icon="chevron_down" id="color-picker-chevron-page" aria-hidden="true"></i>
+                            </button>
+                            <div class="color-picker-inline" id="color-picker-inline-page">
+                                <div class="color-picker-presets" id="color-picker-presets-page"></div>
+                                <button type="button" class="color-picker-custom-toggle" id="color-picker-custom-toggle-page" onclick="toggleColorPickerCustom('page')">התאמה אישית...</button>
+                                <div class="color-picker-custom" id="color-picker-custom-page">
+                                    <div class="color-picker-sv" id="color-picker-sv-page">
+                                        <div class="color-picker-sv-white"></div>
+                                        <div class="color-picker-sv-black"></div>
+                                        <div class="color-picker-sv-cursor" id="color-picker-sv-cursor-page"></div>
+                                    </div>
+                                    <div class="color-picker-hue" id="color-picker-hue-page">
+                                        <div class="color-picker-hue-cursor" id="color-picker-hue-cursor-page"></div>
+                                    </div>
+                                    <div class="color-picker-fields">
+                                        <div class="color-picker-field"><label>R</label><input type="number" min="0" max="255" id="color-picker-r-page"></div>
+                                        <div class="color-picker-field"><label>G</label><input type="number" min="0" max="255" id="color-picker-g-page"></div>
+                                        <div class="color-picker-field"><label>B</label><input type="number" min="0" max="255" id="color-picker-b-page"></div>
+                                        <div class="color-picker-field color-picker-hex-field"><label>HEX</label><input type="text" id="color-picker-hex-page" maxlength="7"></div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-secondary color-picker-reset-btn" onclick="resetColorSetting('page')">איפוס לברירת המחדל</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label>צבע הכתב</label>
+                            <button type="button" class="color-picker-trigger" id="color-picker-trigger-text" onclick="toggleColorPickerInline('text')" data-tooltip="בחר צבע כתב">
+                                <span class="color-picker-swatch" id="color-picker-swatch-text"></span>
+                                <span class="color-picker-current-label" id="color-picker-label-text">ברירת מחדל</span>
+                                <i class="ui-icon color-picker-chevron" data-fluent-icon="chevron_down" id="color-picker-chevron-text" aria-hidden="true"></i>
+                            </button>
+                            <div class="color-picker-inline" id="color-picker-inline-text">
+                                <div class="color-picker-presets" id="color-picker-presets-text"></div>
+                                <button type="button" class="color-picker-custom-toggle" id="color-picker-custom-toggle-text" onclick="toggleColorPickerCustom('text')">התאמה אישית...</button>
+                                <div class="color-picker-custom" id="color-picker-custom-text">
+                                    <div class="color-picker-sv" id="color-picker-sv-text">
+                                        <div class="color-picker-sv-white"></div>
+                                        <div class="color-picker-sv-black"></div>
+                                        <div class="color-picker-sv-cursor" id="color-picker-sv-cursor-text"></div>
+                                    </div>
+                                    <div class="color-picker-hue" id="color-picker-hue-text">
+                                        <div class="color-picker-hue-cursor" id="color-picker-hue-cursor-text"></div>
+                                    </div>
+                                    <div class="color-picker-fields">
+                                        <div class="color-picker-field"><label>R</label><input type="number" min="0" max="255" id="color-picker-r-text"></div>
+                                        <div class="color-picker-field"><label>G</label><input type="number" min="0" max="255" id="color-picker-g-text"></div>
+                                        <div class="color-picker-field"><label>B</label><input type="number" min="0" max="255" id="color-picker-b-text"></div>
+                                        <div class="color-picker-field color-picker-hex-field"><label>HEX</label><input type="text" id="color-picker-hex-text" maxlength="7"></div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-secondary color-picker-reset-btn" onclick="resetColorSetting('text')">איפוס לברירת המחדל</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section-title">הגדרות משיכה</div>
+                <div class="settings-group">
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label for="setting-concurrency">ערוצי משיכה מקבילים (מהירות)</label>
+                            <div class="settings-slider-wrapper" data-tooltip="מספר בקשות הרשת הנשלחות במקביל לאוצריא. ערך גבוה מהיר יותר אך עלול לגרום לעמודים לא מסודרים בספרים גדולים">
+                                <input type="range" id="setting-concurrency" min="2" max="20" step="1" value="6" oninput="updateConcurrencyValue(this.value)" onchange="saveSettings()">
+                                <span class="settings-value-indicator" id="setting-concurrency-val">6 ערוצים</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- לחצן איפוס -->
+                <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--color-border-subtle);">
+                    <button class="btn-secondary" onclick="resetToDefaults()" data-tooltip="אפס את כל פריסות העמודים וערכי ברירת המחדל">איפוס להגדרות ברירת מחדל</button>
+                </div>
+
+                </div><!-- /settings-pane-general -->
+
+                <div class="settings-tab-pane" id="settings-pane-notes">
+
+                <div class="settings-section-title">הגדרות גופן להערות</div>
+                <div class="settings-group">
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label>גופן ההערות</label>
+                            <button type="button" class="font-picker-trigger" id="font-picker-trigger-note" onclick="toggleFontPickerInline('note')" data-tooltip="בחר גופן להערות">
+                                <span id="font-picker-current-name-note">כמו הטקסט (ברירת מחדל)</span>
+                                <i class="ui-icon" data-fluent-icon="chevron_down" id="font-picker-trigger-chevron-note" aria-hidden="true"></i>
+                            </button>
+                            <div class="font-picker-inline" id="font-picker-inline-note">
+                                <div class="font-picker-search-wrapper">
+                                    <input type="text" id="font-picker-search-note" placeholder="חיפוש או הקלדת שם גופן..." oninput="filterFontPickerList('note')" onkeydown="handleFontPickerKeydown(event, 'note')">
+                                </div>
+                                <div class="font-picker-list" id="font-picker-list-note"></div>
+                            </div>
+                            <input type="file" id="font-picker-file-input-note" accept=".ttf,.otf" style="display:none;" onchange="onFontPickerFileChosen(event, 'note')">
+                            <button type="button" class="btn-secondary font-picker-app-font-btn" id="font-picker-app-font-btn-note" onclick="useAppFont('note')" data-tooltip="חזרה לגופן הזהה לטקסט">
+                                כמו הטקסט
+                            </button>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label for="setting-footnote-font-size">גודל גופן ההערות (pt)</label>
+                            <div class="settings-slider-wrapper">
+                                <input type="range" id="setting-footnote-font-size" min="6" max="28" step="1" value="10" oninput="updateFootnoteFontSizeValue(this.value)" onchange="saveSettings()">
+                                <span class="settings-value-indicator" id="setting-footnote-font-size-val">10pt</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label for="setting-footnote-line-height">מרווח בין שורות בהערות</label>
+                            <div class="settings-slider-wrapper">
+                                <input type="range" id="setting-footnote-line-height" min="1.0" max="2.5" step="0.1" value="1.35" oninput="updateFootnoteLineHeightValue(this.value)" onchange="saveSettings()">
+                                <span class="settings-value-indicator" id="setting-footnote-line-height-val">1.35</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label for="setting-footnote-paragraph-spacing">מרווח בין הערות (em)</label>
+                            <div class="settings-slider-wrapper">
+                                <input type="range" id="setting-footnote-paragraph-spacing" min="0.1" max="1.5" step="0.1" value="0.3" oninput="updateFootnoteParagraphSpacingValue(this.value)" onchange="saveSettings()">
+                                <span class="settings-value-indicator" id="setting-footnote-paragraph-spacing-val">0.30em</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section-title">פריסת ההערות</div>
+                <div class="settings-group">
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>הצג הערות בשני טורים</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-footnote-two-column" onchange="updateFootnoteTwoColumnSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label for="setting-footnote-column-gap">מרווח בין טורי ההערות (מ"מ)</label>
+                            <div class="settings-slider-wrapper">
+                                <input type="range" id="setting-footnote-column-gap" min="4" max="25" step="1" value="12" oninput="updateFootnoteColumnGapValue(this.value)" onchange="saveSettings()">
+                                <span class="settings-value-indicator" id="setting-footnote-column-gap-val">12 מ"מ</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>הצג קו מפריד בין טורי ההערות</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-footnote-show-column-rule" onchange="updateFootnoteColumnRuleSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- לחצן איפוס - מאפס רק את הגדרות ההערות לברירת המחדל שלהן, לא נוגע בשאר ההגדרות -->
+                <div style="margin-top: 8px; padding-top: 16px; border-top: 1px solid var(--color-border-subtle);">
+                    <button class="btn-secondary" onclick="resetFootnoteSettings()" data-tooltip="אפס רק את הגדרות ההערות לברירת המחדל שלהן">איפוס הערות לברירת מחדל</button>
+                </div>
+
+                <!-- הגדרות חלונית המפרשים (בצד) - עצמאיות לגמרי מהגדרות ההערות שמעליהן ומהגדרות
+                     הטקסט הראשי. גופן ברירת המחדל (ללא בחירה עצמאית) עוקב אחרי גופן "מפרשים" של
+                     התוכנה עצמה (commentatorsFontFamily) - לא אחרי גופן הטקסט הרגיל של הספר. -->
+                <div class="settings-section-title">הגדרות גופן למפרשים</div>
+                <div class="settings-group">
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label>גופן המפרשים</label>
+                            <button type="button" class="font-picker-trigger" id="font-picker-trigger-commentary" onclick="toggleFontPickerInline('commentary')" data-tooltip="בחר גופן לחלונית המפרשים">
+                                <span id="font-picker-current-name-commentary">גופן מפרשים (ברירת מחדל)</span>
+                                <i class="ui-icon" data-fluent-icon="chevron_down" id="font-picker-trigger-chevron-commentary" aria-hidden="true"></i>
+                            </button>
+                            <div class="font-picker-inline" id="font-picker-inline-commentary">
+                                <div class="font-picker-search-wrapper">
+                                    <input type="text" id="font-picker-search-commentary" placeholder="חיפוש או הקלדת שם גופן..." oninput="filterFontPickerList('commentary')" onkeydown="handleFontPickerKeydown(event, 'commentary')">
+                                </div>
+                                <div class="font-picker-list" id="font-picker-list-commentary"></div>
+                            </div>
+                            <input type="file" id="font-picker-file-input-commentary" accept=".ttf,.otf" style="display:none;" onchange="onFontPickerFileChosen(event, 'commentary')">
+                            <button type="button" class="btn-secondary font-picker-app-font-btn" id="font-picker-app-font-btn-commentary" onclick="useAppFont('commentary')" data-tooltip="חזרה למשיכת גופן המפרשים אוטומטית מהתוכנה">
+                                גופן מפרשים (תוכנה)
+                            </button>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label for="setting-commentary-font-size">גודל גופן המפרשים (pt)</label>
+                            <div class="settings-slider-wrapper">
+                                <input type="range" id="setting-commentary-font-size" min="6" max="28" step="1" value="12" oninput="updateCommentaryFontSizeValue(this.value)" onchange="saveSettings()">
+                                <span class="settings-value-indicator" id="setting-commentary-font-size-val">12pt</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label for="setting-commentary-line-height">מרווח בין שורות במפרשים</label>
+                            <div class="settings-slider-wrapper">
+                                <input type="range" id="setting-commentary-line-height" min="1.0" max="2.5" step="0.1" value="1.55" oninput="updateCommentaryLineHeightValue(this.value)" onchange="saveSettings()">
+                                <span class="settings-value-indicator" id="setting-commentary-line-height-val">1.55</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section-title">צבע חלונית המפרשים</div>
+                <div class="settings-group">
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label>צבע רקע החלונית</label>
+                            <button type="button" class="color-picker-trigger" id="color-picker-trigger-commentaryBg" onclick="toggleColorPickerInline('commentaryBg')" data-tooltip="בחר צבע רקע לחלונית המפרשים">
+                                <span class="color-picker-swatch" id="color-picker-swatch-commentaryBg"></span>
+                                <span class="color-picker-current-label" id="color-picker-label-commentaryBg">ברירת מחדל</span>
+                                <i class="ui-icon color-picker-chevron" data-fluent-icon="chevron_down" id="color-picker-chevron-commentaryBg" aria-hidden="true"></i>
+                            </button>
+                            <div class="color-picker-inline" id="color-picker-inline-commentaryBg">
+                                <div class="color-picker-presets" id="color-picker-presets-commentaryBg"></div>
+                                <button type="button" class="color-picker-custom-toggle" id="color-picker-custom-toggle-commentaryBg" onclick="toggleColorPickerCustom('commentaryBg')">התאמה אישית...</button>
+                                <div class="color-picker-custom" id="color-picker-custom-commentaryBg">
+                                    <div class="color-picker-sv" id="color-picker-sv-commentaryBg">
+                                        <div class="color-picker-sv-white"></div>
+                                        <div class="color-picker-sv-black"></div>
+                                        <div class="color-picker-sv-cursor" id="color-picker-sv-cursor-commentaryBg"></div>
+                                    </div>
+                                    <div class="color-picker-hue" id="color-picker-hue-commentaryBg">
+                                        <div class="color-picker-hue-cursor" id="color-picker-hue-cursor-commentaryBg"></div>
+                                    </div>
+                                    <div class="color-picker-fields">
+                                        <div class="color-picker-field"><label>R</label><input type="number" min="0" max="255" id="color-picker-r-commentaryBg"></div>
+                                        <div class="color-picker-field"><label>G</label><input type="number" min="0" max="255" id="color-picker-g-commentaryBg"></div>
+                                        <div class="color-picker-field"><label>B</label><input type="number" min="0" max="255" id="color-picker-b-commentaryBg"></div>
+                                        <div class="color-picker-field color-picker-hex-field"><label>HEX</label><input type="text" id="color-picker-hex-commentaryBg" maxlength="7"></div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-secondary color-picker-reset-btn" onclick="resetColorSetting('commentaryBg')">איפוס לברירת המחדל</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section-title">ניקוד ופיסוק במפרשים</div>
+                <div class="settings-group">
+                    <!-- עצמאי לגמרי מהגדרות "ניקוד ופיסוק" של הספר עצמו (הגדרות > כללי) - הסתרה
+                         כאן אינה משפיעה על הספר, ולהיפך. ראו applyCommentaryTextFilters. -->
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>הסתר ניקוד במפרשים</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-commentary-hide-nikud" onchange="updateCommentaryHideNikudSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>הסתר טעמי מקרא במפרשים</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-commentary-hide-teamim" onchange="updateCommentaryHideTeamimSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>הסתר סימני פיסוק במפרשים ‎(?!:-_*)‎</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-commentary-hide-punctuation" onchange="updateCommentaryHidePunctuationSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section-title">תצוגת מקורות במפרשים</div>
+                <div class="settings-group">
+                    <div class="settings-card">
+                        <div class="settings-control-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--color-on-surface);">
+                                <span>הצג כותרת מקור לפני כל קטע</span>
+                                <span class="switch">
+                                    <input type="checkbox" id="setting-commentary-show-refs" onchange="updateCommentaryShowRefsSetting(this.checked); saveSettings();">
+                                    <span class="slider"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- לחצן איפוס - מאפס רק את הגדרות חלונית המפרשים לברירת המחדל שלהן -->
+                <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--color-border-subtle);">
+                    <button class="btn-secondary" onclick="resetCommentarySettings()" data-tooltip="אפס רק את הגדרות חלונית המפרשים לברירת המחדל שלהן">איפוס הגדרות מפרשים לברירת מחדל</button>
+                </div>
+
+                </div><!-- /settings-pane-notes -->
+
+                <div class="settings-tab-pane" id="settings-pane-shortcuts">
+                <div class="settings-section-title">קיצורי מקשים</div>
+                <div class="settings-group" id="shortcuts-list-container">
+                </div>
+
+                <!-- לחצן איפוס - מאפס רק את קיצורי המקשים לברירת המחדל שלהם, לא נוגע בשאר ההגדרות -->
+                <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--color-border-subtle);">
+                    <button class="btn-secondary" onclick="resetShortcutsToDefaults()" data-tooltip="אפס רק את קיצורי המקשים לברירת המחדל שלהם">איפוס קיצורים לברירת מחדל</button>
+                </div>
+                </div><!-- /settings-pane-shortcuts -->
+
+            </div>
+        </div>
+
+    <div class="main-content">
+        <div class="nav-panel-scrim" id="nav-panel-scrim" onclick="closeDrawer()" aria-hidden="true"></div>
+        <div class="nav-panel-corner" id="nav-panel-corner" aria-hidden="true"></div>
+        <div class="overlay-panel" id="nav-panel">
+            <div class="nav-panel-resize-handle" id="nav-panel-resize-handle" title="גרור כדי לשנות את רוחב חלונית הניווט"></div>
+            <div class="drawer-icon-rail">
+                <button type="button" class="drawer-icon-btn active" id="rail-nav" onclick="switchRailTab('nav')" data-tooltip="ניווט">
+                    <i class="ui-icon otzaria-icon drawer-tab-icon-regular" data-otzaria-icon="list" aria-hidden="true"></i>
+                    <i class="ui-icon otzaria-icon drawer-tab-icon-filled" data-otzaria-icon="list" data-otzaria-weight="filled" aria-hidden="true"></i>
+                    ניווט
+                </button>
+                <button type="button" class="drawer-icon-btn" id="rail-search" onclick="switchRailTab('search')" data-tooltip="חיפוש">
+                    <i class="ui-icon drawer-tab-icon-regular" data-fluent-icon="search" aria-hidden="true"></i>
+                    <i class="ui-icon drawer-tab-icon-filled" data-fluent-icon="search" data-fluent-weight="filled" aria-hidden="true"></i>
+                    חיפוש
+                </button>
+                <button type="button" class="drawer-icon-btn" id="rail-pages" onclick="switchRailTab('pages')" data-tooltip="דפים">
+                    <i class="ui-icon drawer-tab-icon-regular" data-fluent-icon="document_multiple" aria-hidden="true"></i>
+                    <i class="ui-icon drawer-tab-icon-filled" data-fluent-icon="document_multiple" data-fluent-weight="filled" aria-hidden="true"></i>
+                    דפים
+                </button>
+            </div>
+
+            <div class="drawer-main">
+                <div class="drawer-pane drawer-pane-nav active" id="drawer-pane-nav">
+                    <div class="drawer-search drawer-collapsible-search" id="drawer-search-nav">
+                        <div class="drawer-search-field">
+                            <input type="text" id="toc-filter" placeholder="חיפוש סימניה..." oninput="filterTOC()" onkeydown="handleTocFilterKeydown(event)" data-tooltip="חיפוש סימניה...">
+                            <i class="ui-icon otzaria-icon" data-otzaria-icon="search" aria-hidden="true"></i>
+                            <button type="button" class="drawer-search-clear" id="toc-filter-clear" onclick="clearTocSearchFilter()" data-tooltip="נקה" aria-label="נקה">
+                                <i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <button type="button" class="drawer-search-close" onclick="closeTocSearch()" data-tooltip="סגור חיפוש" aria-label="סגור חיפוש">
+                            <i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="drawer-content toc-scroll-area" id="toc-scroll-area">
+                        <div class="drawer-pane-heading">
+                            <h3 class="drawer-pane-title" id="drawer-pane-nav-title"></h3>
+                            <button type="button" class="drawer-search-toggle" id="toc-search-toggle" onclick="toggleTocSearch()" data-tooltip="חיפוש סימניה..." aria-label="חיפוש סימניה..." aria-expanded="false">
+                                <i class="ui-icon" data-fluent-icon="search" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="toc-list-content" id="toc-list">
+                            <div style="padding: 20px; color: var(--color-outline); text-align: center;">
+                                יש לטעון ספר כדי לראות את כותרות הניווט.
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="drawer-search-toggle drawer-search-toggle-floating" id="toc-search-toggle-floating" onclick="toggleTocSearch()" data-tooltip="חיפוש סימניה..." aria-label="חיפוש סימניה..." aria-expanded="false">
+                        <i class="ui-icon" data-fluent-icon="search" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                <div class="drawer-pane" id="drawer-pane-search">
+                    <div class="drawer-search active" id="drawer-search-book">
+                        <div class="drawer-search-field">
+                            <input type="text" id="book-search" placeholder="חפש כאן..." oninput="handleDrawerSearch()" onkeydown="handleBookSearchKeydown(event)" data-tooltip="חיפוש בתוכן הספר. Enter לתוצאה הבאה, Shift+Enter לקודמת">
+                            <i class="ui-icon" data-fluent-icon="search" aria-hidden="true"></i>
+                        </div>
+                    </div>
+                    <div class="search-results-panel">
+                        <div class="search-results-title">תוצאות חיפוש בספר</div>
+                        <div class="search-results-nav">
+                            <span id="search-results-count"></span>
+                            <button type="button" onclick="prevSearchResult()" data-tooltip="תוצאה קודמת (Shift+Enter)">
+                                <i class="ui-icon" data-fluent-icon="chevron_up" aria-hidden="true"></i>
+                            </button>
+                            <button type="button" onclick="nextSearchResult()" data-tooltip="תוצאה הבאה (Enter)">
+                                <i class="ui-icon" data-fluent-icon="chevron_down" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="drawer-content" id="search-results-list">
+                        <div class="search-empty">הקלד מילה לחיפוש בתוכן הספר. התוצאות יופיעו כאן עם נתיב הכותרות והקשר סביב המילה.</div>
+                    </div>
+                </div>
+
+                <div class="drawer-pane" id="drawer-pane-pages">
+                    <div class="drawer-pane-heading">
+                        <h3 class="drawer-pane-title">דפים</h3>
+                        <button type="button" class="drawer-search-toggle" id="page-search-toggle" onclick="togglePageSearch()" data-tooltip="עבור לדף לפי מספר" aria-label="עבור לדף לפי מספר" aria-expanded="false">
+                            <i class="ui-icon" data-fluent-icon="search" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="drawer-search drawer-collapsible-search" id="drawer-search-pages">
+                        <div class="drawer-search-field">
+                            <input type="text" id="page-filter" inputmode="numeric" placeholder="הקלד מספר דף ולחץ Enter..." oninput="filterPageNav()" onkeydown="handlePageNavKeydown(event)" data-tooltip="הקלד מספר דף ולחץ Enter">
+                            <i class="ui-icon" data-fluent-icon="search" aria-hidden="true"></i>
+                        </div>
+                        <button type="button" class="drawer-search-close" onclick="closePageSearch()" data-tooltip="סגור חיפוש">
+                            <i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="drawer-content" id="page-nav-list">
+                        <div style="padding: 20px; color: var(--color-outline); text-align: center;">
+                            יש לטעון ספר כדי לראות רשימת דפים.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- עטיפה יציבה סביב #preview-area: ה-innerHTML של #preview-area עצמו מוחלף במקומות רבים
+             בקוד (בכל טעינת עמוד/ספר), ולכן חצי הדפדוף חייבים לשבת כאן - כילדים של העטיפה היציבה
+             הזו (שלעולם לא נמחקת) - ולא כילדים של #preview-area (שם הם היו נעלמים בכל רענון תוכן).
+             העטיפה משמשת גם כהקשר המיקום (position:relative) של החצים, כדי ש-right/left: 24px שלהם
+             יתייחס לגבולות שטח הספר בפועל בלבד - ולא לרוחב המלא של .main-content שכולל גם את
+             חלונית המפרשים כשהיא פתוחה (ראו #preview-area-wrapper למטה). -->
+        <div id="preview-area-wrapper">
+            <button type="button" class="panel-open-handle" id="btn-commentary-panel" onclick="toggleCommentaryPanel()" disabled aria-label="הצג מפרשים" data-tooltip="הצג מפרשים">
+                <i class="ui-icon rotate-270" data-fluent-icon="chevron_down" aria-hidden="true"></i>
+            </button>
+            <button class="nav-arrow arrow-right" id="book-nav-prev" onclick="prevBookPage()" data-tooltip="עמוד קודם (ימינה)">
+                <i class="ui-icon rotate-270" data-fluent-icon="chevron_down" aria-hidden="true"></i>
+            </button>
+            <button class="nav-arrow arrow-left" id="book-nav-next" onclick="nextBookPage()" data-tooltip="עמוד הבא (שמאלה)">
+                <i class="ui-icon rotate-90" data-fluent-icon="chevron_down" aria-hidden="true"></i>
+            </button>
+            <div id="preview-area">
+                <div class="print-page" style="column-count: 1; text-align: center;">
+                    <br><br><br>
+                    <h2 style="color: var(--color-primary);">בחר ספר מהסרגל העליון כדי להתחיל...</h2>
+                    <p>המערכת תמשוך את הספר ותסדר אותו אוטומטית בעמודי A4 נפרדים.</p>
+                </div>
+            </div>
+        </div>
+
+        
+
+        <!-- חלונית מפרשים בצד - עצמאית לכל טאב (ראו מודול "חלונית מפרשים בצד" בתחתית הקובץ).
+             שלוש לשוניות, בדומה למבנה חלונית הצד באוצריא עצמה (TabbedCommentaryPanel): מפרשים,
+             קישורים (הפניות/תרגומים - לא מפרשים), והערות אישיות. לשונית ההערות היא תצוגה-בלבד
+             (ראו הערה מפורטת ב-renderCommentaryNotesBody) - אין באוצריא כרגע API לכתיבת הערות
+             חדשות מתוך תוסף, ולכן לא נוספה כאן שום אפשרות ליצור/לערוך הערה. -->
+        <div id="commentary-panel">
+            <div id="commentary-panel-resize-handle" title="גרור כדי לשנות את רוחב החלונית"></div>
+            <div class="commentary-panel-header">
+                <div class="commentary-tabs-row">
+                    <button type="button" class="commentary-tab-btn active" data-subtab="commentary" onclick="switchCommentarySubTab('commentary')" data-tooltip="מפרשים" aria-label="מפרשים">
+                        <span class="commentary-tab-icon"><i class="ui-icon otzaria-icon" data-otzaria-icon="book" aria-hidden="true"></i></span>
+                        <span class="commentary-tab-label">מפרשים</span>
+                    </button>
+                    <button type="button" class="commentary-tab-btn" data-subtab="links" onclick="switchCommentarySubTab('links')" data-tooltip="קישורים" aria-label="קישורים">
+                        <span class="commentary-tab-icon"><i class="ui-icon otzaria-icon" data-otzaria-icon="links" aria-hidden="true"></i></span>
+                        <span class="commentary-tab-label">קישורים</span>
+                    </button>
+                    <button type="button" class="commentary-tab-btn" data-subtab="notes" onclick="switchCommentarySubTab('notes')" data-tooltip="הערות" aria-label="הערות">
+                        <span class="commentary-tab-icon"><i class="ui-icon" data-fluent-icon="note" aria-hidden="true"></i></span>
+                        <span class="commentary-tab-label">הערות</span>
+                    </button>
+                </div>
+                <button class="icon-btn" id="btn-commentary-panel-close" onclick="toggleCommentaryPanel()" data-tooltip="סגור חלונית מפרשים">
+                    <i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="commentary-toolbar-row" id="commentary-toolbar-row">
+                <button class="icon-btn" id="btn-commentary-expand-all" onclick="toggleCommentaryGroupsExpandAll()" data-tooltip="הרחב את כל המפרשים" aria-label="הרחב את כל המפרשים">
+                    <i class="ui-icon" data-fluent-icon="arrow_expand_all" id="commentary-expand-all-icon" aria-hidden="true"></i>
+                </button>
+                <div class="commentary-toolbar-spacer"></div>
+                <div class="popover-anchor" id="commentary-picker-anchor" style="position:relative;">
+                    <button class="icon-btn" id="btn-commentary-picker" onclick="openCommentaryPickerScreen()" data-tooltip="בחר אילו מפרשים יוצגו">
+                        <i class="ui-icon" data-fluent-icon="text_bullet_list" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="commentary-panel-body" id="commentary-panel-body">
+                <div class="commentary-panel-status">יש לטעון ספר כדי לראות מפרשים כאן.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="shortcut-modal-overlay" id="shortcut-modal-overlay" onclick="if (event.target === this) closeShortcutModal();">
+        <div class="shortcut-modal-card">
+            <h3 class="shortcut-modal-title">הגדרת קיצור מקשים מותאם אישית</h3>
+            <p class="shortcut-modal-subtitle">התחל הקלטה ובחר קיצור</p>
+            <div class="shortcut-modal-funcname" id="shortcut-modal-funcname"></div>
+            <div class="shortcut-modal-box" id="shortcut-modal-box">
+                <i class="ui-icon shortcut-modal-kbd-icon" data-fluent-icon="keyboard" aria-hidden="true"></i>
+                <div class="shortcut-modal-value" id="shortcut-modal-value">לא הוגדר קיצור</div>
+            </div>
+            <button type="button" class="shortcut-modal-record-btn" id="shortcut-modal-record-btn" onclick="toggleShortcutRecording()">
+                <span class="shortcut-modal-record-icon" id="shortcut-modal-record-icon"></span>
+                <span id="shortcut-modal-record-label">התחל הקלטה</span>
+            </button>
+            <div class="shortcut-modal-actions">
+                <button type="button" class="btn-secondary shortcut-modal-confirm" onclick="confirmShortcutModal()">אישור</button>
+                <button type="button" class="shortcut-modal-cancel" onclick="closeShortcutModal()">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- חלונית "הדפסה ויצוא" - נפתחת בלחיצה על כפתור ההדפסה בסרגל הכלים -->
+    <div class="print-export-modal-overlay" id="print-export-modal-overlay" onclick="if (event.target === this) closePrintExportModal();">
+        <div class="print-export-modal-card">
+            <h3 class="print-export-modal-title">הדפסה ויצוא</h3>
+
+            <div class="print-export-field">
+                <label for="print-export-range-mode">מה לייצא:</label>
+                <select id="print-export-range-mode" class="settings-select" onchange="onPrintRangeModeChange(this.value)">
+                    <option value="all" selected>הכל</option>
+                    <option value="custom">טווח עמודים מותאם אישית</option>
+                </select>
+                <div class="print-export-range-row" id="print-export-range-row" style="display:none;">
+                    <span>מעמוד</span>
+                    <input type="number" id="print-export-range-from" min="1" value="1">
+                    <span>עד עמוד</span>
+                    <input type="number" id="print-export-range-to" min="1" value="1">
+                </div>
+            </div>
+
+            <div class="print-export-field">
+                <label for="print-export-page-size">גודל דף:</label>
+                <select id="print-export-page-size" class="settings-select">
+                    <option value="a4" selected>A4</option>
+                    <option value="a5">A5</option>
+                    <option value="letter">Letter</option>
+                </select>
+            </div>
+
+            <div class="print-export-field">
+                <label for="print-export-orientation">כיוון הדף:</label>
+                <select id="print-export-orientation" class="settings-select">
+                    <option value="portrait" selected>לגובה</option>
+                    <option value="landscape">לרוחב</option>
+                </select>
+            </div>
+
+            <div class="print-export-field">
+                <label for="print-export-quality">איכות (ליצוא PDF):</label>
+                <select id="print-export-quality" class="settings-select">
+                    <option value="standard" selected>רגילה - קובץ קל וברור (מומלץ)</option>
+                    <option value="high">גבוהה - קובץ כבד יותר</option>
+                    <option value="compressed">דחוסה - קובץ קטן יותר (ניסיוני)</option>
+                    <option value="compressed-more">דחוס יותר - קובץ קטן במיוחד (ניסיוני מאוד)</option>
+                </select>
+            </div>
+
+            <div class="print-export-actions">
+                <button type="button" class="print-export-cancel-btn" onclick="closePrintExportModal()">ביטול</button>
+                <div class="print-export-actions-group">
+                    <button type="button" class="print-export-pill-btn outline" id="print-export-pdf-btn" onclick="exportPdfFromModal()">ייצוא ל-PDF</button>
+                    <button type="button" class="print-export-pill-btn primary" onclick="confirmPrintFromModal()">הדפסה</button>
+                </div>
+            </div>
+            <div id="print-export-status" style="margin-top:10px; font-size:0.85rem; color:var(--color-on-surface-subtle); text-align:center; display:none;"></div>
+        </div>
+    </div>
+
+    <div id="global-tooltip" class="custom-tooltip"></div>
+    </div>
+
+    <script src="js/icons.js"></script>
+    <script src="js/globals.js"></script>
+    <script src="js/settings-colors.js"></script>
+    <script src="js/print-pdf.js"></script>
+    <script src="js/book-view-text.js"></script>
+    <script src="js/page-settings-fonts.js"></script>
+    <script src="js/tabs-ui.js"></script>
+    <script src="js/shortcuts-search.js"></script>
+    <script src="js/content-external.js"></script>
+    <script src="js/main-integration.js"></script>
+    <script src="js/commentary-nav-split.js"></script>
+</body>
+</html>

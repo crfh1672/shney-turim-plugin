@@ -1,0 +1,3678 @@
+﻿@font-face {
+    font-family: 'FluentSystemIcons-Regular';
+    src: url('../fonts/FluentSystemIcons-Regular.ttf') format('truetype');
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'FluentSystemIcons-Filled';
+    src: url('../fonts/FluentSystemIcons-Filled.ttf') format('truetype');
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'OtzariaIcons';
+    src: url('../fonts/otzaria_icons.otf') format('opentype');
+    font-display: swap;
+}
+
+.ui-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: 'FluentSystemIcons-Regular';
+    font-size: 24px;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    text-rendering: geometricPrecision;
+    -webkit-font-smoothing: antialiased;
+}
+
+.ui-icon-filled { font-family: 'FluentSystemIcons-Filled'; }
+.ui-icon.otzaria-icon { font-family: 'OtzariaIcons'; }
+.ui-icon.rotate-90 { transform: rotate(90deg); }
+.ui-icon.rotate-180 { transform: rotate(180deg); }
+.ui-icon.rotate-270 { transform: rotate(270deg); }
+
+/* --- הגדרות משתני צבע ממשק (מבוסס API בלבד) --- */
+        :root {
+            --color-primary: #805610;
+            --color-on-primary: #ffffff;
+            --color-primary-container: #ffddb3;
+            --color-on-primary-container: #633f00;
+            --color-secondary: #6f5b40;
+            --color-on-secondary: #ffffff;
+            --color-secondary-container: #fbdebc;
+            --color-on-secondary-container: #56442a;
+            --color-tertiary: #51643f;
+            --color-on-tertiary: #ffffff;
+            --color-tertiary-container: #d4eabb;
+            --color-on-tertiary-container: #3a4c2a;
+            --color-surface: #fff8f4;
+            --color-on-surface: #201b13;
+            --color-on-surface-variant: #4f4539;
+            --color-surface-container-lowest: #ffffff;
+            --color-surface-container-low: #fff1e5;
+            --color-surface-container: #f9ecdf;
+            --color-surface-container-high: #f3e6da;
+            --color-surface-container-highest: #ede0d4;
+            --color-error: #ba1a1a;
+            --color-on-error: #ffffff;
+            --color-error-container: #ffdad6;
+            --color-outline: #79747E;
+            --color-outline-variant: #c9c1b6;
+            --color-top-bar-background: #f3e6da;
+            --color-panel-background: #fff1e5;
+            --color-card-background: #fff8f4;
+            --color-nav-panel-background: #f3e6da;
+            
+            --color-primary-subtle: rgba(103, 80, 164, 0.12);
+            --color-secondary-subtle: rgba(98, 91, 113, 0.12);
+            --color-border-subtle: rgba(121, 116, 126, 0.2);
+            --color-error-subtle: rgba(179, 38, 30, 0.12);
+            --color-on-surface-subtle: rgba(28, 27, 31, 0.6);
+            --color-outline-subtle: rgba(122, 118, 127, 0.2);
+
+            --font-ui: 'Segoe UI', Arial, sans-serif;
+            --font-book: 'Segoe UI', Arial, sans-serif;
+            --font-commentators: 'Shofar', serif;
+            --font-size-book: 14pt;
+            --font-size-commentators: 22px;
+            --font-size-commentary-panel: 12pt;
+            --line-height-commentary-panel: 1.55;
+            --commentary-panel-bg-color: #F6EDE5;
+            --line-height-book: 1.5;
+            --paragraph-spacing: 0.3em;
+            --radius-sm: var(--app-radius, 8px);
+            --radius-md: var(--app-radius, 8px);
+            --radius-lg: var(--app-radius, 8px);
+            --radius-pill: 999px;
+            --app-radius: 8px;
+            --top-bar-height: 56px;
+            --toolbar-button-size: 40px;
+            --toolbar-icon-size: 20px;
+            --cols: 2;
+
+            /* משתני הגדרות פריסה דינמיים */
+            --page-margin: 20mm;
+            --column-gap: 12mm;
+            --page-scale: 1.0;
+            --page-width: 210mm;
+            --page-height: 297mm;
+
+            /* --- התאמה אישית של צבעי התצוגה (הגדרות > הגדרות צבע) ---
+               המשתנים נשארים ללא ערך תקף כברירת מחדל (fallback דרך var(...,ברירת-מחדל) בכל
+               מקום שבו הם בשימוש), כך שהמראה הנוכחי לא משתנה כלל עד שהמשתמש בוחר צבע בעצמו. */
+            --user-bg-color: initial;
+            --user-page-color: initial;
+            --user-text-color: initial;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-ui);
+            background-color: var(--color-top-bar-background);
+            color: var(--color-on-surface);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- עיצוב סרגל הטאבים --- */
+        .tab-bar-outer {
+            background-color: var(--color-top-bar-background);
+            z-index: 210;
+            overflow: visible;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: none;
+        }
+
+        .tab-bar {
+            flex: 1;
+            background-color: var(--color-surface);
+            display: flex;
+            padding: 2px 8px 0 8px;
+            gap: 0;
+            overflow-x: auto;
+            overflow-y: visible;
+            height: 35px;
+            align-items: flex-end;
+        }
+
+        .tab {
+            display: flex; 
+            align-items: center; 
+            gap: 5px;
+            padding: 1px 11px 3px 11px;
+            background-color: transparent;
+            border: none;
+            border-radius: 0;
+            font-size: 0.9rem;
+            font-weight: 250;
+            cursor: pointer;
+            color: var(--color-on-surface);
+            white-space: nowrap;
+            transition: background 0.15s;
+            position: relative;
+            height: 100%;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+
+        .tab.active {
+            background-color: color-mix(in srgb, var(--color-on-surface) 12%, transparent);
+            font-weight: 500;
+            border-radius: 8px 8px 0 0;
+            overflow: visible;
+        }
+
+        /* פינות חיצוניות מעוגלות (anti-notch) */
+        .tab.active::before,
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            width: 12px;
+            height: 12px;
+            background: transparent;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .tab.active::after {
+            right: -12px;
+            border-bottom-left-radius: 12px;
+            box-shadow: -6px 0 0 0 var(--color-surface-container-high);
+        }
+
+        .tab.active::before {
+            left: -12px;
+            border-bottom-right-radius: 12px;
+            box-shadow: 6px 0 0 0 var(--color-surface-container-high);
+        }
+
+        /* --- ממשק המשתמש העליון (Toolbar) --- */
+        .toolbar {
+            box-sizing: border-box;
+            height: var(--top-bar-height);
+            min-height: var(--top-bar-height);
+            padding: 0 8px;
+            background-color: var(--color-top-bar-background);
+            border: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 200;
+        }
+
+        .toolbar-side {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .toolbar > .toolbar-side:last-child {
+            flex-shrink: 0;
+        }
+
+        .toolbar-title {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 350;
+            color: var(--color-on-surface);
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--color-on-surface-variant);
+            cursor: pointer;
+            box-sizing: border-box;
+            width: 40px;
+            height: 40px;
+            padding: 8px;
+            border-radius: var(--radius-pill);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, opacity 0.2s;
+        }
+
+        .icon-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
+        .icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .icon-btn .ui-icon { width: 20px; font-size: 20px; height: 20px; color: currentColor; }
+
+        /* מצב "פעיל" (מסומן) לכפתורי סרגל כלים בודדים (למשל חלונית מפרשים פתוחה) - אותו עיצוב
+           בדיוק כמו .drawer-icon-btn.active למעלה, לשמירה על עקביות חזותית באפליקציה */
+        .icon-btn.active {
+            background: color-mix(in srgb, var(--color-on-surface) 12%, transparent);
+            color: var(--color-on-surface);
+        }
+
+        /* ============================================================================
+           === חלונית מפרשים (Commentary Panel) — ראו את מודול ה-JS המתאים בתחתית הקובץ.
+           עצמאית לכל טאב, ולכן עצמאית גם בין שני חלוני התצוגה המפוצלת. ============
+           ============================================================================ */
+        #commentary-panel {
+            display: none;
+            flex-direction: column;
+            width: 340px;
+            min-width: 220px;
+            max-width: 45vw;
+            flex: 0 0 340px;
+            position: relative;
+            container-type: inline-size;
+            container-name: commentary-panel;
+            margin-block: 14px 10px;
+            margin-inline: 10px 12px;
+            border: 1px solid var(--color-outline-variant);
+            border-radius: var(--app-radius, 8px);
+            background: var(--commentary-panel-bg-color);
+            overflow: hidden;
+        }
+        #commentary-panel.open { display: flex; }
+
+        /* ידית גרירה במראה של ידית חלונית הניווט, בצד הפונה לתוכן הראשי. */
+        #commentary-panel-resize-handle {
+            position: absolute;
+            z-index: 20;
+            top: 0;
+            bottom: 0;
+            inset-inline-start: 0;
+            width: 12px;
+            cursor: ew-resize;
+            touch-action: none;
+        }
+
+        #commentary-panel-resize-handle::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: 4px;
+            width: 3px;
+            height: 42px;
+            border-radius: var(--radius-pill);
+            background: var(--color-outline);
+            opacity: 0;
+            transform: translateY(-50%);
+            transition: opacity 0.15s;
+        }
+
+        #commentary-panel-resize-handle:hover::after,
+        #commentary-panel-resize-handle.dragging::after {
+            opacity: 0.55;
+        }
+
+        /* שורה עליונה של החלונית - לשוניות (הערות/קישורים/מפרשים, בדיוק כמו בתמונות) יחד עם
+           כפתור הסגירה (X) באותה שורה ממש. אין כאן יותר כותרת טקסט קבועה ("מפרשים וקישורים") -
+           הלשוניות עצמן ממלאות את מקומה. */
+        .commentary-panel-header {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            height: 44px;
+            padding: 0;
+            flex-shrink: 0;
+        }
+        .commentary-panel-header .icon-btn {
+            flex: 0 0 32px;
+            width: 32px;
+            min-width: 32px;
+            height: 32px;
+            padding: 0;
+        }
+        .commentary-panel-header .icon-btn .ui-icon { width: 16px; font-size: 16px; height: 16px; }
+
+        /* תואם ל-TabBar של אוצריא: טאבים שווי-רוחב ומצב בחירה secondaryContainer. */
+        .commentary-tabs-row {
+            display: flex;
+            align-items: stretch;
+            flex: 1;
+            min-width: 0;
+        }
+        .commentary-tab-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1px;
+            min-height: 44px;
+            padding: 0 4px;
+            background: transparent;
+            border: none;
+            color: var(--color-on-surface-variant);
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: var(--app-radius, 8px);
+            transition: background 0.15s, color 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .commentary-tab-btn:hover { background: color-mix(in srgb, var(--color-primary) 8%, transparent); }
+        .commentary-tab-btn.active {
+            background: var(--color-secondary-container);
+            color: var(--color-on-surface);
+            font-weight: 600;
+        }
+        .commentary-tab-btn.active:hover { background: color-mix(in srgb, var(--color-primary) 8%, var(--color-secondary-container)); }
+        .commentary-tab-btn:active { background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
+        .commentary-tab-btn.active:active { background: color-mix(in srgb, var(--color-primary) 12%, var(--color-secondary-container)); }
+        .commentary-tab-btn .commentary-tab-icon { display: flex; }
+        .commentary-tab-btn .commentary-tab-icon .ui-icon { width: 16px; font-size: 16px; height: 16px; color: currentColor; }
+        .commentary-tab-btn .commentary-tab-label { font-size: 11px; font-weight: 400; white-space: nowrap; }
+        .commentary-tab-btn.active .commentary-tab-label { font-weight: 600; }
+
+        @container commentary-panel (max-width: 269px) {
+            .commentary-tab-btn { gap: 0; }
+            .commentary-tab-label { display: none; }
+        }
+
+        /* שורת הכלים (כיווץ/הרחב הכל + בחירת מפרשים) - מתחת לשורת הלשוניות, לא לידה */
+        .commentary-toolbar-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--color-border-subtle);
+            flex-shrink: 0;
+        }
+        .commentary-toolbar-row .icon-btn { width: 40px; height: 40px; padding: 8px; }
+        .commentary-toolbar-row .icon-btn .ui-icon { width: 20px; font-size: 20px; height: 20px; }
+        .commentary-toolbar-row .icon-btn:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+        }
+        .commentary-toolbar-row .icon-btn:active:not(:disabled) {
+            background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+        }
+        .commentary-toolbar-spacer { flex: 1; }
+
+        .commentary-panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 14px;
+        }
+
+        .commentary-panel-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100%;
+            margin: 0 -14px;
+            padding: 12px 16px;
+            text-align: center;
+        }
+        .commentary-panel-empty-icon {
+            width: 36px;
+            height: 36px;
+            margin-bottom: 8px;
+            color: var(--color-on-surface-variant);
+            font-size: 36px;
+        }
+        .commentary-panel-empty-title {
+            color: var(--color-on-surface);
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.45;
+        }
+        .commentary-panel-empty-message {
+            margin-top: 4px;
+            color: var(--color-on-surface-variant);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .commentary-panel-status {
+            color: var(--color-on-surface-variant);
+            text-align: center;
+            padding: 24px 10px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .commentary-panel-status.is-loading::before {
+            content: "";
+            display: block;
+            width: 20px;
+            height: 20px;
+            margin: 0 auto 8px;
+            border: 2px solid var(--color-outline-variant);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: commentary-panel-spin 0.8s linear infinite;
+        }
+        @keyframes commentary-panel-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .commentary-note-card {
+            margin: 4px -6px 8px;
+            overflow: hidden;
+            border-radius: var(--app-radius, 8px);
+            background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
+        }
+        .commentary-note-header {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 8px;
+        }
+        .commentary-note-title-block {
+            flex: 1;
+            min-width: 0;
+        }
+        .commentary-note-title {
+            color: var(--color-on-surface);
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+        .commentary-note-location {
+            margin-top: 4px;
+            color: var(--color-on-surface-variant);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .commentary-note-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 32px;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: 0;
+            border-radius: var(--radius-pill);
+            background: transparent;
+            color: var(--color-on-surface-variant);
+            cursor: pointer;
+        }
+        .commentary-note-toggle:hover { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
+        .commentary-note-toggle:active { background: color-mix(in srgb, var(--color-on-surface) 12%, transparent); }
+        .commentary-note-toggle .ui-icon {
+            width: 16px;
+            height: 16px;
+            font-size: 16px;
+            transition: transform 0.25s ease-in-out;
+        }
+        .commentary-note-toggle .ui-icon.expanded { transform: rotate(180deg); }
+        .commentary-entry-content.commentary-note-content {
+            padding: 0 8px 8px;
+            font-family: var(--font-ui);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .commentary-entry-group { margin: 0; }
+        /* הקו התחתון (border-bottom) שייך לקבוצה כולה (כותרת + תוכן פתוח, אם קיים) - כך שהוא
+           תמיד מפריד בין קבוצת מפרש אחת לקבוצה הבאה אחריה, גם כשהמפרש פתוח (במקום להישאר צמוד
+           לכותרת עצמה, לפני הטקסט הנפתח של אותו מפרש - זה היה הבאג). מוגבל בכוונה לקבוצות עם
+           כותרת לחיצה (מפרשים/קישורים, ראו buildCommentaryEntryGroupEl); כרטיסי ההערות מוצגים
+           בנפרד ללא קו מפריד. */
+        .commentary-entry-group:has(> .commentary-entry-group-header) {
+            margin: 0 -14px;
+            padding: 0 14px;
+            border-bottom: 1px solid var(--color-border-subtle);
+        }
+
+        /* כותרת קבוצת מפרשים/קישורים - השורה כולה (כולל החץ) לחיצה אחת שמרחיבה/מכווצת את
+           תוכן הקבוצה, בדיוק כמו _CommentaryGroupHeader באוצריא עצמה (InkWell על כל השורה,
+           לא רק על אייקון החץ). ברירת המחדל בפתיחת החלונית היא מכווץ - ראו commentaryExpandState.
+           הכותרת אינה עוד "נדבקת" (position: sticky) בגלילה - כשגוללים בתוך מפרש ארוך שפתוח,
+           הכותרת שלו נגללת פנימה יחד עם שאר התוכן, בלי להישאר קבועה למעלה.
+           הריחוף (hover) על הכותרת חייב למלא את כל הרוחב מקצה לקצה (בדיוק כמו קו ההפרדה
+           שמתחתיו), ולא רק את רוחב תוכן הקבוצה הפנימי (שכבר צומצם ב-14px משני הצדדים בגלל
+           הריפוד של .commentary-entry-group). לכן יש כאן טריק "מרווח שלילי" כפול/מקונן: הכותרת
+           עצמה מקבלת עוד מרווח שלילי (margin) של 14px משני הצדדים (שמבטל את ריפוד הקבוצה
+           שעוטפת אותה ומרחיב את הכותרת עד לקצה האמיתי), יחד עם ריפוד פנימי של 16px שממקם את
+           התוכן (חץ+שם) במרחק זהה מקצה החלונית. כך הרקע המודגש
+           בריחוף (background על הכותרת עצמה) משתרע על כל רוחב החלונית ממש כמו הקו התחתון,
+           בלי שהחץ או שם המפרש יזוזו ממקומם. */
+        .commentary-entry-group-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            margin: 0 -14px;
+            padding: 12px 16px;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .commentary-entry-group-header:hover { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
+        .commentary-entry-group-header:active { background: color-mix(in srgb, var(--color-on-surface) 12%, transparent); }
+        .commentary-entry-group-header:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: -2px;
+        }
+        .commentary-entry-group-chevron {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            color: color-mix(in srgb, var(--color-on-surface) 60%, transparent);
+            transition: transform 0.25s ease-in-out;
+            transform: rotate(0deg);
+        }
+        .commentary-entry-group[data-subtab="links"] .commentary-entry-group-chevron { color: var(--color-on-surface-variant); }
+        .commentary-entry-group-chevron .ui-icon { width: 20px; font-size: 20px; height: 20px; color: currentColor; }
+        .commentary-entry-group-header.expanded .commentary-entry-group-chevron { transform: rotate(-90deg); }
+        .commentary-entry-group-title {
+            font-weight: 700;
+            color: var(--color-on-surface);
+            font-family: var(--font-commentators);
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .commentary-entry-group[data-subtab="commentary"] { font-size: var(--font-size-book); }
+        .commentary-entry-group[data-subtab="commentary"] .commentary-entry-group-title { font-size: 0.85em; }
+        .commentary-entry-group[data-subtab="links"] { font-size: var(--font-size-commentators); }
+        .commentary-entry-group[data-subtab="links"] .commentary-entry-group-title { font-size: calc(var(--font-size-commentators) - 2px); }
+        .commentary-entry-group-content { padding: 10px 0 16px; }
+        .commentary-entry { margin-bottom: 10px; }
+        .commentary-entry:last-child { margin-bottom: 0; }
+        .commentary-entry-ref {
+            font-size: 0.75rem;
+            color: var(--color-on-surface-subtle);
+            margin-bottom: 2px;
+            font-family: var(--font-commentators);
+        }
+        /* הסתרת הכותרות (המקור) שלפני כל קטע בחלונית המפרשים - ראו updateCommentaryShowRefsSetting.
+           display:none בלבד (לא ניגע במרווחים אחרים) כדי שהרווח בין סוף הפסקה הקודמת לתחילת
+           הפסקה הבאה יישאר בדיוק כפי שהיה קודם, בלי "לספור" גם את גובה הכותרת שהוסתרה. */
+        body.hide-commentary-refs .commentary-entry-ref { display: none; }
+        .commentary-entry-content {
+            font-size: var(--font-size-commentary-panel);
+            line-height: var(--line-height-commentary-panel);
+            font-family: var(--font-commentators);
+            text-align: justify;
+        }
+
+        /* === לשונית "בחירת מפרשים" - מסך מלא בתוך גוף החלונית (לא עוד פופאובר צף), בדיוק כמו
+           בתמונה: שורת חזרה עם חץ בראש, תיבת סינון, שבבי קטגוריות לקפיצה מהירה, ורשימת קטגוריות
+           מתקפלות עם תיבת סימון "הצג את כל X" לכל קטגוריה ותיבת סימון לכל מפרש בנפרד. ===== */
+        .commentary-picker-screen { display: flex; flex-direction: column; height: 100%; }
+        .commentary-picker-back-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 0;
+            flex-shrink: 0;
+        }
+        .commentary-picker-back-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            flex-shrink: 0;
+            background: transparent;
+            border: none;
+            border-radius: 50%;
+            color: var(--color-on-surface);
+            cursor: pointer;
+        }
+        .commentary-picker-back-btn:hover { background: var(--color-secondary-subtle); }
+        .commentary-picker-back-btn .ui-icon { width: 20px; font-size: 20px; height: 20px; color: currentColor; }
+        .commentary-picker-title { font-weight: 700; font-size: 1rem; }
+        .commentary-picker-search-row { flex-shrink: 0; padding-bottom: 10px; }
+        .commentary-picker-search-row input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 9px 14px;
+            border-radius: var(--radius-pill, 20px);
+            border: 1px solid var(--color-border-subtle);
+            background: var(--color-surface);
+            color: var(--color-on-surface);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+        .commentary-picker-pills-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            flex-shrink: 0;
+            padding-bottom: 12px;
+        }
+        .commentary-picker-pill {
+            padding: 6px 14px;
+            border-radius: var(--radius-pill, 20px);
+            border: 1px solid var(--color-border-subtle);
+            background: var(--color-surface);
+            color: var(--color-on-surface);
+            font-family: inherit;
+            font-size: 0.82rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .commentary-picker-pill:hover { background: var(--color-secondary-subtle); }
+        .commentary-picker-list { flex: 1; overflow-y: auto; margin: 0 -14px; padding: 0 14px; }
+        .commentary-picker-master-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--color-border-subtle);
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.92rem;
+        }
+        .commentary-picker-category { }
+        .commentary-picker-category-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 0;
+            border-bottom: 1px solid var(--color-border-subtle);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.88rem;
+        }
+        .commentary-picker-category-row:hover,
+        .commentary-picker-master-row:hover,
+        .commentary-picker-item-row:hover { background: var(--color-secondary-subtle); }
+        .commentary-picker-folder-icon { display: flex; flex-shrink: 0; color: var(--color-on-surface-subtle); }
+        .commentary-picker-folder-icon .ui-icon { width: 18px; font-size: 18px; height: 18px; color: currentColor; }
+        .commentary-picker-item-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0 10px 28px;
+            border-bottom: 1px solid var(--color-border-subtle);
+            cursor: pointer;
+            font-size: 0.97rem;
+        }
+        .commentary-picker-item-label,
+        .commentary-picker-category-label,
+        .commentary-picker-master-label { flex: 1; min-width: 0; }
+        .commentary-picker-checkbox {
+            flex-shrink: 0;
+            width: 19px;
+            height: 19px;
+            border-radius: 4px;
+            border: 1.5px solid var(--color-outline);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-surface);
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .commentary-picker-checkbox .ui-icon { width: 13px; font-size: 13px; height: 13px; color: #fff; opacity: 0; transition: opacity 0.1s; }
+        .commentary-picker-checkbox.checked { background: var(--color-primary); border-color: var(--color-primary); }
+        .commentary-picker-checkbox.checked .ui-icon { opacity: 1; }
+        .commentary-picker-checkbox.indeterminate { background: var(--color-secondary-container); border-color: var(--color-primary); }
+
+        /* פופאובר בחירת מפרשים - קלאס פנימי (popover-anchor) עדיין עוטף את כפתור בחירת המפרשים
+           בשורת הכלים (ראו commentary-toolbar-row), אך הבחירה עצמה עברה למסך מלא (ראו
+           renderCommentaryPickerScreen) - לכן נשאר כאן רק .commentary-picker-empty המשותף. */
+        .commentary-picker-empty {
+            padding: 14px;
+            color: var(--color-outline);
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        .font-size-buttons {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .font-size-btn {
+            background: transparent;
+            border: none;
+            color: var(--color-on-surface-variant);
+            cursor: pointer;
+            box-sizing: border-box;
+            padding: 8px;
+            border-radius: var(--radius-pill);
+            font-family: inherit;
+            font-size: 0.9rem;
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, opacity 0.2s;
+        }
+
+        .font-size-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
+        .font-size-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .font-size-btn .ui-icon { width: 20px; font-size: 20px; height: 20px; color: currentColor; }
+
+        select.compact-select {
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-border-subtle);
+            font-family: inherit;
+            background: var(--color-surface);
+            color: var(--color-on-surface);
+            cursor: pointer;
+            display: none;
+        }
+
+        .popover.column-popover {
+            width: 100px !important;
+            min-width: 110px !important;
+        }
+
+        /* --- פופאובר עמודות --- */
+        .popover-anchor { position: relative; display: inline-block; }
+        
+        .popover {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0; 
+            right: auto;
+            width: 300px;
+            background: var(--color-surface-container-highest);
+            border-radius: var(--radius-md);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--color-border-subtle);
+            padding: 8px 0;
+            z-index: 300;
+            opacity: 0;
+            transform: translateY(-6px) scale(0.97);
+            pointer-events: none;
+            transform-origin: top left; 
+            transition: opacity 0.15s, transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .popover.open {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        .popover-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.15s;
+        }
+        
+        .popover-item:hover { background: var(--color-primary-subtle); }
+
+        /* --- טאב בחירת ספר חדש --- */
+        .new-book-tab-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px 24px;
+            background-color: var(--color-surface);
+            min-height: 100%;
+            box-sizing: border-box;
+        }
+
+        .new-book-tab-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .new-book-tab-header h2 {
+            font-size: 1.4rem;
+            font-weight: 400;
+            color: var(--color-primary);
+            margin: 0 0 6px 0;
+        }
+
+        .new-book-tab-header p {
+            font-size: 0.9rem;
+            color: var(--color-on-surface-subtle);
+            margin: 0;
+        }
+
+        .new-book-search-wrapper {
+            max-width: 480px;
+            margin: 0 auto 24px auto;
+            position: relative;
+        }
+
+        .open-external-btn {
+            margin-top: 12px;
+        }
+
+        .new-book-search-wrapper input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px 40px 10px 14px;
+            border: 1px solid var(--color-outline);
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 1rem;
+            background: var(--color-surface);
+            color: var(--color-on-surface);
+        }
+
+        .new-book-search-wrapper input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .new-book-search-wrapper .ui-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            font-size: 18px;
+            color: var(--color-outline);
+            pointer-events: none;
+        }
+
+        /* חלונית תוצאות נגללת (כמו רשימת השלמה אוטומטית) - גלילה בגלגלת עכבר/מגע וגם בחיצים */
+        .new-book-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            max-width: 560px;
+            max-height: min(50vh, 420px);
+            overflow-y: auto;
+            margin: 0 auto;
+            padding: 6px;
+            border: 1px solid var(--color-border-subtle);
+            border-radius: var(--radius-md);
+            /* גוון כהה/מובחן יותר מהרקע הלבן, כדי שהרשימה תיראה כמשטח נפרד */
+            background: var(--color-surface-container-high);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+        }
+
+        .new-book-card {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.15s, border-color 0.15s;
+            font-size: 0.95rem;
+            color: var(--color-on-surface);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .new-book-card:hover {
+            background: var(--color-primary-subtle);
+            border-color: var(--color-primary);
+        }
+
+        .new-book-card.highlighted {
+            background: var(--color-primary-subtle);
+            border-color: var(--color-primary);
+        }
+
+        .new-book-card .ui-icon {
+            width: 18px;
+            height: 18px;
+            font-size: 18px;
+            /* אייקון ספר מלא בגוון הערכה, לא מרובע חלול */
+            color: var(--color-primary);
+            opacity: 0.85;
+            flex-shrink: 0;
+        }
+
+        .new-book-card:hover .ui-icon {
+            color: var(--color-primary);
+        }
+
+        .new-book-card span {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .new-book-loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--color-on-surface-subtle);
+            font-size: 0.95rem;
+        }
+
+        .new-book-error {
+            text-align: center;
+            padding: 40px;
+            color: var(--color-error);
+            font-size: 0.95rem;
+        }
+
+        /* --- הקדשה בתחתית מסך "בחר ספר" --- */
+        .new-book-dedication {
+            max-width: 560px;
+            margin: 20px auto 0 auto;
+            padding-top: 14px;
+            border-top: 1px solid var(--color-border-subtle);
+            text-align: center;
+        }
+
+        .new-book-dedication-text {
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: var(--color-on-surface-subtle);
+        }
+
+        /* --- אזור מרכזי --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+            background-color: var(--user-bg-color, var(--color-surface));
+        }
+
+        /* --- פאנלים צדדיים (Drawers) --- */
+
+        /* --- עטיפת האפליקציה (מאפשרת position:absolute לפאנלים) --- */
+        .app-shell {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* מצב מסך מלא: לא משנה את המיקום/גודל (זה תפקידו של ה-Fullscreen API/F11 האמיתי) -
+           רק מסתיר את שורת הטאבים כדי לפנות מעט מקום נוסף לתוכן */
+        body.fullscreen-mode .tab-bar-outer {
+            display: none;
+        }
+
+        /* מצב מסך מלא + Ctrl+Shift+J: מסתיר גם את סרגל הכלים העליון, ומשאיר רק חץ קטן ושקוף לחשיפתו מחדש */
+        body.toolbar-hidden .toolbar {
+            display: none !important;
+        }
+
+        .toolbar-reveal-arrow {
+            display: flex;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 44px;
+            height: 14px;
+            border: 1px solid var(--color-border-subtle);
+            border-radius: 0 0 10px 10px;
+            background-color: var(--color-surface-container-highest);
+            color: var(--color-on-surface);
+            opacity: 0.1;
+            cursor: pointer;
+            z-index: 220;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, opacity 0.15s ease, top 0.2s ease;
+        }
+
+        /* בתצוגת ספר דו-עמודי החץ נראה יותר (0.75) על הרקע הריק שמסביב לספר - וכשהוא יושב פיזית
+           מעל הספר עצמו (זום גדול/מסך צר) חוזר להיות שקוף כדי לא להסתיר טקסט, בדיוק כמו שממומש
+           עבור חצי הדפדוף (nav-arrow.over-book). בתצוגת גלילה רגילה החץ שקוף כברירת מחדל תמיד
+           (התוכן מתחיל כמעט מיד מתחת לסרגל), ומתגלה במלואו רק בריחוף (ראו :hover למטה) */
+        body.book-view-active .toolbar-reveal-arrow {
+            opacity: 0.75;
+        }
+
+        body.book-view-active .toolbar-reveal-arrow.over-book {
+            opacity: 0.1;
+        }
+
+        .toolbar-reveal-arrow:hover {
+            background-color: var(--color-primary-subtle);
+            color: var(--color-primary);
+            opacity: 1 !important;
+        }
+
+        .toolbar-reveal-arrow .ui-icon {
+            width: 16px;
+            height: 16px;
+            font-size: 16px;
+            color: currentColor;
+        }
+
+        /* --- סרגל כלים מצומצם (אופציונלי, דרך ההגדרות) - מקטין מעט את עובי הסרגל העליון --- */
+        body.compact-toolbar .toolbar {
+            height: 44px;
+            min-height: 44px;
+            padding: 0 8px;
+        }
+        body.compact-toolbar .icon-btn {
+            width: 36px;
+            height: 36px;
+            padding: 8px;
+        }
+        body.compact-toolbar .icon-btn .ui-icon {
+            width: 18px;
+            height: 18px;
+            font-size: 18px;
+        }
+        body.compact-toolbar .font-size-btn {
+            width: 36px;
+            height: 36px;
+            padding: 8px;
+        }
+        body.compact-toolbar .font-size-btn .ui-icon {
+            width: 18px;
+            height: 18px;
+            font-size: 18px;
+        }
+        body.compact-toolbar .tab-bar {
+            height: 28px;
+        }
+        body.compact-toolbar .tab {
+            font-size: 0.82rem;
+            padding: 1px 9px 2px 9px;
+        }
+        body.compact-toolbar .tab-bar-outer {
+            align-items: flex-end;
+        }
+
+
+        /* --- סרגל כלים: מונה עמודים, כותרת ניווט ממורכזת, ותפריט "עוד" (שלוש נקודות) --- */
+        .page-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            direction: ltr;
+            font-size: 0.95rem;
+            color: var(--color-on-surface);
+            margin-inline-end: 4px;
+            white-space: nowrap;
+        }
+        .page-indicator input {
+            width: 3ch;
+            text-align: center;
+            font: inherit;
+            color: var(--color-on-surface);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 3px 4px;
+            outline: none;
+        }
+        .page-indicator input:focus {
+            border-color: var(--color-primary);
+        }
+        .page-indicator-sep, .page-indicator-total { opacity: 0.85; }
+
+        .toolbar-nav-center {
+            position: absolute;
+            top: 50%;
+            left: var(--nav-center-left, calc(50% - 220px));
+            transform: translateY(-50%);
+            width: var(--nav-center-w, 440px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2px;
+            z-index: 1;
+        }
+        .toolbar-nav-center.nav-center-hidden { display: none; }
+        .toolbar-nav-center.nav-center-empty .nav-heading-btn { visibility: hidden; }
+
+        .nav-heading-btn {
+            flex: 0 0 auto;
+            background: transparent;
+            border: none;
+            color: var(--color-on-surface-variant);
+            cursor: pointer;
+            box-sizing: border-box;
+            width: 40px;
+            height: 40px;
+            padding: 8px;
+            border-radius: var(--radius-pill);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, opacity 0.2s;
+        }
+        .nav-heading-btn .ui-icon { width: 20px; font-size: 20px; height: 20px; }
+        .nav-heading-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
+        .nav-heading-btn:disabled { opacity: 0.3; cursor: default; }
+        body.compact-toolbar .nav-heading-btn { width: 36px; height: 36px; padding: 8px; }
+        body.compact-toolbar .nav-heading-btn .ui-icon { width: 18px; font-size: 18px; height: 18px; }
+        body.app-compact-density .toolbar:not(.compact-toolbar) .icon-btn,
+        body.app-compact-density .toolbar:not(.compact-toolbar) .font-size-btn {
+            width: var(--toolbar-button-size);
+            height: var(--toolbar-button-size);
+        }
+        body.app-compact-density .toolbar:not(.compact-toolbar) .icon-btn .ui-icon,
+        body.app-compact-density .toolbar:not(.compact-toolbar) .font-size-btn .ui-icon {
+            width: var(--toolbar-icon-size);
+            height: var(--toolbar-icon-size);
+            font-size: var(--toolbar-icon-size);
+        }
+
+        .nav-heading-title-wrap {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+            text-align: center;
+        }
+        .nav-heading-title {
+            display: block;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: var(--color-on-surface);
+            cursor: default;
+        }
+
+        /* בועת הכותרת המלאה בריחוף - עיצוב "פיל" עם מסגרת דקה */
+        #nav-heading-tooltip {
+            position: fixed;
+            z-index: 10001;
+            max-width: min(92vw, 900px);
+            padding: 4px 14px;
+            border-radius: 12px;
+            border: 1px solid color-mix(in srgb, var(--color-on-surface) 22%, transparent);
+            background: var(--color-surface-container);
+            color: var(--color-on-surface);
+            font-size: 1.05rem;
+            font-weight: 400;
+            line-height: 1.5;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s ease;
+        }
+        #nav-heading-tooltip.visible { opacity: 1; }
+
+        .toolbar-main > .toolbar-side-start { max-width: var(--nav-start-max, none); }
+
+        /* תפריט "עוד" (שלוש נקודות) בקצה השמאלי של הסרגל */
+        .popover.more-menu {
+            width: 230px;
+            padding: 6px;
+            transform-origin: top left;
+        }
+        .more-menu-item {
+            width: 100%;
+            box-sizing: border-box;
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            color: var(--color-on-surface);
+            font-family: inherit;
+            font-size: 0.95rem;
+            text-align: start;
+            padding: 10px 12px;
+        }
+        .more-menu-item:disabled { opacity: 0.4; cursor: not-allowed; }
+        .more-menu-item:hover:not(:disabled) { background: var(--color-primary-subtle); }
+        .more-menu-item .ui-icon { width: 22px; font-size: 22px; height: 22px; flex: 0 0 auto; color: currentColor; }
+        .more-menu-text { flex: 1 1 auto; }
+        .more-menu-value { font-size: 0.85rem; color: var(--color-on-surface-subtle); }
+        .more-menu-item .ui-icon.more-menu-chevron { width: 16px; font-size: 16px; height: 16px; transition: transform 0.15s; }
+        #column-toggle.open .more-menu-chevron { transform: rotate(180deg); }
+        .more-menu-sub { display: none; padding: 2px 0 2px 0; }
+        .more-menu-sub.open { display: block; }
+        .more-menu-sub .popover-item {
+            padding: 8px 12px 8px 12px;
+            padding-inline-start: 46px;
+            border-radius: var(--radius-sm);
+            font-size: 0.92rem;
+        }
+
+        /* scrim — מוצג רק כשפאנל ההגדרות פתוח */
+        .overlay-scrim {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s;
+            z-index: 240;
+        }
+
+        .overlay-scrim.settings-open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .nav-panel-scrim {
+            position: absolute;
+            inset: 0;
+            z-index: 150;
+            background: color-mix(in srgb, var(--color-on-surface) 14%, transparent);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .nav-panel-scrim.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .nav-panel-corner {
+            display: none;
+            position: absolute;
+            top: 0;
+            width: 8px;
+            height: 8px;
+            z-index: 156;
+            pointer-events: none;
+            background: radial-gradient(circle at 0 100%, transparent 8px, var(--color-nav-panel-background) 8.25px);
+        }
+
+        .main-content.nav-push-mode .nav-panel-corner.visible {
+            display: block;
+        }
+
+        /* חלונית הניווט מחוברת לשורת הסרגל, כמו חלונית הצד באוצריא. */
+        .overlay-panel {
+            position: absolute;
+            top: 0; bottom: 0; right: 0;
+            width: 300px;
+            width: min(var(--nav-panel-width, 300px), calc(100vw - 20px));
+            background: var(--color-nav-panel-background);
+            border-inline-start: 1px solid var(--color-border-subtle);
+            border-radius: 0;
+            overflow: hidden;
+            background-clip: padding-box;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.12);
+            display: flex;
+            flex-direction: column;
+            z-index: 155;
+            opacity: 0;
+            transform: translateX(100%);
+            pointer-events: none;
+            transition: opacity 0.2s, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-sizing: border-box;
+        }
+
+        .overlay-panel.open {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+
+        .main-content.nav-push-mode .overlay-panel {
+            position: relative;
+            top: auto;
+            right: auto;
+            bottom: auto;
+            flex: 0 0 min(var(--nav-panel-width, 300px), calc(100vw - 20px));
+            width: min(var(--nav-panel-width, 300px), calc(100vw - 20px));
+            opacity: 1;
+            transform: none;
+            pointer-events: auto;
+            transition: flex-basis 0.18s, width 0.18s;
+            box-shadow: none;
+        }
+
+        .main-content.nav-push-mode .nav-panel-scrim {
+            display: none;
+        }
+
+        /* פאנל הגדרות שמאלי — מלא גובה, מכסה סרגלים, עם צל */
+        .settings-panel {
+            position: absolute;
+            top: 10px; bottom: 10px; left: 10px;
+            width: 320px;
+            background: var(--color-surface-container);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            background-clip: padding-box;
+            box-shadow: 4px 0 32px rgba(0, 0, 0, 0.22);
+            display: flex;
+            flex-direction: column;
+            z-index: 250;
+            opacity: 0;
+            transform: translateX(-100%);
+            pointer-events: none;
+            transition: opacity 0.25s, transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+            border-inline-end: 1px solid var(--color-border-subtle);
+        }
+
+        .settings-panel.open {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+
+        .settings-panel-header {
+            padding: 18px 16px 12px;
+            border-bottom: none;
+            background: var(--color-surface-container);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .settings-panel-close-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--color-on-surface);
+            padding: 6px;
+            border-radius: var(--radius-sm);
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            /* דחיפה מפורשת לקצה הנגדי (שמאל ב-RTL) + מניעת כיווץ - לא מסתמכים רק על space-between */
+            margin-inline-start: auto;
+            flex-shrink: 0;
+            opacity: 0.75;
+            transition: background 0.15s, color 0.15s, opacity 0.15s;
+        }
+
+        .settings-panel-close-btn:hover {
+            background: var(--color-primary-subtle);
+            color: var(--color-primary);
+            opacity: 1;
+        }
+
+        .settings-panel-close-btn .ui-icon {
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
+            color: currentColor;
+        }
+
+        .settings-panel-kicker {
+            margin: 0;
+            min-width: 0;
+            color: var(--color-on-surface);
+            font-family: 'Segoe UI', Arial, sans-serif !important;
+            font-size: 1.35rem !important;
+            font-weight: 700 !important;
+            line-height: 1.2;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+
+        .settings-section-title {
+            margin: 0 0 6px;
+            color: var(--color-primary);
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .settings-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0px;
+        }
+
+        .settings-card {
+            background: var(--color-on-primary);
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .settings-group .settings-card {
+            border-radius: var(--radius-md);
+            box-shadow: none;
+        }
+
+        .settings-group .settings-card:first-child:not(:last-child) {
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .settings-group .settings-card:last-child:not(:first-child) {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+        }
+
+        .settings-group .settings-card:not(:first-child):not(:last-child) {
+            border-radius: 0;
+        }
+
+        /* כפתור איפוס משני */
+        .btn-secondary {
+            background: var(--color-primary);
+            color: var(--color-on-primary);
+            border: 1px solid var(--color-outline);
+            border-radius: var(--radius-sm);
+            padding: 8px 16px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.15s, background-color 0.15s;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .btn-secondary:hover { 
+            opacity: 0.85;
+            background-color: var(--color-primary);
+        }
+
+        /* שורת טאבים עליונה בפאנל הניווט */
+        .drawer-icon-rail {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            padding: 0;
+            gap: 0;
+            height: 44px;
+            background: var(--color-nav-panel-background);
+            flex-shrink: 0;
+        }
+
+        .drawer-icon-btn {
+            flex: 1;
+            height: 44px;
+            border-radius: var(--radius-md);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            color: var(--color-on-surface-variant);
+            opacity: 0.55;
+            transition: background 0.15s, opacity 0.15s, color 0.15s;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 400;
+        }
+
+        .drawer-icon-btn .ui-icon,
+        .pin-btn .ui-icon {
+            width: 16px;
+            height: 16px;
+            font-size: 16px;
+            color: currentColor;
+            transition: transform 0.18s ease, color 0.18s ease;
+            transform-origin: center;
+        }
+
+        .drawer-icon-btn:hover {
+            opacity: 1;
+            background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
+        }
+
+        .drawer-icon-btn.active {
+            background: var(--color-secondary-container);
+            color: var(--color-on-surface);
+            opacity: 1;
+            font-weight: 600;
+        }
+
+        .drawer-tab-icon-filled { display: none; }
+        .drawer-icon-btn.active .drawer-tab-icon-regular { display: none; }
+        .drawer-icon-btn.active .drawer-tab-icon-filled { display: inline-block; }
+
+        /* כפתור נעיצה */
+        .pin-btn {
+            width: 40px;
+            height: 40px;
+            border-radius:  var(--radius-pill);
+            background: transparent;
+            border: none;
+            color: var(--color-on-surface);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.55;
+            transition: background 0.15s, opacity 0.15s;
+            flex-shrink: 0;
+        }
+        .toolbar-side-start > .pin-btn {
+            display: none;
+        }
+        .toolbar-side-start > .pin-btn.visible {
+            display: flex;
+        }
+        .pin-btn:hover { opacity: 0.85; }
+        .pin-btn .pin-icon-filled { display: none; }
+        .pin-btn.pinned .pin-icon-outline { display: none; }
+        .pin-btn.pinned .pin-icon-filled { display: inline-block; }
+        .pin-btn.pinned {
+            color: var(--color-primary);
+            opacity: 1;
+            background: var(--color-surface-container-highest);
+        }
+        .pin-btn.pinned .ui-icon {
+            color: var(--color-primary);
+            transform: rotate(-45deg);
+        }
+
+        .pin-btn .ui-icon {
+            width: 24px;
+            height: 24px;
+            font-size: 24px;
+        }
+
+        .drawer-toggle-icon {
+            width: 24px;
+            height: 24px;
+            font-size: 24px;
+            color: currentColor;
+            transition: opacity 0.15s;
+        }
+        .drawer-toggle-open { display: none; }
+        .drawer-toggle-btn.active .drawer-toggle-closed { display: none; }
+        .drawer-toggle-btn.active .drawer-toggle-open { display: inline-flex; }
+        .drawer-toggle-btn,
+        .drawer-toggle-btn.active {
+            background: transparent;
+            color: var(--color-on-secondary-container);
+        }
+        .drawer-toggle-btn:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
+        }
+
+        /* תוכן הפאנל */
+        .drawer-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--color-nav-panel-background);
+        }
+
+        /* סגנונות משותפים ללשוניות משנה בהגדרות */
+        .nav-subtabs {
+            display: flex;
+            gap: 6px;
+            padding: 10px 12px 0;
+            flex-shrink: 0;
+        }
+
+        .nav-subtab-btn {
+            flex: 1;
+            background: var(--color-surface-container-highest);
+            color: var(--color-on-surface-subtle);
+            border: 1px solid var(--color-border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 8px 16px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+        }
+
+        .nav-subtab-btn:hover {
+            background: var(--color-primary-subtle);
+            color: var(--color-primary);
+        }
+
+        .nav-subtab-btn.active {
+            background: var(--color-primary);
+            color: var(--color-on-primary);
+            border-color: var(--color-primary);
+        }
+
+        /* --- לשוניות פאנל ההגדרות (כללי / קיצורים) - משתמשות באותם עיצוב .nav-subtabs/.nav-subtab-btn --- */
+        .settings-tab-pane {
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .settings-tab-pane.active {
+            display: flex;
+        }
+
+        .page-nav-item {
+            cursor: pointer;
+        }
+
+        .drawer-pane-heading {
+            min-height: 46px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 10px 26px 8px;
+            flex-shrink: 0;
+            color: var(--color-primary);
+        }
+
+        .drawer-pane-title {
+            margin: 0;
+            min-width: 0;
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            text-align: right;
+            color: var(--color-primary);
+            font-size: 0.875rem;
+            line-height: 1.4;
+            font-weight: 700;
+        }
+
+        .drawer-search-toggle {
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border: 0;
+            border-radius: var(--radius-pill);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            color: var(--color-on-surface-variant);
+            background: transparent;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .drawer-search-close {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: 0;
+            border-radius: var(--radius-pill);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            color: var(--color-on-surface-variant);
+            background: transparent;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .drawer-search-toggle:hover,
+        .drawer-search-close:hover {
+            color: var(--color-on-surface);
+            background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
+        }
+
+        .drawer-search-toggle .ui-icon {
+            width: 16px;
+            height: 16px;
+            font-size: 16px;
+            color: currentColor;
+        }
+
+        .drawer-search-close .ui-icon {
+            width: 16px;
+            height: 16px;
+            font-size: 16px;
+            color: currentColor;
+        }
+
+        .drawer-pane-nav {
+            position: relative;
+        }
+
+        .drawer-pane-nav.search-open #toc-search-toggle {
+            display: none;
+        }
+
+        .drawer-search-toggle-floating {
+            display: none;
+            position: absolute;
+            z-index: 3;
+            top: 8px;
+            inset-inline-end: 24px;
+            background: var(--color-nav-panel-background);
+            color: var(--color-on-surface-variant);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+        }
+
+        .drawer-search-toggle-floating.visible {
+            display: flex;
+        }
+
+        .drawer-pane-nav.search-open .drawer-search-toggle-floating {
+            display: none;
+        }
+
+        .drawer-search {
+            display: none;
+            position: relative;
+            background: var(--color-nav-panel-background);
+        }
+
+        .drawer-collapsible-search {
+            align-items: center;
+            gap: 0;
+            flex-shrink: 0;
+            padding-block: 8px 4px;
+            padding-inline-start: 14px;
+            padding-inline-end: 4px;
+        }
+
+        .drawer-collapsible-search.expanded {
+            display: flex;
+        }
+
+        .drawer-search-field {
+            position: relative;
+            flex: 1;
+            min-width: 0;
+        }
+
+        #drawer-search-book.active {
+            display: block;
+            padding: 10px 12px 4px;
+        }
+        
+        .drawer-search input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 9px 36px 9px 12px;
+            border: 1px solid var(--color-outline);
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.95rem;
+            background: var(--color-surface);
+            color: var(--color-on-surface);
+        }
+
+        #drawer-search-nav .drawer-search-field #toc-filter {
+            height: 48px;
+            padding: 0 44px 0 40px;
+            border: 0;
+            border-radius: 8px;
+            background: color-mix(in srgb, var(--color-on-surface) 7%, transparent);
+            font-size: 16px;
+            line-height: 1.4;
+            transition: background-color 0.15s;
+        }
+
+        #drawer-search-nav .drawer-search-field #toc-filter::placeholder {
+            color: var(--color-on-surface-variant);
+            opacity: 1;
+        }
+
+        #drawer-search-nav .drawer-search-field #toc-filter:focus {
+            background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+        }
+
+        .drawer-collapsible-search input {
+            border-radius: 8px;
+        }
+        
+        .drawer-search input:focus { 
+            outline: none; 
+            border-color: var(--color-primary); 
+        }
+        
+        .drawer-search .ui-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            font-size: 18px;
+            color: var(--color-outline);
+            pointer-events: none;
+        }
+
+        #drawer-search-nav .drawer-search-field > .otzaria-icon {
+            right: 12px;
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
+            color: var(--color-on-surface-variant);
+        }
+
+        #drawer-search-nav .drawer-search-field #toc-filter:focus + .otzaria-icon {
+            color: var(--color-primary);
+        }
+
+        .drawer-search-clear {
+            display: none;
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 40px;
+            height: 48px;
+            padding: 0;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            border-radius: var(--radius-pill);
+            background: transparent;
+            color: var(--color-on-surface-variant);
+            cursor: pointer;
+            transform: translateY(-50%);
+        }
+
+        #drawer-search-nav.has-query .drawer-search-clear {
+            display: flex;
+        }
+
+        .drawer-search-clear:hover {
+            color: var(--color-on-surface);
+            background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
+        }
+
+        .drawer-search-clear .ui-icon {
+            position: static;
+            transform: none;
+            width: 16px;
+            height: 16px;
+            font-size: 16px;
+            color: currentColor;
+        }
+
+        .drawer-search-close .ui-icon {
+            position: static;
+            transform: none;
+        }
+
+        /* רשימת התוכן */
+        .drawer-content { 
+            flex-grow: 1; 
+            min-height: 0;
+            overflow-y: auto; 
+            margin: 0 12px 12px;
+            border-radius: var(--radius-md);
+            background: var(--color-surface);
+            direction: ltr;
+            scrollbar-width: thin;
+            scrollbar-color: color-mix(in srgb, var(--color-outline) 45%, transparent) transparent;
+        }
+
+        .drawer-content > * {
+            direction: rtl;
+        }
+
+        .drawer-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .drawer-content::-webkit-scrollbar-thumb {
+            border: 2px solid transparent;
+            border-radius: 4px;
+            background: color-mix(in srgb, var(--color-outline) 45%, transparent);
+            background-clip: content-box;
+        }
+
+        #toc-scroll-area.drawer-content {
+            margin: 0;
+            border-radius: 0;
+            background: var(--color-nav-panel-background);
+        }
+
+        #toc-scroll-area > .drawer-pane-heading,
+        #toc-scroll-area > #toc-list {
+            direction: rtl;
+        }
+
+        #toc-list.toc-list-content {
+            margin: 0 12px 12px;
+            padding: 6px 0;
+            border-radius: var(--radius-md);
+            background: var(--color-surface);
+        }
+
+        #toc-list.toc-list-content > .toc-item-wrapper:last-child > .toc-item,
+        #toc-list.toc-list-content > .toc-item:last-child {
+            border-bottom: 0;
+        }
+
+        .drawer-pane {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .drawer-pane.active {
+            display: flex;
+        }
+
+        .nav-panel-resize-handle {
+            position: absolute;
+            z-index: 2;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 12px;
+            cursor: ew-resize;
+            touch-action: none;
+        }
+
+        .nav-panel-resize-handle::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 4px;
+            width: 3px;
+            height: 42px;
+            border-radius: var(--radius-pill);
+            background: var(--color-outline);
+            opacity: 0;
+            transform: translateY(-50%);
+            transition: opacity 0.15s;
+        }
+
+        .nav-panel-resize-handle:hover::after,
+        .nav-panel-resize-handle.dragging::after {
+            opacity: 0.55;
+        }
+
+        .search-results-panel {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 12px 12px 8px;
+            border-bottom: 1px solid var(--color-border-subtle);
+            background: var(--color-nav-panel-background);
+        }
+
+        .search-results-title {
+            font-size: 0.88rem;
+            color: var(--color-on-surface-subtle);
+            font-weight: 600;
+        }
+
+        .search-result-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .search-result-item {
+            display: block;
+            width: 260px;
+            max-width: calc(100% - 8px);
+            min-height: 72px;
+            margin: 0 auto;
+            box-sizing: border-box;
+            border: 1px solid var(--color-border-subtle);
+            border-radius: 12px;
+            padding: 10px 12px;
+            background: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
+            cursor: pointer;
+            text-align: right;
+            transition: background 0.15s, border-color 0.15s, transform 0.15s;
+        }
+
+        .search-result-item:hover {
+            background: var(--color-primary-subtle);
+            border-color: var(--color-primary);
+            transform: translateY(-1px);
+        }
+
+        .search-result-item.active {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px var(--color-primary-subtle);
+        }
+
+        .search-results-nav {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .search-results-nav span {
+            font-size: 0.8rem;
+            color: var(--color-on-surface-subtle);
+            min-width: 46px;
+        }
+
+        .search-results-nav button {
+            background: none;
+            border: 1px solid var(--color-border-subtle);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            padding: 3px;
+            color: var(--color-on-surface-subtle);
+            display: flex;
+        }
+
+        .search-results-nav button:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .search-results-nav button .ui-icon {
+            width: 16px;
+            height: 16px;
+            font-size: 16px;
+            color: currentColor;
+        }
+
+        #search-results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 8px 10px 12px;
+            box-sizing: border-box;
+        }
+
+        .search-result-path {
+            font-size: 0.82rem;
+            color: var(--color-primary);
+            margin: 0 4px 2px;
+            padding: 0 0 4px;
+            border-bottom: 1px solid var(--color-border-subtle);
+            font-weight: 600;
+        }
+
+        .search-result-snippet {
+            /* אותו גופן כמו בספר עצמו, לא גופן ברירת המחדל של הממשק */
+            font-family: var(--font-book);
+            font-size: 0.92rem;
+            line-height: 1.45;
+            color: var(--color-on-surface);
+        }
+
+        /* הדגשת תוצאות חיפוש בצבע הערכה של התוכנה (primary) במקום אדום צורם */
+        /* צבע הדגשה רך (שקוף למחצה) - משמש גם לתוצאות חיפוש וגם לסימון טקסט (::selection), כך ששניהם נראים אותו דבר */
+        :root { --search-hl-bg: color-mix(in srgb, var(--color-primary) 24%, transparent); }
+
+        .search-result-snippet mark,
+        .search-highlight {
+            background: var(--search-hl-bg);
+            color: inherit;
+            font-weight: 700;
+            border-radius: 3px;
+            padding: 0 1px;
+        }
+
+        /* התוצאה הנוכחית: אותו צבע, מעט עמוק יותר כדי שתבלוט מבין שאר התוצאות - ועדיין רך, בלי טקסט לבן */
+        mark.search-highlight.active-match {
+            background: color-mix(in srgb, var(--color-primary) 42%, transparent);
+            color: inherit;
+            border-radius: 3px;
+        }
+
+        ::selection { background: var(--search-hl-bg); }
+        ::-moz-selection { background: var(--search-hl-bg); }
+
+        .search-empty {
+            padding: 18px 16px;
+            color: var(--color-outline);
+            text-align: center;
+            font-size: 0.92rem;
+        }
+        
+        .toc-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.15s;
+            font-size: 0.95rem;
+            font-weight: 250;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            color: var(--color-on-surface);
+        }
+        
+        .toc-item:hover { 
+            background: var(--color-primary-subtle); 
+        }
+        
+        .toc-item.active-item {
+            background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+            color: var(--color-primary);
+        }
+
+        .toc-item.kb-highlighted {
+            box-shadow: inset 0 0 0 2px var(--color-primary);
+        }
+
+        /* עץ כותרות מתקפל - רק הרמה העליונה גלויה כברירת מחדל */
+        .toc-children {
+            display: none;
+        }
+        .toc-item-wrapper.expanded > .toc-children {
+            display: block;
+        }
+        .toc-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px;
+            margin-inline-end: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-on-surface-subtle);
+            flex-shrink: 0;
+            border-radius: var(--radius-sm);
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+        .toc-toggle:hover {
+            background: var(--color-primary-subtle);
+            color: var(--color-primary);
+        }
+        .toc-item-wrapper.expanded > .toc-item .toc-toggle {
+            transform: rotate(180deg);
+        }
+        .toc-toggle .ui-icon {
+            width: 16px;
+            height: 16px;
+            font-size: 16px;
+            color: currentColor;
+        }
+        .toc-toggle-spacer {
+            display: inline-block;
+            width: 20px;
+            flex-shrink: 0;
+        }
+        
+        .toc-item .ui-icon { 
+            width: 18px; 
+            height: 18px;
+            font-size: 18px; 
+            color: var(--color-outline); 
+            flex-shrink: 0; 
+        }
+        .toc-text { 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            flex-grow: 1; 
+        }
+
+        /* הגדרות פריסה - רכיבי מכוונים */
+        .settings-control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 4px 0;
+        }
+        .settings-control-group label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--color-on-surface);
+        }
+
+        .settings-select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 10px;
+            border: 1px solid var(--color-outline);
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            color: var(--color-on-surface);
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .page-size-custom-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-size-custom-row input[type="number"] {
+            flex: 1;
+            min-width: 0;
+            box-sizing: border-box;
+            padding: 7px 8px;
+            border: 1px solid var(--color-outline);
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            color: var(--color-on-surface);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .page-size-custom-row span {
+            color: var(--color-on-surface-subtle);
+        }
+        .settings-slider-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .settings-slider-wrapper input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            height: 24px;
+        }
+        .settings-slider-wrapper input[type="range"]::-webkit-slider-runnable-track {
+            background: var(--color-surface-container-highest);
+            height: 6px;
+            border-radius: var(--radius-pill);
+        }
+        .settings-slider-wrapper input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -5px;
+            background-color: var(--color-primary);
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            transition: background-color 0.1s;
+        }
+        .settings-slider-wrapper input[type="range"]::-webkit-slider-thumb:hover {
+            background-color: var(--color-secondary);
+        }
+        .settings-slider-wrapper input[type="range"]::-moz-range-track {
+            background: var(--color-surface-container-highest);
+            height: 6px;
+            border-radius: var(--radius-pill);
+        }
+        .settings-slider-wrapper input[type="range"]::-moz-range-thumb {
+            background-color: var(--color-primary);
+            border: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+        }
+
+        /* --- בורר גופן (הגדרות > הגדרות גופן) --- */
+        .font-picker-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 9px 12px;
+            border: 1px solid var(--color-outline);
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            color: var(--color-on-surface);
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .font-picker-trigger:hover {
+            border-color: var(--color-primary);
+        }
+        .font-picker-trigger .ui-icon {
+            width: 16px;
+            height: 16px;
+            font-size: 16px;
+            color: var(--color-outline);
+            flex-shrink: 0;
+            transition: transform 0.15s ease;
+        }
+        .font-picker-trigger.open .ui-icon {
+            transform: rotate(180deg);
+        }
+        .font-picker-trigger span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .font-picker-app-font-btn {
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        /* רשימת גופנים נפתחת (accordion) בתוך ההגדרות עצמן - לא חלונית נפרדת */
+        .font-picker-inline {
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 6px;
+            padding: 8px;
+            border: 1px solid var(--color-border-subtle);
+            border-radius: var(--radius-md);
+            /* גוון כהה/מובחן יותר מהרקע הלבן */
+            background: var(--color-surface-container-high);
+        }
+        .font-picker-inline.open { display: flex; }
+
+        .font-picker-search-wrapper input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 12px;
+            border: 1px solid var(--color-outline);
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            color: var(--color-on-surface);
+            font-family: inherit;
+            font-size: 0.95rem;
+        }
+        .font-picker-search-wrapper input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+        .font-picker-list {
+            max-height: 260px;
+            overflow-y: auto;
+        }
+        .font-picker-item {
+            padding: 9px 8px 9px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--color-on-surface);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .font-picker-item span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+        }
+        .font-picker-item:hover,
+        .font-picker-item.highlighted {
+            background: var(--color-primary-subtle);
+        }
+        .font-picker-item.selected span {
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+        .font-picker-item-remove {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--color-on-surface-subtle);
+            opacity: 0;
+            padding: 2px 5px;
+            border-radius: var(--radius-sm);
+            line-height: 1;
+            flex-shrink: 0;
+            transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+        }
+        .font-picker-item:hover .font-picker-item-remove {
+            opacity: 0.55;
+        }
+        .font-picker-item-remove:hover {
+            opacity: 1 !important;
+            background: var(--color-primary-subtle);
+            color: var(--color-primary);
+        }
+        .font-picker-empty {
+            padding: 24px 12px;
+            text-align: center;
+            color: var(--color-on-surface-subtle);
+            font-size: 0.9rem;
+        }
+        /* --- בורר צבע (הגדרות > הגדרות צבע) - עיצוב תואם לבורר הגופן שמעליו --- */
+        .color-picker-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 12px;
+            border: 1px solid var(--color-outline);
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            color: var(--color-on-surface);
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .color-picker-trigger:hover {
+            border-color: var(--color-primary);
+        }
+        .color-picker-trigger.open .color-picker-chevron {
+            transform: rotate(180deg);
+        }
+        .color-picker-swatch {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 1px solid var(--color-outline-subtle);
+            box-shadow: inset 0 0 0 2px var(--color-surface);
+            background-color: #fff8f4;
+            background-image:
+                linear-gradient(45deg, var(--color-outline-subtle) 25%, transparent 25%, transparent 75%, var(--color-outline-subtle) 75%),
+                linear-gradient(45deg, var(--color-outline-subtle) 25%, transparent 25%, transparent 75%, var(--color-outline-subtle) 75%);
+            background-size: 8px 8px;
+            background-position: 0 0, 4px 4px;
+        }
+        .color-picker-current-label {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-align: start;
+        }
+        .color-picker-chevron {
+            width: 16px;
+            height: 16px;
+            font-size: 16px;
+            color: var(--color-outline);
+            flex-shrink: 0;
+            transition: transform 0.15s ease;
+        }
+        .color-picker-inline {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 6px;
+            padding: 10px;
+            border: 1px solid var(--color-border-subtle);
+            border-radius: var(--radius-md);
+            background: var(--color-surface-container-high);
+        }
+        .color-picker-inline.open {
+            display: flex;
+        }
+        .color-picker-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .color-picker-preset-swatch {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            box-sizing: border-box;
+            border: 2px solid transparent;
+            cursor: pointer;
+            padding: 0;
+            box-shadow: 0 0 0 1px var(--color-outline-subtle);
+        }
+        .color-picker-preset-swatch:hover {
+            box-shadow: 0 0 0 1px var(--color-primary);
+        }
+        .color-picker-preset-swatch.selected {
+            border-color: var(--color-surface-container-high);
+            box-shadow: 0 0 0 2px var(--color-primary);
+        }
+        .color-picker-preset-swatch.none-swatch {
+            background-color: #fff;
+            background-image:
+                linear-gradient(45deg, var(--color-outline) 25%, transparent 25%, transparent 75%, var(--color-outline) 75%),
+                linear-gradient(45deg, var(--color-outline) 25%, transparent 25%, transparent 75%, var(--color-outline) 75%);
+            background-size: 8px 8px;
+            background-position: 0 0, 4px 4px;
+        }
+        .color-picker-custom-toggle {
+            font-size: 0.85rem;
+            color: var(--color-primary);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px 0;
+            text-align: start;
+            width: fit-content;
+            text-decoration: underline;
+        }
+        .color-picker-custom {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .color-picker-custom.open {
+            display: flex;
+        }
+        .color-picker-sv {
+            position: relative;
+            width: 100%;
+            height: 120px;
+            border-radius: var(--radius-sm);
+            cursor: crosshair;
+            overflow: hidden;
+            touch-action: none;
+            box-shadow: inset 0 0 0 1px var(--color-outline-subtle);
+        }
+        .color-picker-sv-white,
+        .color-picker-sv-black {
+            position: absolute;
+            inset: 0;
+        }
+        .color-picker-sv-white {
+            background: linear-gradient(to right, #fff, rgba(255,255,255,0));
+        }
+        .color-picker-sv-black {
+            background: linear-gradient(to top, #000, rgba(0,0,0,0));
+        }
+        .color-picker-sv-cursor {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.45), 0 1px 3px rgba(0,0,0,0.35);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        .color-picker-hue {
+            position: relative;
+            width: 100%;
+            height: 14px;
+            border-radius: var(--radius-pill);
+            cursor: pointer;
+            touch-action: none;
+            background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+            box-shadow: inset 0 0 0 1px var(--color-outline-subtle);
+        }
+        .color-picker-hue-cursor {
+            position: absolute;
+            top: 50%;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.45), 0 1px 3px rgba(0,0,0,0.35);
+            transform: translate(-50%, -50%);
+            background: transparent;
+            pointer-events: none;
+        }
+        .color-picker-fields {
+            display: flex;
+            gap: 6px;
+            align-items: flex-end;
+        }
+        .color-picker-field {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            flex: 1;
+            min-width: 0;
+        }
+        .color-picker-field.color-picker-hex-field {
+            flex: 1.7;
+        }
+        .color-picker-field label {
+            font-size: 0.68rem;
+            color: var(--color-on-surface-subtle);
+            text-align: center;
+        }
+        .color-picker-field input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 6px 4px;
+            text-align: center;
+            border: 1px solid var(--color-outline);
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            color: var(--color-on-surface);
+            font-family: inherit;
+            font-size: 0.85rem;
+            direction: ltr;
+        }
+        .color-picker-field input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+        .color-picker-reset-btn {
+            width: 100%;
+        }
+        .settings-value-indicator {
+            font-size: 0.85rem;
+            color: var(--color-on-surface-subtle);
+            width: 55px;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        /* --- עיצוב Tooltip מותאם אישית --- */
+        .custom-tooltip {
+            position: fixed;
+            background-color: var(--color-surface-container-high);
+            color: var(--color-on-surface);
+            padding: 4px 8px;
+            border: 1px solid var(--color-outline-variant);
+            border-radius: var(--app-radius, 8px);
+            font-size: 0.875rem;
+            font-family: inherit;
+            pointer-events: none;
+            z-index: 10000;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.1s ease, transform 0.1s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            white-space: nowrap;
+        }
+        .custom-tooltip.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+
+        #pagination-banner {
+            display: none;
+            background: var(--color-error-subtle);
+            color: var(--color-error);
+            font-family: var(--font-ui);
+            font-size: 1.1rem;
+            padding: 10px 16px;
+            align-items: center;
+            gap: 12px;
+            border-radius: 8px;
+            margin: 8px 16px 0 16px;
+            border: none;
+            min-height: 40px;
+        }
+        #pagination-banner.visible { display: none; }
+        #pagination-banner .ui-icon { flex-shrink: 0; width: 26px; font-size: 26px; height: 26px; color: var(--color-error); }
+        #pagination-banner span { flex: 1; }
+        #pagination-banner-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--color-error);
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            opacity: 0.75;
+            flex-shrink: 0;
+        }
+        #pagination-banner-close .ui-icon { width: 18px; font-size: 18px; height: 18px; color: currentColor; }
+
+        /* --- אזור התצוגה המקדימה --- */
+        /* עטיפה יציבה סביב #preview-area - ראו הערה ב-HTML ליד <div id="preview-area-wrapper">.
+           תופסת בדיוק את אותו מקום ב.main-content ש-#preview-area עצמו היה תופס קודם (flex:1),
+           ו-#preview-area בפנים ממשיך למלא את כולה (flex:1 בתוך display:flex כאן), כך שלא השתנה
+           שום דבר ברוחב/גובה בפועל של שטח הספר - רק נוסף מכל אליו החץ יכול להתייחס במיקום. */
+        #preview-area-wrapper {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            position: relative;
+        }
+
+        /* ידית פתיחת המפרשים — כמו PanelOpenHandle באוצריא: מוסתרת בלי ספר או כשהחלונית פתוחה. */
+        .panel-open-handle {
+            position: absolute;
+            z-index: 30;
+            top: 10%;
+            left: 0;
+            width: 20px;
+            height: 80px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            border-radius: 0 999px 999px 0;
+            background: color-mix(in srgb, var(--color-surface-container-highest) 80%, transparent);
+            color: var(--color-on-surface);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+            cursor: pointer;
+            transition: width 200ms ease-out, background-color 200ms ease-out;
+        }
+        .panel-open-handle:hover,
+        .panel-open-handle:focus-visible {
+            width: 48px;
+            background: color-mix(in srgb, var(--color-surface-container-highest) 95%, transparent);
+        }
+        .panel-open-handle:disabled,
+        .panel-open-handle.active {
+            display: none;
+        }
+        .panel-open-handle .ui-icon {
+            width: 20px;
+            height: 20px;
+            font-size: 18px;
+            opacity: 0.6;
+            transition: width 150ms ease-out, height 150ms ease-out, font-size 150ms ease-out, opacity 150ms ease-out;
+        }
+        .panel-open-handle:hover .ui-icon,
+        .panel-open-handle:focus-visible .ui-icon {
+            width: 24px;
+            height: 24px;
+            font-size: 24px;
+            opacity: 1;
+        }
+
+        #preview-area {
+            flex: 1;
+            min-width: 0;
+            overflow-y: auto;
+            /* תיקון: ברירת מחדל היא לא לאפשר גלילה אופקית כלל - updatePreviewHorizontalScroll
+               (בכל applyPageScale) עוברת ל-'auto' רק כשהתוכן אכן חורג לרוחב בפועל (זום מוגדל),
+               כדי שלא יהיה אפשר "לגלול לצדדים" כשהעמוד כבר נכנס לגמרי ברוחב המסך */
+            overflow-x: hidden;
+            padding: 40px 20px;
+            background-color: var(--user-bg-color, var(--color-surface));
+            scroll-behavior: smooth;
+        }
+
+        /* --- תצוגת שני עמודים בשורה בתוך תצוגת הגלילה הרגילה (לא תצוגת ספר) ---
+           בשונה מ"תצוגת ספר דו-עמודי" (המחליפה לגמרי את מנגנון התצוגה בדפדוף בין "עלים" קבועים),
+           זו נשארת בדיוק אותה תצוגת גלילה רגילה כמו ברירת המחדל - עם כל מנגנוני הגלילה, דפדוף
+           החיצים ושמירת המיקום הקיימים (getScrollCurrentPage / scrollToPageInScrollView וכו')
+           ללא שום שינוי - רק שבמקום עמוד יחיד בכל שורה, כל שורה מציגה שני עמודים זה לצד זה
+           (כמו תצוגת "שני עמודים" ברוב תוכנות ה-PDF), והגלילה נשארת אנכית ורציפה בלבד.
+           הבחירה ב-:not(.book-view-active) מבטיחה שהכלל הזה "רדום" לגמרי כשתצוגת הספר פעילה,
+           כדי שלא יתנגש איתה בשום צורה גם אם שתי ההגדרות מסומנות יחד. */
+        body.two-column-scroll-active:not(.book-view-active) #preview-area {
+            display: grid;
+            grid-template-columns: repeat(2, max-content);
+            justify-content: center;
+            align-content: start;
+            /* הרווח בין שני העמודים = עובי פס הגלילה (8px, ראו ::-webkit-scrollbar למטה) */
+            column-gap: 8px;
+        }
+
+        /* --- עיצוב דף בודד (גודל ניתן להתאמה אישית דרך --page-width/--page-height) --- */
+        .print-page {
+            width: var(--page-width, 210mm);
+            height: var(--page-height, 297mm);
+            padding: 20mm var(--page-margin, 20mm); /* שוליים למעלה ולמטה קבועים, שולי צד דינמיים */
+            margin: 0 auto 30px auto; 
+            background: var(--user-page-color, white);
+            color: var(--user-text-color, black);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+            box-sizing: border-box;
+            
+            column-count: var(--cols);
+            column-gap: var(--column-gap, 12mm);
+            column-rule: var(--column-rule-style, 2px solid var(--color-outline-subtle));
+            column-fill: auto; 
+            
+            font-family: var(--font-book);
+            text-align: justify; 
+            text-justify: inter-word; 
+            word-break: normal; 
+            overflow-wrap: break-word; 
+            
+            line-height: var(--line-height-book);
+            font-size: var(--font-size-book);
+            overflow: hidden; 
+            position: relative;
+            
+            /* הגדלת והקטנת הדף ללא השפעה על חלוקת הדפים */
+            zoom: var(--page-scale, 1.0);
+            transform-origin: top center;
+
+            /* שיפור החלקת הגופן ומניעת טשטוש */
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: subpixel-antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* --- וירטואליזציה של תצוגת הגלילה --- */
+        /* עמודים שנמצאים מחוץ לאזור התצוגה (למשל מיד אחרי מעבר טאב, כשכל עמודי הספר מוכנסים
+           בבת אחת ל-DOM) מדלגים על חישוב הפריסה/הציור שלהם עד שהם מתקרבים לתצוגה בפועל - בדיוק
+           כמו האופטימיזציה הקיימת כבר בתצוגת ספר (המסתירה display:none עלים רחוקים לגמרי). זה
+           הגורם העיקרי לכך שמעבר טאבים בתצוגת גלילה איטי יותר: כל עמודי הספר (כולל הטורים
+           המוצדקים שלהם) חייבים להיפרס מחדש בבת אחת, במקום רק העמודים הנראים כרגע.
+           הבחירה ב-`#preview-area > .print-page` (ולא סתם `.print-page`) קריטית: היא תופסת רק
+           עמודים שהם ילדים ישירים של אזור התצוגה - כלומר עמודי תצוגת הגלילה בלבד. בתצוגת ספר
+           העמודים "עוברים דירה" לתוך .book-leaf (שהוא כבר ילד של .book-wrapper, לא של
+           preview-area ישירות) ולכן לא מושפעים כלל מהכלל הזה, ולא נוגעים באופטימיזציה/באנימציות
+           הקיימות שם. הגובה והרוחב של כל עמוד כבר קבועים במפורש למעלה (לא תלויים בתוכן), כך
+           שהדפדפן לא צריך למדוד את התוכן כדי לדעת כמה מקום להקצות לעמוד בזרימה/בגלילה - זה בדיוק
+           מה שהופך את content-visibility: auto לבטוח כאן, בלי לשנות שום חישוב מיקום גלילה קיים
+           (getBoundingClientRect ממשיך להחזיר את המיקום/הגודל הנכונים גם לעמוד שמדולג כרגע). */
+        #preview-area > .print-page {
+            content-visibility: auto;
+        }
+
+        .print-page p, .print-page div { orphans: 1; widows: 1; margin-bottom: var(--paragraph-spacing); margin-top: 0; line-height: var(--line-height-book); }
+        /* מניעת הגדלת גובה השורה בגלל מספרי הערות/סימנים עיליים (sup/sub) - שומר על מרווח שורות אחיד כמו בוורד */
+        .print-page sup, .print-page sub {
+            line-height: 0;
+            vertical-align: super;
+            font-size: 0.65em;
+            position: relative;
+            top: -0.35em;
+        }
+        .print-page sub {
+            vertical-align: sub;
+            top: 0.2em;
+        }
+        .print-page * {
+            line-height: inherit;
+        }
+/* יישור שורה אחרונה לשני הצדדים רק כאשר הפסקה נחתכת וממשיכה בעמוד הבא */
+        .print-page .split-continued {
+            text-align-last: justify;
+        }
+        /* פריט רשימה (<li>) שהוא בעצם המשך של אותו פריט מהעמוד הקודם (ולא פריט חדש) -
+           לא מציגים לו נקודה/תבליט משלו, כדי שלא ייראה כמו סעיף חדש ברשימה */
+        .print-page li.split-continuation {
+            list-style: none;
+        }
+        .print-page h1, .print-page h2 { text-align: center; column-span: all; margin-top: 0; margin-bottom: 1em; }
+        /* תמונות שוברות את זרימת הטורים ומתפרסות על פני כל רוחב העמוד, בדיוק כמו כותרות - */
+        /* לא נכנסות דחוסות לתוך טור בודד */
+        .print-page img {
+            column-span: all;
+            display: block;
+            max-width: 100%;
+            height: auto;
+            margin: 0.5em auto;
+        }
+
+/* --- הערות שוליים (מקובץ Word) - מוצגות בתחתית העמוד המדויק שבו מופיעה ההפניה אליהן --- */
+        .print-page .footnote-ref {
+            color: var(--user-text-color, black);
+            font-weight: 700;
+            cursor: default;
+            padding: 0 1px;
+        }
+
+        .print-page .page-footnotes-block {
+            column-span: all;
+            margin-top: 10px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(0, 0, 0, 0.35);
+            font-family: var(--font-footnote, var(--font-book));
+            font-size: var(--font-size-footnote, calc(var(--font-size-book) * 0.72));
+            line-height: var(--line-height-footnote, 1.35);
+            color: var(--user-text-color, black);
+            text-align: justify;
+            text-justify: inter-word;
+            word-break: normal;
+            overflow-wrap: break-word;
+        }
+
+        /* תצוגת הערות השוליים בשני טורים (הגדרות > הערות) - בלוק ההערות כבר פורש על פני כל
+           רוחב העמוד (column-span: all לעיל), וכאן הוא מקבל טורים פנימיים משל עצמו, בדיוק כמו
+           שהטקסט הראשי מקבל טורים דרך --cols על .print-page עצמו. כברירת מחדל (בלי המחלקה) -
+           טור בודד, בדיוק כפי שהוצג עד כה. */
+        .print-page .page-footnotes-block.footnote-two-col {
+            column-count: 2;
+            column-gap: var(--footnote-column-gap, 12mm);
+            column-rule: var(--footnote-column-rule-style, 2px solid var(--color-outline-subtle));
+        }
+
+        .print-page .page-footnote-line {
+            /* בלי override מפורש כאן, השורה הייתה יורשת line-height מ-.page-footnotes-block,
+               אבל הכלל הגורף ".print-page p, .print-page div { line-height: var(--line-height-book); }"
+               (למעלה) חל ישירות גם על ה-div הזה ומנצח ירושה - לכן צריך לקבוע כאן מפורשות שוב */
+            line-height: var(--line-height-footnote, 1.35);
+            margin-bottom: var(--paragraph-spacing-footnote, 3px);
+        }
+
+        /* שורת הערה שממשיכה בעמוד הבא (נחתכה כי לא נכנסה בשלמותה) - יישור השורה האחרונה לשני
+           הצדדים, בדיוק כמו פסקת גוף שנחתכת (.split-continued), כדי שלא תיראה "פרומה" מימין */
+        .print-page .page-footnote-line.footnote-line-continues {
+            text-align-last: justify;
+        }
+
+        .print-page .page-footnote-line sup {
+            vertical-align: baseline;
+            position: static;
+            top: 0;
+            font-size: 1em;
+            color: var(--user-text-color, black);
+            font-weight: 700;
+            margin-inline-end: 3px;
+        }
+
+        /* סימון חזותי לשורת "המשך" של הערת שוליים ארוכה שממשיכה מהעמוד הקודם */
+        .print-page .page-footnote-line.page-footnote-continued::before {
+            content: '(המשך) ';
+            font-weight: 700;
+            opacity: 0.6;
+        }
+
+/* --- עיצוב גלובלי לפסי גלילה (לכל האלמנטים באפליקציה) --- */
+        
+        /* גובה ורוחב של כל קווי הגלילה באפליקציה */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        /* רקע קו הגלילה - שקוף לחלוטין תמיד לכל האלמנטים */
+        ::-webkit-scrollbar-track {
+            background: transparent !important;
+        }
+
+        /* הסרת חיצים (למעלה/למטה/ימין/שמאל) מכל פסי הגלילה באפליקציה */
+        ::-webkit-scrollbar-button {
+            display: none !important;
+            height: 0 !important;
+            width: 0 !important;
+        }
+
+        /* גוף הגלגלת (החלק שנע) - שקוף כברירת מחדל */
+        ::-webkit-scrollbar-thumb {
+            background: transparent;
+            border-radius: var(--radius-pill);
+        }
+
+        /* הצגת גוף הגלגלת בצבע אפור כהה ברור (אטום) רק בעת ריחוף מעל האזור הגליל */
+        *:hover::-webkit-scrollbar-thumb {
+            background: var(--color-outline) !important; /* <-- שימוש בצבע אטום וברור */
+        }
+
+        /* תאימות למנועי רינדור נוספים */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: transparent transparent;
+        }
+        *:hover {
+            scrollbar-color: var(--color-outline) transparent;
+        }
+
+/* --- הגדרות למדפסת האמיתית --- */
+        @media print {
+            @page { 
+                size: A4; 
+                margin: 0; 
+            }
+            
+            /* ביטול מוחלט של הגבלות הגובה, המיקום והגלילה של כל התיבות העוטפות - כולל את
+               עוטפי תצוגת הפיצול (#split-view-wrapper / #split-pane-a) שנוספו עם פיצ'ר התצוגה
+               המפוצלת: בלעדיהם height:100vh + overflow:hidden שלהם "חותכים" את ההדפסה לעמוד
+               הראשון בלבד, בדיוק כמו שהיה קורה בלי הכלל הזה עם app-shell/main-content עצמם */
+            body, .app-shell, .main-content, #preview-area, #split-view-wrapper, #split-pane-a { 
+                overflow: visible !important; 
+                height: auto !important; 
+                max-height: none !important;
+                min-height: 0 !important;
+                position: static !important;
+                display: block !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                background: none !important;
+            }
+            
+            body { 
+                background-color: white !important; 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+            }
+            
+            /* הסתרת כפתורים וסרגלים שאינם שייכים לדף המודפס */
+            .toolbar, .tab-bar-outer, .overlay-panel, .settings-panel, .overlay-scrim, .custom-tooltip, #pagination-banner, .nav-arrow, .no-print { 
+                display: none !important; 
+            }
+            
+            .print-page { 
+                margin: 0 !important; 
+                box-shadow: none !important; 
+                border: none !important; 
+                page-break-after: always !important; 
+                break-after: page !important; 
+                
+                /* גובה ורוחב נוקשים השומרים על הטורים של ה-A4 */
+                height: 297mm !important; 
+                width: 210mm !important;  
+                zoom: 1.0 !important;     
+                box-sizing: border-box !important;
+                
+                padding: 20mm var(--page-margin, 20mm) !important;
+                column-gap: var(--column-gap, 12mm) !important;
+                
+                position: relative !important;
+                display: block !important;
+                /* ביטחון נוסף: מבטיח שוירטואליזציית content-visibility (ראו הכלל
+                   #preview-area > .print-page למעלה) לעולם לא תשפיע על ההדפסה - כל עמוד תמיד
+                   מרונדר במלואו בהדפסה, גם אם היה מדולג במסך רגע לפני כן */
+                content-visibility: visible !important;
+            }
+
+            /* עמודים שמחוץ לטווח שנבחר בחלונית ההדפסה/יצוא (ראו printCurrentView) - מוסתרים אך
+               ורק בהדפסה בפועל; המחלקה עצמה לא משפיעה על שום דבר בתצוגת המסך הרגילה */
+            .print-page.print-range-excluded {
+                display: none !important;
+            }
+        }
+
+/* --- עיצוב כפתור הזזה (Toggle Switch) בסגנון Fluent --- */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        /* הסתרת תיבת הסימון המקורית של הדפדפן */
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        /* רקע כפתור ההזזה */
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--color-surface);
+            transition: 0.2s ease;
+            border-radius: 20px;
+            border: 1.5px solid var(--color-outline);
+        }
+
+        /* עיגול ההזזה הפנימי (הכפתור) */
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 3px;
+            bottom: 2.5px;
+            background-color: var(--color-outline);
+            transition: 0.2s ease;
+            border-radius: 50%;
+        }
+
+        /* עיצוב במצב פעיל (Checked) */
+        .switch input:checked + .slider {
+            background-color: var(--color-primary);
+            border-color: var(--color-primary);
+        }
+
+        /* הזזת העיגול הפנימי ימינה ושינוי צבעו ללבן כשהכפתור פעיל */
+        .switch input:checked + .slider:before {
+            transform: translateX(20px);
+            background-color: var(--color-on-primary);
+        }
+
+/* --- עיצוב כותרת עליונה משתקפת (ספר פתוח) --- */
+        .page-header {
+            column-span: all;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--color-border-subtle);
+            padding-bottom: 6px;
+            margin-bottom: 14px;
+            font-size: 10pt;
+            font-family: var(--font-book);
+            color: var(--color-on-surface-subtle);
+            direction: rtl;
+        }
+
+        /* "הצג כותרת עליונה ומספר עמוד" כבוי - מסתירים את הכותרת חזותית (visibility, לא display)
+           כדי שהיא תמשיך לתפוס בדיוק את אותו המקום בעמוד - כך שכיבוי/הדלקת ההגדרה הזו לעולם לא
+           מצריך עימוד מחדש (שינוי מלא ב-DOM/סידור עמודים), אלא רק הפעלת/כיבוי מחלקה גלובלית */
+        body.hide-page-header .page-header {
+            visibility: hidden;
+        }
+
+        /* השוואת אורך הטורים בעמוד האחרון בלבד (איזון טורים) */
+        .print-page:last-of-type {
+            column-fill: balance !important;
+        }
+
+/* --- תצוגת ספר דו-עמודי תלת-ממדית --- */
+        
+.book-view-active #preview-area {
+            /* פרספקטיבה קצרה יותר = אפקט תלת-ממד מודגש ומוחשי יותר בהפיכת הדף */
+            perspective: 1600px;
+            perspective-origin: center center;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            overflow: hidden !important;
+            background-color: var(--user-bg-color, var(--color-surface));
+            position: relative; 
+        }
+
+/* עטיפת הספר הכללית (שולטת בזום ובכריכה) */
+        .book-wrapper {
+            position: relative;
+            width: calc(var(--page-width, 210mm) * 2);
+            height: var(--page-height, 297mm);
+            transform-style: preserve-3d;
+            transition: transform 0.4s ease-out;
+            transform: translateY(var(--book-pan-y, 0px)) scale(calc(var(--page-scale, 1.0) * 0.46)) translateZ(0);
+    
+            flex-shrink: 0;
+            flex-grow: 0;
+        }
+
+/* כריכת הספר ואפקט עומק מאחור */
+        .book-wrapper::before {
+            content: '';
+            position: absolute;
+            top: -6mm; 
+            bottom: -6mm; 
+            left: -12mm; 
+            right: -12mm;
+            background: var(--color-secondary);
+            border-radius: 12px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 0 20px rgba(0,0,0,0.5);
+            transform: translateZ(-8px);
+            z-index: 1;
+        }
+
+/* שדרת הספר במרכז - כעת מוגדרת בשכבה גיאומטרית מאחורי הנייר */
+        .book-wrapper::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: -6mm; 
+            bottom: -6mm; 
+            width: 16mm;
+            background: color-mix(in srgb, var(--color-secondary) 60%, black);
+            transform: translateX(-50%) translateZ(-7px);
+            z-index: 2; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+
+/* עלה (פיסת נייר פיזית) המחזיק עמוד קדמי ועמוד אחורי */
+        .book-leaf {
+            position: absolute;
+            width: var(--page-width, 210mm);
+            height: var(--page-height, 297mm);
+            top: 0;
+            left: 0; 
+            transform-origin: right center;
+            transform-style: preserve-3d;
+            /* עקומת תנועה טבעית יותר לנייר: התחלה איטית, האצה באמצע, נחיתה רכה */
+            transition: transform 1.05s cubic-bezier(0.42, 0.02, 0.24, 1);
+            z-index: 10;
+            will-change: transform;
+            
+            /* זווית מיקרוסקופית שמאלצת את הדפדפן לשמור על חדות קבועה בשמאל */
+            transform: rotateY(0.01deg);
+        }
+
+        /* כאשר מדפדפים, העלה מסתובב אל צד ימין */
+        .book-leaf.flipped {
+            /* זווית מיקרוסקופית שמאלצת את הדפדפן לשמור על חדות קבועה בימין */
+            transform: rotateY(179.99deg);
+        }
+
+/* הפיכת ה-print-page להיות הצדדים (פנים/אחור) של העלה */
+        .book-leaf .print-page {
+            position: absolute;
+            top: 0; left: 0;
+            margin: 0 !important;
+            box-shadow: none !important;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            background-color: var(--user-page-color, white) !important; 
+            zoom: 1 !important;
+            
+            /* הגדרת הדף כדו-ממדי שטוח כדי למנוע טשטוש של הגופן */
+            transform-style: flat;
+            -webkit-transform-style: flat;
+            
+            /* שילוב מאפיינים לאילוץ חדות קבועה ומניעת השטחה */
+            transform: translateZ(0.1px);
+            outline: 1px solid transparent;
+
+            /* רינדור הגופן - זהה בדיוק לתצוגת עמוד (.print-page הבסיסי), כדי שהטקסט ייראה חד
+               כמו טקסט אמיתי (וורד/PDF) ולא "שטוח"/כמו תמונה. text-rendering:geometricPrecision
+               ו--webkit-font-smoothing:antialiased (רינדור אפור-בלבד, בלי ניצול תת-הפיקסלים)
+               היו כאן קודם וגרמו בדיוק לתחושת ה"תמונה" - לכן הוחזר לרינדור subpixel הרגיל. */
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: subpixel-antialiased;
+            -moz-osx-font-smoothing: grayscale;
+
+        }
+
+        /* עמוד קדמי (פונה אלינו כשהעלה משמאל) */
+        .book-leaf .print-page.front {
+            border-radius: 8px 0 0 8px; 
+            box-shadow: inset 5px 0 20px rgba(0,0,0,0.03) !important;
+        }
+
+        /* עמוד אחורי (יתגלה כאשר העלה יתהפך ימינה) */
+        .book-leaf .print-page.back {
+            transform: rotateY(-180deg);
+            border-radius: 0 8px 8px 0; 
+            box-shadow: inset -5px 0 20px rgba(0,0,0,0.03) !important;
+        }
+
+/* הצללה דינמית שמדמה קימור נייר בזמן האנימציה */
+        .page-shadow {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            backface-visibility: hidden;
+            transition: opacity 1.05s ease;
+        }
+
+/* דפי בטנה קבועים (פורזץ) המודבקים לכריכה שלא זזים */
+        .book-endpaper {
+            position: absolute;
+            width: var(--page-width, 210mm);
+            height: var(--page-height, 297mm);
+            background-color: var(--user-page-color, white) !important;
+            z-index: 3; 
+            transform: translateZ(-6px); 
+            pointer-events: none; 
+        }
+
+        .book-endpaper.left-endpaper {
+            left: 0;
+            border-radius: 8px 0 0 8px;
+            box-shadow: inset 10px 0 20px rgba(0,0,0,0.02) !important;
+        }
+
+        .book-endpaper.right-endpaper {
+            left: 210mm;
+            border-radius: 0 8px 8px 0;
+            box-shadow: inset -10px 0 20px rgba(0,0,0,0.02) !important;
+        }
+
+        .front .page-shadow { background: linear-gradient(to left, rgba(0,0,0,0.38), rgba(0,0,0,0.08) 25%, transparent 55%); opacity: 0; }
+        .back .page-shadow { background: linear-gradient(to right, rgba(0,0,0,0.38), rgba(0,0,0,0.08) 25%, transparent 55%); opacity: 1; }
+        .book-leaf.flipped .front .page-shadow { opacity: 1; }
+        .book-leaf.flipped .back .page-shadow { opacity: 0; }
+
+        /* הגדרות הדפסה לניקוי אובייקטי הספר בעת הדפסה אמיתית */
+        @media print {
+            /* תיקון קריטי: לכלל ".book-view-active #preview-area" (למעלה, בתצוגת המסך) יש
+               specificity גבוה יותר מהכלל הרגיל "#preview-area" שבבלוק ה-@media print הראשון
+               (מחלקה+מזהה מול מזהה בלבד) - ולכן הוא ממשיך לגבור גם בזמן הדפסה בפועל אם התוסף
+               נמצא במצב תצוגת ספר, ומשאיר את אזור התצוגה כקופסת flex ממורכזת עם overflow:hidden.
+               התוצאה בפועל: מודפס רק "צילום" של הפריסה (Spread) הבודדת שהייתה גלויה על המסך באותו
+               רגע, במקום כל תוכן הספר בזרימה רגילה של עמודי הדפסה. כאן מנטרלים את זה במפורש, עם
+               אותו selector בדיוק (כדי לשמור על אותו specificity) אך בתוך @media print שמוגדר
+               אחרי הכלל המקורי - כך שבהדפסה בלבד (לא במסך) הגרסה הזו גוברת.
+            */
+            .book-view-active #preview-area {
+                display: block !important;
+                overflow: visible !important;
+                justify-content: normal !important;
+                align-items: normal !important;
+                position: static !important;
+                perspective: none !important;
+                background: none !important;
+            }
+            .book-wrapper { display: block !important; zoom: 1 !important; transform: none !important; position: static !important; width: auto !important; height: auto !important; }
+            .book-leaf { display: block !important; transform: none !important; position: static !important; }
+            .book-leaf .print-page { position: relative !important; transform: none !important; }
+            /* דפי הבטנה (endpaper) הם קישוט לבן שמדמה כריכה על המסך בלבד - בהדפסה הם רק היו
+               "מכסים" בטעות את זוג העמודים הראשון (הם ממוקמים absolute וגובהם קבוע לעמוד אחד
+               בלבד, ולכן חופפים רק את תחילת הזרימה) - ולכן מוסתרים לגמרי בהדפסה */
+            .page-shadow, .book-wrapper::before, .book-wrapper::after, .book-endpaper { display: none !important; }
+        }
+
+        /* קונטיינר ההדפסה השטוח (ראו printCurrentView) - מוסתר לגמרי במסך תמיד, כדי שהוספתו
+           הזמנית ל-DOM לא תגרום לשום שינוי חזותי בתצוגת הספר החיה, אפילו לא לרגע */
+        #print-flat-pages {
+            display: none;
+        }
+
+        @media print {
+            /* בזמן ההדפסה עצמה (printing-flat-mode) - מציגים רק את קונטיינר ההדפסה השטוח (זהה
+               לחלוטין למבנה תצוגת גלילה), ומסתירים את תצוגת הספר החיה כדי שלא תודפס פעמיים */
+            body.printing-flat-mode #preview-area {
+                display: none !important;
+            }
+            body.printing-flat-mode #print-flat-pages {
+                display: block !important;
+            }
+        }
+
+        /* כפתורי חצי ניווט צפים */
+        .nav-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: var(--color-surface-container-highest);
+            color: var(--color-on-surface);
+            border: 1px solid var(--color-border-subtle);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: none; /* מוסתר כברירת מחדל במסך גלילה */
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            z-index: 150;
+            transition: background 0.2s, opacity 0.2s;
+            /* נראים היטב כברירת מחדל (הם יושבים על הרקע, מחוץ לספר) */
+            opacity: 0.75;
+        }
+
+        /* כשהספר עצמו נכנס פיזית מתחת לחץ (זום גדול/מסך צר) - החץ נעשה שקוף כדי לא להסתיר טקסט.
+           המחלקה מתווספת מ-JS לפי חפיפה גיאומטרית אמיתית בין הספר לחץ (ראה updateNavArrowOverlap) */
+        .nav-arrow.over-book {
+            opacity: 0.1;
+        }
+
+        /* אבל ריחוף ישיר על החץ עצמו תמיד מחזיר אותו לנראות מלאה */
+        .nav-arrow:hover:not(:disabled) {
+            background-color: var(--color-primary-subtle);
+            color: var(--color-primary);
+            opacity: 1 !important;
+        }
+
+        .nav-arrow:disabled {
+            opacity: 0.25;
+            cursor: not-allowed;
+        }
+
+        .nav-arrow .ui-icon {
+            width: 24px;
+            height: 24px;
+            font-size: 24px;
+            color: currentColor;
+        }
+
+        /* מיקום החצים */
+        .nav-arrow.arrow-right { right: 24px; } /* חץ ימינה - עמוד קודם (אחורה) */
+        .nav-arrow.arrow-left { left: 24px; }  /* חץ שמאלה - עמוד הבא (קדימה) */
+
+        /* הצגת החצים רק כאשר מצב ספר פעיל */
+        .book-view-active .nav-arrow {
+            display: flex;
+        }
+
+        /* --- קיצורי מקשים מותאמים אישית (הגדרות > קיצורי מקשים) --- */
+        .shortcut-value-box {
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 9px 12px;
+            border: 1px solid var(--color-outline);
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            color: var(--color-on-surface);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .shortcut-value-box:hover {
+            border-color: var(--color-primary);
+            background: var(--color-primary-subtle);
+        }
+        .shortcut-value-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .shortcut-pencil-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+            color: var(--color-on-surface-subtle);
+        }
+        .shortcut-value-box:hover .shortcut-pencil-icon {
+            color: var(--color-primary);
+        }
+
+        /* --- פופאפ הקלטת קיצור מקשים מותאם אישית --- */
+        .shortcut-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s;
+        }
+        .shortcut-modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .shortcut-modal-card {
+            width: 320px;
+            max-width: calc(100vw - 32px);
+            background: var(--color-surface-container-highest);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+            padding: 22px 20px;
+            box-sizing: border-box;
+            text-align: center;
+            border: 1px solid var(--color-border-subtle);
+        }
+        .shortcut-modal-title {
+            margin: 0 0 4px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--color-on-surface);
+        }
+        .shortcut-modal-subtitle {
+            margin: 0 0 16px;
+            font-size: 0.85rem;
+            color: var(--color-on-surface-subtle);
+        }
+        .shortcut-modal-funcname {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--color-primary);
+            margin-bottom: 12px;
+        }
+        .shortcut-modal-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 22px 12px;
+            border: 2px solid var(--color-outline);
+            border-radius: var(--radius-md);
+            color: var(--color-on-surface-subtle);
+            margin-bottom: 14px;
+            transition: border-color 0.15s, color 0.15s;
+        }
+        .shortcut-modal-box.recording {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+        .shortcut-modal-kbd-icon {
+            width: 42px;
+            height: 42px;
+            font-size: 42px;
+            color: currentColor;
+        }
+        .shortcut-modal-value {
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--color-on-surface);
+        }
+        .shortcut-modal-box.recording .shortcut-modal-value {
+            color: var(--color-primary);
+        }
+        .shortcut-modal-record-btn {
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-border-subtle);
+            background: var(--color-surface);
+            color: var(--color-on-surface);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 14px;
+            transition: border-color 0.15s, background 0.15s, color 0.15s;
+        }
+        .shortcut-modal-record-btn:hover {
+            border-color: var(--color-primary);
+        }
+        .shortcut-modal-record-btn.recording {
+            border-color: var(--color-primary);
+            background: var(--color-primary-subtle);
+            color: var(--color-primary);
+        }
+        .shortcut-modal-record-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .shortcut-modal-record-icon .ui-icon {
+            width: 18px;
+            height: 18px;
+            font-size: 18px;
+        }
+        .shortcut-modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .shortcut-modal-confirm {
+            flex: 1;
+            margin-top: 0 !important;
+            width: auto !important;
+        }
+        .shortcut-modal-cancel {
+            flex: 1;
+            background: transparent;
+            border: 1px solid var(--color-border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 8px 16px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--color-on-surface);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .shortcut-modal-cancel:hover {
+            background: var(--color-primary-subtle);
+        }
+
+        /* --- חלונית "הדפסה ויצוא" (נפתחת בלחיצה על כפתור ההדפסה, במקום הדפסה ישירה) --- */
+        .print-export-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 510;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s;
+        }
+        .print-export-modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .print-export-modal-card {
+            width: 380px;
+            max-width: calc(100vw - 32px);
+            background: var(--color-surface-container-highest);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+            padding: 22px 22px 18px;
+            box-sizing: border-box;
+            border: 1px solid var(--color-border-subtle);
+        }
+        .print-export-modal-title {
+            margin: 0 0 18px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--color-on-surface);
+        }
+        .print-export-field {
+            margin-bottom: 14px;
+        }
+        .print-export-field label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--color-on-surface);
+        }
+        .print-export-range-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .print-export-range-row input[type="number"] {
+            flex: 1;
+            min-width: 0;
+            box-sizing: border-box;
+            padding: 7px 8px;
+            border: 1px solid var(--color-outline);
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            color: var(--color-on-surface);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+        .print-export-range-row span {
+            color: var(--color-on-surface-subtle);
+            font-size: 0.85rem;
+        }
+        .print-export-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        .print-export-actions-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .print-export-pill-btn {
+            border-radius: var(--radius-pill);
+            padding: 10px 22px;
+            font-family: inherit;
+            font-size: 0.92rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s, background-color 0.15s;
+            white-space: nowrap;
+        }
+        .print-export-pill-btn.primary {
+            background: var(--color-primary);
+            color: var(--color-on-primary);
+            border: none;
+        }
+        .print-export-pill-btn.primary:hover {
+            opacity: 0.88;
+        }
+        .print-export-pill-btn.outline {
+            background: transparent;
+            color: var(--color-primary);
+            border: 1.5px solid var(--color-primary);
+        }
+        .print-export-pill-btn.outline:hover:not(:disabled) {
+            background: var(--color-primary-subtle);
+        }
+        .print-export-pill-btn.outline:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+        .print-export-cancel-btn {
+            background: transparent;
+            border: none;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.92rem;
+            color: var(--color-on-surface-subtle);
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .print-export-cancel-btn:hover {
+            background: var(--color-primary-subtle);
+            color: var(--color-on-surface);
+        }
+
+        /* --- פריט "בחר קובץ מהמחשב..." בתחתית בורר הגופנים הקיים --- */
+        .font-picker-item-file-option {
+            border-top: 1px solid var(--color-border-subtle);
+            margin-top: 4px;
+            padding-top: 11px;
+            color: var(--color-primary);
+        }
+
+        /* --- הסתרת סרגל הטאבים: כל מופע מכיל ספר אחד בלבד --- */
+        .tab-bar-outer { display: none !important; }

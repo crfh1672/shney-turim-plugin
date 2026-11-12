@@ -1,0 +1,57 @@
+{
+    "id":  "shney-turim-plugin",
+    "name":  "שני טורים",
+    "version":  "10.0.1",
+    "description":  "הצגת מסמך כספר מודפס עם אפשרות למספר טורים",
+    "author":"D9+ח.צ וחד בדרא מוקדש בל\"נ לע\"נ הבה\"ח מאיר בן יבדלחט\"א ר' אברהם הראל שאער זצ\"ל",
+    "type":  "webapp",
+    "entrypoint":  "index.html",
+    "category":  "Utilities",
+    "stability":  "beta",
+    "minAppVersion":  "0.9.99",
+    "permissions":  [
+                        "library.books.read",
+                        "library.content.read",
+                        "library.links.read",
+                        "reader.open",
+                        "notes.read",
+                        "reader.toolbar",
+                        "app.startup_contributions",
+                        "app.info.read",
+                        "app.shortcuts",
+                        "navigation.write",
+                        "ui.feedback",
+                        "events.subscribe:theme.changed",
+                        "plugin.storage.read",
+                        "plugin.storage.write"
+                    ],
+    "contributes":  {
+                        "toolTab":  {
+                                        "title":  "שני טורים",
+                                        "order":  200,
+                                        "defaultPinned":  true,
+                                        "iconName":  "document_pdf_24_regular",
+                                        "allowMultipleInstances":  true
+                                    },
+                        "startup":  {
+                                        "toolbarItems":  [
+                                                            {
+                                                                "id":  "shney-turim-open",
+                                                                "title":  "פתח בתצוגת שני טורים",
+                                                                "icon":  "text_column_two_24_regular",
+                                                                "contexts":  ["reader-text"],
+                                                                "openPlugin":  true,
+                                                                "newTab":  true
+                                                            }
+                                                        ],
+                                        "shortcuts":  [
+                                                          {
+                                                              "id":  "shney-turim-open-shortcut",
+                                                              "label":  "פתח בתצוגת שני טורים",
+                                                              "key":  "ctrl+shift+i",
+                                                              "command":  "shney-turim-open-shortcut"
+                                                          }
+                                                      ]
+                                    }
+                    }
+}
