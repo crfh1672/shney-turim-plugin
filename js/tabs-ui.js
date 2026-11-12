@@ -119,6 +119,8 @@
 
 function switchTab(index) {
             if (index === activeTabIndex) return;
+
+            resetPageNavThumbnailState();
             
             clearTimeout(fontSizeChangeTimer);
             
@@ -322,6 +324,13 @@ const previewArea = document.getElementById('preview-area');
             applyCommentaryPanelStateForActiveTab();
 
             renderTabs();
+            if (currentRailTab === 'pages') {
+                buildPageNav();
+                selectPageNavItem(
+                    currentSettings.isBookView ? currentLeaf * 2 : getScrollCurrentPage(),
+                    true
+                );
+            }
         }
 
         function closeTab(index, e) {
@@ -942,6 +951,7 @@ const previewArea = document.getElementById('preview-area');
 
         const previewArea = document.getElementById('preview-area');
         let isScrollingFromTOC = false;
+        let pageNavScrollUpdateTimer = null;
         
         if (previewArea) {
             previewArea.addEventListener('wheel', (e) => {
@@ -951,7 +961,19 @@ const previewArea = document.getElementById('preview-area');
             }, { passive: true });
 
             previewArea.addEventListener('scroll', () => {
-                if (isScrollingFromTOC || isPinned) return;
+                if (isScrollingFromTOC) return;
+                if (isPinned) {
+                    if (currentRailTab === 'pages' && !currentSettings.isBookView) {
+                        clearTimeout(pageNavScrollUpdateTimer);
+                        pageNavScrollUpdateTimer = setTimeout(() => {
+                            const panel = document.querySelector('.overlay-panel');
+                            if (!isPinned || currentRailTab !== 'pages' || currentSettings.isBookView ||
+                                !panel || !panel.classList.contains('open')) return;
+                            selectPageNavItem(getScrollCurrentPage(), true);
+                        }, 160);
+                    }
+                    return;
+                }
                 // סגירת ניווט בגלילה (לא הגדרות) - אלא אם הפאנל נעוץ
                 closeDrawer();
             }, { passive: true });
@@ -1105,10 +1127,10 @@ const previewArea = document.getElementById('preview-area');
                 searchInBook();
             } else if (tab === 'pages') {
                 buildPageNav();
-                filterPageNav();
-                if (document.getElementById('drawer-search-pages').classList.contains('expanded')) {
-                    document.getElementById('page-filter').focus();
-                }
+                selectPageNavItem(
+                    currentSettings.isBookView ? currentLeaf * 2 : getScrollCurrentPage(),
+                    true
+                );
             } else {
                 if (document.getElementById('toc-filter').value) {
                     document.getElementById('drawer-search-nav').classList.add('expanded');
@@ -1195,27 +1217,150 @@ const previewArea = document.getElementById('preview-area');
             });
         }
 
-        function togglePageSearch() {
-            const search = document.getElementById('drawer-search-pages');
-            if (search.classList.contains('expanded')) {
-                closePageSearch();
-                return;
-            }
-            search.classList.add('expanded');
-            const toggle = document.getElementById('page-search-toggle');
-            toggle.dataset.tooltip = 'סגור איתור דפים';
-            toggle.setAttribute('aria-expanded', 'true');
-            document.getElementById('page-filter').focus();
+        let pageNavThumbnailObserver = null;
+        let pageNavSourcePages = [];
+        let pageNavSelectedItem = null;
+
+        function initializePageNavEvents(listEl) {
+            if (listEl.dataset.pageNavEventsInitialized) return;
+            listEl.addEventListener('click', (event) => {
+                const item = event.target instanceof Element ? event.target.closest('.page-nav-item') : null;
+                if (!item || !listEl.contains(item)) return;
+                const pageIndex = Number(item.dataset.pageIndex);
+                selectPageNavItem(pageIndex, false);
+                goToPageIndex(pageIndex);
+            });
+            listEl.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                const item = event.target instanceof Element ? event.target.closest('.page-nav-item') : null;
+                if (!item || !listEl.contains(item)) return;
+                event.preventDefault();
+                item.click();
+            });
+            listEl.dataset.pageNavEventsInitialized = 'true';
         }
 
-        function closePageSearch() {
-            document.getElementById('drawer-search-pages').classList.remove('expanded');
-            const toggle = document.getElementById('page-search-toggle');
-            toggle.dataset.tooltip = 'עבור לדף לפי מספר';
-            toggle.setAttribute('aria-expanded', 'false');
-            document.getElementById('page-filter').value = '';
-            filterPageNav();
-            document.getElementById('page-search-toggle').focus();
+        function resetPageNavThumbnailState() {
+            if (pageNavThumbnailObserver) {
+                pageNavThumbnailObserver.disconnect();
+                pageNavThumbnailObserver = null;
+            }
+            pageNavSourcePages = [];
+            pageNavSelectedItem = null;
+            const listEl = document.getElementById('page-nav-list');
+            if (listEl) listEl.innerHTML = '';
+        }
+
+        function clearPageNavThumbnail(item) {
+            const frame = item.querySelector('.page-thumbnail-frame');
+            if (!frame) return;
+            frame.innerHTML = '';
+            frame.classList.remove('is-rendered');
+        }
+
+        function renderPageNavThumbnail(item) {
+            if (item.querySelector('.page-thumbnail-stage')) return;
+            const pageIndex = Number(item.dataset.pageIndex);
+            const sourcePage = pageNavSourcePages[pageIndex];
+            const frame = item.querySelector('.page-thumbnail-frame');
+            if (!sourcePage || !frame) return;
+
+            const pageStyle = getComputedStyle(sourcePage);
+            const pageWidth = parseFloat(pageStyle.width);
+            const pageHeight = parseFloat(pageStyle.height);
+            const frameWidth = frame.clientWidth;
+            const frameHeight = frame.clientHeight;
+            if (!(pageWidth > 0 && pageHeight > 0 && frameWidth > 0 && frameHeight > 0)) return;
+
+            const scale = Math.min(frameWidth / pageWidth, frameHeight / pageHeight);
+            const stage = document.createElement('div');
+            stage.className = 'page-thumbnail-stage';
+            stage.style.width = `${pageWidth * scale}px`;
+            stage.style.height = `${pageHeight * scale}px`;
+
+            const clone = sourcePage.cloneNode(true);
+            clone.classList.remove('front', 'back');
+            clone.removeAttribute('id');
+            clone.removeAttribute('data-line-idx');
+            clone.setAttribute('aria-hidden', 'true');
+            clone.setAttribute('inert', '');
+            clone.style.position = 'absolute';
+            clone.style.top = '0';
+            clone.style.left = '0';
+            clone.style.width = `${pageWidth}px`;
+            clone.style.height = `${pageHeight}px`;
+            clone.style.margin = '0';
+            clone.style.zoom = '1';
+            clone.style.transform = `scale(${scale})`;
+            clone.style.transformOrigin = 'top left';
+            clone.style.boxShadow = 'none';
+            clone.style.pointerEvents = 'none';
+
+            clone.querySelectorAll('iframe, video, audio, canvas, object, embed, button, input, textarea, select')
+                .forEach((element) => element.remove());
+            clone.querySelectorAll('a').forEach((link) => {
+                link.removeAttribute('href');
+                link.removeAttribute('target');
+                link.removeAttribute('download');
+            });
+            clone.querySelectorAll('img').forEach((image) => {
+                image.loading = 'lazy';
+                image.decoding = 'async';
+            });
+
+            [clone, ...clone.querySelectorAll('*')].forEach((element) => {
+                element.removeAttribute('id');
+                element.removeAttribute('data-line-idx');
+                element.removeAttribute('tabindex');
+                element.removeAttribute('contenteditable');
+                Array.from(element.attributes).forEach((attribute) => {
+                    if (attribute.name.toLowerCase().startsWith('on')) {
+                        element.removeAttribute(attribute.name);
+                    }
+                });
+            });
+
+            stage.appendChild(clone);
+            frame.innerHTML = '';
+            frame.appendChild(stage);
+            frame.classList.add('is-rendered');
+        }
+
+        function createPageNavThumbnailObserver(listEl) {
+            if (!('IntersectionObserver' in window)) return;
+            pageNavThumbnailObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        renderPageNavThumbnail(entry.target);
+                    } else {
+                        clearPageNavThumbnail(entry.target);
+                    }
+                });
+            }, {
+                root: listEl,
+                rootMargin: '160px 0px'
+            });
+        }
+
+        function selectPageNavItem(pageIndex, scrollIntoView) {
+            const listEl = document.getElementById('page-nav-list');
+            if (!listEl) return;
+            const selectedItem = listEl.querySelector(`.page-nav-item[data-page-index="${pageIndex}"]`);
+            if (!selectedItem) return;
+            if (pageNavSelectedItem && pageNavSelectedItem !== selectedItem) {
+                pageNavSelectedItem.classList.remove('active-item');
+                pageNavSelectedItem.setAttribute('aria-pressed', 'false');
+            }
+            selectedItem.classList.add('active-item');
+            selectedItem.setAttribute('aria-pressed', 'true');
+            pageNavSelectedItem = selectedItem;
+
+            if (!scrollIntoView || selectedItem.style.display === 'none') return;
+            const listRect = listEl.getBoundingClientRect();
+            const itemRect = selectedItem.getBoundingClientRect();
+            if (itemRect.top < listRect.top || itemRect.bottom > listRect.bottom) {
+                listEl.scrollTop += itemRect.top - listRect.top - (listEl.clientHeight - itemRect.height) / 2;
+            }
         }
 
         // בניית רשימת ניווט לפי מספרי דפים - לחיצה על דף קופצת אליו ישירות, בלי תלות בכותרות
@@ -1223,46 +1368,53 @@ const previewArea = document.getElementById('preview-area');
             const previewArea = document.getElementById('preview-area');
             const listEl = document.getElementById('page-nav-list');
             if (!listEl) return;
+            initializePageNavEvents(listEl);
 
             const pages = Array.from(previewArea.querySelectorAll('.print-page'));
             if (pages.length === 0) {
+                resetPageNavThumbnailState();
                 listEl.innerHTML = '<div style="padding: 20px; color: var(--color-outline); text-align: center;">יש לטעון ספר כדי לראות רשימת דפים.</div>';
                 return;
             }
 
-            listEl.innerHTML = '';
+            const previousPageCount = pageNavSourcePages.length;
+            const isSamePageList = pages.length === previousPageCount &&
+                pages.every((pageEl, idx) => pageEl === pageNavSourcePages[idx]);
+            const isAppendingPages = pages.length > previousPageCount &&
+                pageNavSourcePages.every((pageEl, idx) => pageEl === pages[idx]);
+            if (isSamePageList) return;
+
+            if (!isAppendingPages) {
+                resetPageNavThumbnailState();
+                listEl.innerHTML = '';
+                createPageNavThumbnailObserver(listEl);
+            } else if (!listEl.querySelector('.page-nav-item')) {
+                listEl.innerHTML = '';
+                createPageNavThumbnailObserver(listEl);
+            }
+
+            pageNavSourcePages = pages;
+            const firstNewPageIndex = isAppendingPages ? previousPageCount : 0;
             pages.forEach((pageEl, idx) => {
+                if (isAppendingPages && idx < firstNewPageIndex) return;
                 const item = document.createElement('div');
                 item.className = 'toc-item page-nav-item';
+                item.dataset.pageIndex = String(idx);
+                item.setAttribute('role', 'button');
+                item.setAttribute('aria-pressed', 'false');
+                item.setAttribute('aria-label', `עמוד ${idx + 1}`);
+                item.tabIndex = 0;
                 const humanNum = idx + 1;
-                item.dataset.pageNumber = String(humanNum);
-                const gem = numToGematria(humanNum);
-                item.innerHTML = `${fluentIconHTML('document_pdf')}<span class="toc-text">${gem} <span style="color: var(--color-on-surface-subtle); font-weight: 400;">(${humanNum})</span></span>`;
-                item.onclick = () => goToPageIndex(idx);
+                const thumbnail = document.createElement('div');
+                thumbnail.className = 'page-thumbnail-frame';
+                thumbnail.setAttribute('aria-hidden', 'true');
+                const label = document.createElement('span');
+                label.className = 'page-thumbnail-label';
+                label.textContent = String(humanNum);
+                item.append(thumbnail, label);
                 listEl.appendChild(item);
+                if (pageNavThumbnailObserver) pageNavThumbnailObserver.observe(item);
             });
-            filterPageNav();
-        }
-
-        function filterPageNav() {
-            const query = document.getElementById('page-filter').value.trim();
-            document.querySelectorAll('#page-nav-list .page-nav-item').forEach((item) => {
-                item.style.display = !query || item.dataset.pageNumber.includes(query) ? 'flex' : 'none';
-            });
-        }
-
-        function handlePageNavKeydown(event) {
-            if (event.key === 'Escape') {
-                event.preventDefault();
-                closePageSearch();
-                return;
-            }
-            if (event.key !== 'Enter') return;
-            event.preventDefault();
-            const pageNumber = parseInt(document.getElementById('page-filter').value.trim(), 10);
-            if (Number.isInteger(pageNumber) && pageNumber > 0) {
-                goToPageIndex(pageNumber - 1);
-            }
         }
 
         // קפיצה ישירה לעמוד לפי אינדקס - תומך גם בתצוגת גלילה וגם בתצוגת ספר דו-עמודי
@@ -1271,6 +1423,7 @@ const previewArea = document.getElementById('preview-area');
             const pages = Array.from(previewArea.querySelectorAll('.print-page'));
             if (pageIndex < 0 || pageIndex >= pages.length) return;
 
+            selectPageNavItem(pageIndex, false);
             isScrollingFromTOC = true;
 
             if (currentSettings.isBookView) {
