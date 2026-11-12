@@ -497,24 +497,28 @@
         updateCommentaryExpandAllButtonUI(tab);
     }
 
-    // === כיווץ/הרחבה של קבוצות מפרשים/קישורים ===
-    // מצב הכיווץ עצמאי לכל טאב, ועצמאי בין לשונית "מפרשים" ללשונית "קישורים" (כל אחת עם המפה
-    // שלה) - בדיוק כמו _expansionStates באוצריא עצמה. מפתח חסר במפה = מכווץ (ברירת המחדל בפתיחת
-    // החלונית היא הכל מכווץ, כפי שהתבקש).
+    // === כיווץ/הרחבה של קבוצות מפרשים וקישורים ===
+    // מצב הכיווץ עצמאי לכל טאב ולכל לשונית. מפתח חסר מתחיל פתוח במפרשים וסגור בקישורים,
+    // כמו ברירות המחדל באוצריא.
     function getCommentaryExpandState(tab, subTabKey) {
         const key = subTabKey === 'links' ? 'linksGroupExpandState' : 'mefarshimGroupExpandState';
         if (!tab[key]) tab[key] = {};
         return tab[key];
     }
 
-    // שמות הקבוצות (כותרות) המוצגות כרגע בפועל בלשונית הנתונה, לפי אותו סדר שבו הן מרונדרות -
-    // משמש גם את הרינדור עצמו וגם את כפתור "הרחב/כווץ הכל" כדי לדעת על אילו קבוצות לפעול.
+    function isCommentaryGroupExpanded(tab, subTabKey, name) {
+        const state = getCommentaryExpandState(tab, subTabKey)[name];
+        return typeof state === 'boolean' ? state : subTabKey !== 'links';
+    }
+
+    function getLinkEntryKey(entry) {
+        return JSON.stringify([entry.sourceLine, entry.targetTitle, entry.targetHeRef, entry.content]);
+    }
+
+    // מזהי הקבוצות והקישורים המוצגים, לפי סדר הרינדור, עבור כפתור "הרחב/כווץ הכל".
     function getCommentaryGroupNamesForSubTab(tab, subTabKey) {
         if (subTabKey === 'links') {
-            const entries = tab.linksEntries || [];
-            const order = [];
-            entries.forEach(e => { if (!order.includes(e.targetTitle)) order.push(e.targetTitle); });
-            return order;
+            return Array.from(new Set((tab.linksEntries || []).map(getLinkEntryKey)));
         }
         const entries = tab.commentaryEntries || [];
         const activeNames = tab.activeCommentators || [];
@@ -523,7 +527,7 @@
 
     function toggleCommentaryGroupExpand(tab, subTabKey, name) {
         const stateMap = getCommentaryExpandState(tab, subTabKey);
-        stateMap[name] = !stateMap[name];
+        stateMap[name] = !isCommentaryGroupExpanded(tab, subTabKey, name);
         renderCommentaryBody(tab);
     }
 
@@ -538,7 +542,7 @@
         const names = getCommentaryGroupNamesForSubTab(tab, subTabKey);
         if (names.length === 0) return;
         const stateMap = getCommentaryExpandState(tab, subTabKey);
-        const allExpanded = names.every(n => stateMap[n]);
+        const allExpanded = names.every(n => isCommentaryGroupExpanded(tab, subTabKey, n));
         const newVal = !allExpanded;
         names.forEach(n => { stateMap[n] = newVal; });
         renderCommentaryBody(tab);
@@ -558,8 +562,7 @@
         const subTabKey = subTab === 'links' ? 'links' : 'commentary';
         const names = getCommentaryGroupNamesForSubTab(tab, subTabKey);
         btn.disabled = names.length === 0;
-        const stateMap = getCommentaryExpandState(tab, subTabKey);
-        const allExpanded = names.length > 0 && names.every(n => stateMap[n]);
+        const allExpanded = names.length > 0 && names.every(n => isCommentaryGroupExpanded(tab, subTabKey, n));
         const label = subTab === 'links' ? 'הקישורים' : 'המפרשים';
         const iconName = allExpanded ? 'arrow_collapse_all' : 'arrow_expand_all';
         const tooltip = (allExpanded ? 'כווץ את כל ' : 'הרחב את כל ') + label;
@@ -569,12 +572,9 @@
         btn.setAttribute('aria-label', tooltip);
     }
 
-    // בונה DOM עבור קבוצת מפרשים/קישורים אחת: כותרת לחיצה (חץ + שם) שמרחיבה/מכווצת, ותוכן
-    // (רשימת ה"פגיעות" של אותו מפרש/קישור בטווח המוצג) - מוסתר כברירת מחדל (ראו
-    // getCommentaryExpandState). subTabKey קובע לאיזו מפת כיווץ (מפרשים/קישורים) הקבוצה שייכת.
-    function buildCommentaryEntryGroupEl(tab, subTabKey, name, forThis) {
-        const stateMap = getCommentaryExpandState(tab, subTabKey);
-        const isExpanded = Boolean(stateMap[name]);
+    // בונה קבוצת מפרשים או פריט קישור, עם כותרת לחיצה ותוכן נפתח.
+    function buildCommentaryEntryGroupEl(tab, subTabKey, name, forThis, displayTitle = name) {
+        const isExpanded = isCommentaryGroupExpanded(tab, subTabKey, name);
 
         const groupEl = document.createElement('div');
         groupEl.className = 'commentary-entry-group';
@@ -590,12 +590,21 @@
         chevronEl.className = 'commentary-entry-group-chevron';
         chevronEl.innerHTML = fluentIconHTML('chevron_down', 'rotate-90');
 
+        const headingEl = document.createElement('span');
+        headingEl.className = 'commentary-entry-group-heading';
         const titleEl = document.createElement('span');
         titleEl.className = 'commentary-entry-group-title';
-        titleEl.textContent = name;
+        titleEl.textContent = displayTitle;
+        headingEl.appendChild(titleEl);
+        if (subTabKey === 'links' && forThis[0].targetHeRef) {
+            const subtitleEl = document.createElement('span');
+            subtitleEl.className = 'commentary-entry-group-subtitle';
+            subtitleEl.textContent = forThis[0].targetHeRef;
+            headingEl.appendChild(subtitleEl);
+        }
 
         headerEl.appendChild(chevronEl);
-        headerEl.appendChild(titleEl);
+        headerEl.appendChild(headingEl);
         const onToggle = () => toggleCommentaryGroupExpand(tab, subTabKey, name);
         headerEl.addEventListener('click', onToggle);
         headerEl.addEventListener('keydown', (e) => {
@@ -613,7 +622,7 @@
         forThis.forEach(entry => {
             const entryEl = document.createElement('div');
             entryEl.className = 'commentary-entry';
-            if (entry.targetHeRef) {
+            if (subTabKey !== 'links' && entry.targetHeRef) {
                 const refEl = document.createElement('div');
                 refEl.className = 'commentary-entry-ref';
                 refEl.textContent = entry.targetHeRef;
@@ -621,7 +630,12 @@
             }
             const contentEl = document.createElement('div');
             contentEl.className = 'commentary-entry-content';
-            contentEl.innerHTML = applyCommentaryTextFilters(entry.content || '');
+            if (subTabKey === 'links' && !entry.content) {
+                contentEl.classList.add('is-empty');
+                contentEl.textContent = 'אין תוכן זמין';
+            } else {
+                contentEl.innerHTML = applyCommentaryTextFilters(entry.content || '');
+            }
             entryEl.appendChild(contentEl);
             contentWrapEl.appendChild(entryEl);
         });
@@ -692,8 +706,8 @@
 
         body.innerHTML = '';
         // קיבוץ לפי מפרש, בסדר הבחירה של המשתמש (tab.activeCommentators) - כל מפרש עם רשימת
-        // ה"פגיעות" שלו על הטווח המוצג, ממוינות לפי שורת המקור. כל קבוצה מוצגת מכווצת כברירת
-        // מחדל, עם כותרת לחיצה שמרחיבה/מכווצת אותה (ראו buildCommentaryEntryGroupEl).
+        // ה"פגיעות" שלו על הטווח המוצג, ממוינות לפי שורת המקור. הקבוצות פתוחות כברירת מחדל,
+        // כמו ברשימת המפרשים באוצריא.
         tab.activeCommentators.forEach(name => {
             const forThis = entries.filter(e => e.targetTitle === name).sort((a, b) => a.sourceLine - b.sourceLine);
             if (forThis.length === 0) return;
@@ -705,8 +719,7 @@
     }
 
     // לשונית "קישורים" - הפניות/תרגומים וכדומה (כל קישור שאינו מפרש, isCommentary===false) על
-    // הטווח המוצג. בניגוד ללשונית "מפרשים" - אין כאן בחירה ידנית של המשתמש; מוצגים כל הקישורים
-    // הלא-מפרשיים שנמצאו, מקובצים לפי כותרת היעד לפי סדר הופעתם הראשון בטווח.
+    // הטווח המוצג. כל קישור מוצג כפריט נפרד עם כותרת והפניה, כמו ברשימת הקישורים באוצריא.
     function renderCommentaryLinksBody(tab, body) {
         if (tab.linksContentLoading) {
             renderCommentaryPanelStatus(body, 'טוען קישורים...', true);
@@ -723,11 +736,15 @@
         }
 
         body.innerHTML = '';
-        const order = getCommentaryGroupNamesForSubTab(tab, 'links');
-        order.forEach(name => {
-            const forThis = entries.filter(e => e.targetTitle === name).sort((a, b) => a.sourceLine - b.sourceLine);
-            if (forThis.length === 0) return;
-            body.appendChild(buildCommentaryEntryGroupEl(tab, 'links', name, forThis));
+        entries.slice().sort((a, b) => a.sourceLine - b.sourceLine).forEach(entry => {
+            const entryKey = getLinkEntryKey(entry);
+            body.appendChild(buildCommentaryEntryGroupEl(
+                tab,
+                'links',
+                entryKey,
+                [entry],
+                entry.targetTitle
+            ));
         });
         if (!body.firstChild) {
             renderCommentaryEmptyState(body, 'links', 'אין קישורים לטקסט הנראה במסך');

@@ -130,8 +130,8 @@
             // לגמרי מהגדרות הטקסט הראשי ומהגדרות ההערות שמעליהן, ומהגדרות הספר. כל הערכים
             // כאן null/false כברירת מחדל: null בגופן = עוקב אחרי גופן "מפרשים" של התוכנה עצמה
             // (commentatorsFontFamily, לא גופן הטקסט הרגיל) - ראו applyTheme. null בגודל/מרווח
-            // שורות = נופל לערך הקבוע שהוגדר ב-CSS (--font-size-commentary-panel/
-            // --line-height-commentary-panel). דגלי ההסתרה עצמאיים לחלוטין מ-hideNikud/
+            // שורות = עוקב אחרי ברירות המחדל של אוצריא ב-CSS (--font-size-commentators/
+            // --line-height-book), עם אפשרות לדריסה עצמאית כאן. דגלי ההסתרה עצמאיים לחלוטין מ-hideNikud/
             // hideTeamim/hidePunctuation של הספר - ראו applyCommentaryTextFilters.
             commentaryFontFamily: null,
             commentaryFontSize: null,

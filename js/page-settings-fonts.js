@@ -223,14 +223,14 @@
             const input = document.getElementById('setting-commentary-font-size');
             const label = document.getElementById('setting-commentary-font-size-val');
             if (input && label) {
-                const effective = val || 12;
+                const effective = val || 16.5;
                 input.value = effective;
                 label.innerText = effective + 'pt';
             }
         }
 
         function updateCommentaryFontSizeValue(val) {
-            const value = parseInt(val, 10);
+            const value = parseFloat(val);
             currentSettings.commentaryFontSize = value;
             document.documentElement.style.setProperty('--font-size-commentary-panel', value + 'pt');
             const label = document.getElementById('setting-commentary-font-size-val');
@@ -247,7 +247,7 @@
             const input = document.getElementById('setting-commentary-line-height');
             const label = document.getElementById('setting-commentary-line-height-val');
             if (input && label) {
-                const effective = val || 1.55;
+                const effective = val || 1.5;
                 input.value = effective;
                 label.innerText = effective.toFixed(2);
             }

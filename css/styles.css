@@ -80,8 +80,8 @@
             --font-commentators: 'Shofar', serif;
             --font-size-book: 14pt;
             --font-size-commentators: 22px;
-            --font-size-commentary-panel: 12pt;
-            --line-height-commentary-panel: 1.55;
+            --font-size-commentary-panel: var(--font-size-commentators);
+            --line-height-commentary-panel: var(--line-height-book);
             --commentary-panel-bg-color: #F6EDE5;
             --line-height-book: 1.5;
             --paragraph-spacing: 0.3em;
@@ -526,7 +526,7 @@
 
         /* כותרת קבוצת מפרשים/קישורים - השורה כולה (כולל החץ) לחיצה אחת שמרחיבה/מכווצת את
            תוכן הקבוצה, בדיוק כמו _CommentaryGroupHeader באוצריא עצמה (InkWell על כל השורה,
-           לא רק על אייקון החץ). ברירת המחדל בפתיחת החלונית היא מכווץ - ראו commentaryExpandState.
+           לא רק על אייקון החץ). המפרשים מתחילים פתוחים והקישורים סגורים, כמו באוצריא.
            הכותרת אינה עוד "נדבקת" (position: sticky) בגלילה - כשגוללים בתוך מפרש ארוך שפתוח,
            הכותרת שלו נגללת פנימה יחד עם שאר התוכן, בלי להישאר קבועה למעלה.
            הריחוף (hover) על הכותרת חייב למלא את כל הרוחב מקצה לקצה (בדיוק כמו קו ההפרדה
@@ -547,6 +547,10 @@
             user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
+        .commentary-entry-group[data-subtab="links"] .commentary-entry-group-header {
+            gap: 16px;
+            padding-block: 8px;
+        }
         .commentary-entry-group-header:hover { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
         .commentary-entry-group-header:active { background: color-mix(in srgb, var(--color-on-surface) 12%, transparent); }
         .commentary-entry-group-header:focus-visible {
@@ -565,8 +569,18 @@
             transform: rotate(0deg);
         }
         .commentary-entry-group[data-subtab="links"] .commentary-entry-group-chevron { color: var(--color-on-surface-variant); }
+        .commentary-entry-group[data-subtab="links"] .commentary-entry-group-chevron {
+            width: 40px;
+            height: 40px;
+        }
         .commentary-entry-group-chevron .ui-icon { width: 20px; font-size: 20px; height: 20px; color: currentColor; }
         .commentary-entry-group-header.expanded .commentary-entry-group-chevron { transform: rotate(-90deg); }
+        .commentary-entry-group-heading {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-width: 0;
+        }
         .commentary-entry-group-title {
             font-weight: 700;
             color: var(--color-on-surface);
@@ -574,17 +588,24 @@
             flex: 1 1 auto;
             min-width: 0;
         }
-        .commentary-entry-group[data-subtab="commentary"] { font-size: var(--font-size-book); }
+        .commentary-entry-group-subtitle {
+            color: color-mix(in srgb, var(--color-on-surface) 50%, transparent);
+            font-family: var(--font-commentators);
+            font-size: calc(var(--font-size-commentators) - 4px);
+            font-weight: 400;
+        }
+        .commentary-entry-group[data-subtab="commentary"] { font-size: var(--font-size-commentators); }
         .commentary-entry-group[data-subtab="commentary"] .commentary-entry-group-title { font-size: 0.85em; }
         .commentary-entry-group[data-subtab="links"] { font-size: var(--font-size-commentators); }
         .commentary-entry-group[data-subtab="links"] .commentary-entry-group-title { font-size: calc(var(--font-size-commentators) - 2px); }
-        .commentary-entry-group-content { padding: 10px 0 16px; }
-        .commentary-entry { margin-bottom: 10px; }
-        .commentary-entry:last-child { margin-bottom: 0; }
+        .commentary-entry-group[data-subtab="commentary"] .commentary-entry-group-content { margin-inline: -14px; }
+        .commentary-entry-group[data-subtab="links"] .commentary-entry-group-content { padding: 20px 14px; }
+        .commentary-entry { margin: 0; }
+        .commentary-entry-group[data-subtab="commentary"] .commentary-entry { padding: 8px 32px 8px 16px; }
         .commentary-entry-ref {
-            font-size: 0.75rem;
-            color: var(--color-on-surface-subtle);
-            margin-bottom: 2px;
+            font-size: calc(var(--font-size-commentators) * 0.75);
+            color: color-mix(in srgb, var(--color-on-surface) 50%, transparent);
+            margin-bottom: 4px;
             font-family: var(--font-commentators);
         }
         /* הסתרת הכותרות (המקור) שלפני כל קטע בחלונית המפרשים - ראו updateCommentaryShowRefsSetting.
@@ -596,6 +617,11 @@
             line-height: var(--line-height-commentary-panel);
             font-family: var(--font-commentators);
             text-align: justify;
+            color: var(--color-on-surface);
+        }
+        .commentary-entry-content a { color: var(--color-primary); }
+        .commentary-entry-content.is-empty {
+            color: color-mix(in srgb, var(--color-on-surface) 59%, transparent);
         }
 
         /* === לשונית "בחירת מפרשים" - מסך מלא בתוך גוף החלונית (לא עוד פופאובר צף), בדיוק כמו
