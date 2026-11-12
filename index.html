@@ -851,24 +851,24 @@
                     <div class="drawer-search active" id="drawer-search-book">
                         <div class="drawer-search-field">
                             <input type="text" id="book-search" placeholder="חפש כאן..." oninput="handleDrawerSearch()" onkeydown="handleBookSearchKeydown(event)" data-tooltip="חיפוש בתוכן הספר. Enter לתוצאה הבאה, Shift+Enter לקודמת">
-                            <i class="ui-icon" data-fluent-icon="search" aria-hidden="true"></i>
+                            <i class="ui-icon otzaria-icon" data-otzaria-icon="search" aria-hidden="true"></i>
+                            <button type="button" class="drawer-search-clear" id="book-search-clear" onclick="clearBookSearch()" data-tooltip="נקה" aria-label="נקה">
+                                <i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i>
+                            </button>
                         </div>
                     </div>
                     <div class="search-results-panel">
                         <div class="search-results-title">תוצאות חיפוש בספר</div>
                         <div class="search-results-nav">
-                            <span id="search-results-count"></span>
-                            <button type="button" onclick="prevSearchResult()" data-tooltip="תוצאה קודמת (Shift+Enter)">
+                            <button type="button" id="prev-search-result" onclick="prevSearchResult()" data-tooltip="תוצאה קודמת (Shift+Enter)">
                                 <i class="ui-icon" data-fluent-icon="chevron_up" aria-hidden="true"></i>
                             </button>
-                            <button type="button" onclick="nextSearchResult()" data-tooltip="תוצאה הבאה (Enter)">
+                            <button type="button" id="next-search-result" onclick="nextSearchResult()" data-tooltip="תוצאה הבאה (Enter)">
                                 <i class="ui-icon" data-fluent-icon="chevron_down" aria-hidden="true"></i>
                             </button>
                         </div>
                     </div>
-                    <div class="drawer-content" id="search-results-list">
-                        <div class="search-empty">הקלד מילה לחיפוש בתוכן הספר. התוצאות יופיעו כאן עם נתיב הכותרות והקשר סביב המילה.</div>
-                    </div>
+                    <div class="drawer-content" id="search-results-list"></div>
                 </div>
 
                 <div class="drawer-pane" id="drawer-pane-pages">

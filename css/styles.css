@@ -1875,7 +1875,7 @@
 
         #drawer-search-book.active {
             display: block;
-            padding: 10px 12px 4px;
+            padding: 8px;
         }
         
         .drawer-search input {
@@ -1979,6 +1979,47 @@
             color: currentColor;
         }
 
+        #drawer-search-book .drawer-search-field input {
+            height: 48px;
+            padding: 0 44px 0 40px;
+            border: 0;
+            border-radius: 8px;
+            background: color-mix(in srgb, var(--color-on-surface) 7%, transparent);
+            font-family: var(--font-ui);
+            font-size: 16px;
+            line-height: 1.4;
+            transition: background-color 0.15s;
+        }
+
+        #drawer-search-book .drawer-search-field input:focus {
+            border-color: transparent;
+            background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+        }
+
+        #drawer-search-book .drawer-search-field > .otzaria-icon {
+            right: 12px;
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
+            color: var(--color-on-surface-variant);
+        }
+
+        #drawer-search-book.has-query .drawer-search-clear {
+            display: flex;
+            height: 48px;
+        }
+
+        body.app-compact-density #drawer-search-book .drawer-search-field input {
+            height: 36px;
+            padding: 0 36px 0 32px;
+            font-size: 13px;
+        }
+
+        body.app-compact-density #drawer-search-book.has-query .drawer-search-clear {
+            width: 32px;
+            height: 36px;
+        }
+
         .drawer-search-close .ui-icon {
             position: static;
             transform: none;
@@ -1995,6 +2036,12 @@
             direction: ltr;
             scrollbar-width: thin;
             scrollbar-color: color-mix(in srgb, var(--color-outline) 45%, transparent) transparent;
+        }
+
+        #search-results-list.drawer-content {
+            margin: 0;
+            border-radius: 0;
+            background: var(--color-nav-panel-background);
         }
 
         .drawer-content > * {
@@ -2082,49 +2129,58 @@
             align-items: center;
             justify-content: space-between;
             gap: 8px;
-            padding: 12px 12px 8px;
-            border-bottom: 1px solid var(--color-border-subtle);
-            background: var(--color-nav-panel-background);
+            padding: 4px 16px;
+            background: transparent;
+        }
+
+        #drawer-pane-search:not(.has-results) .search-results-panel {
+            display: none;
         }
 
         .search-results-title {
-            font-size: 0.88rem;
-            color: var(--color-on-surface-subtle);
-            font-weight: 600;
+            font-size: 12px;
+            color: var(--color-on-surface-variant);
+            font-weight: 400;
         }
 
         .search-result-group {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 0;
+        }
+
+        .search-result-items {
+            margin: 0 14px;
+            overflow: hidden;
+            border-radius: var(--radius-md);
+            background: var(--color-card-background);
         }
 
         .search-result-item {
             display: block;
-            width: 260px;
-            max-width: calc(100% - 8px);
-            min-height: 72px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: none;
+            margin: 0;
             box-sizing: border-box;
-            border: 1px solid var(--color-border-subtle);
-            border-radius: 12px;
+            border: 0;
+            border-radius: 0;
             padding: 10px 12px;
-            background: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
+            background: transparent;
             cursor: pointer;
             text-align: right;
-            transition: background 0.15s, border-color 0.15s, transform 0.15s;
+            transition: background 0.15s;
+        }
+
+        .search-result-item + .search-result-item {
+            border-top: 1.5px solid var(--color-panel-background);
         }
 
         .search-result-item:hover {
-            background: var(--color-primary-subtle);
-            border-color: var(--color-primary);
-            transform: translateY(-1px);
+            background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
         }
 
         .search-result-item.active {
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 2px var(--color-primary-subtle);
+            background: var(--color-secondary-container);
         }
 
         .search-results-nav {
@@ -2141,17 +2197,32 @@
 
         .search-results-nav button {
             background: none;
-            border: 1px solid var(--color-border-subtle);
-            border-radius: var(--radius-sm);
+            border: 0;
+            border-radius: var(--radius-pill);
             cursor: pointer;
-            padding: 3px;
-            color: var(--color-on-surface-subtle);
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            color: var(--color-on-surface-variant);
             display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.15s, color 0.15s;
         }
 
         .search-results-nav button:hover {
-            border-color: var(--color-primary);
-            color: var(--color-primary);
+            background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
+            color: var(--color-on-surface);
+        }
+
+        .search-results-nav button:disabled {
+            color: var(--color-on-surface-variant);
+            opacity: 0.38;
+            cursor: default;
+        }
+
+        .search-results-nav button:disabled:hover {
+            background: transparent;
         }
 
         .search-results-nav button .ui-icon {
@@ -2164,39 +2235,44 @@
         #search-results-list {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            padding: 8px 10px 12px;
+            gap: 0;
+            padding: 6px 0;
             box-sizing: border-box;
         }
 
         .search-result-path {
-            font-size: 0.82rem;
+            font-size: 14px;
             color: var(--color-primary);
-            margin: 0 4px 2px;
-            padding: 0 0 4px;
-            border-bottom: 1px solid var(--color-border-subtle);
-            font-weight: 600;
+            margin: 0;
+            padding: 10px 26px 8px;
+            font-weight: 700;
         }
 
         .search-result-snippet {
             /* אותו גופן כמו בספר עצמו, לא גופן ברירת המחדל של הממשק */
             font-family: var(--font-book);
-            font-size: 0.92rem;
-            line-height: 1.45;
+            font-size: 16px;
+            line-height: 1.5;
             color: var(--color-on-surface);
+            text-align: justify;
         }
 
-        /* הדגשת תוצאות חיפוש בצבע הערכה של התוכנה (primary) במקום אדום צורם */
-        /* צבע הדגשה רך (שקוף למחצה) - משמש גם לתוצאות חיפוש וגם לסימון טקסט (::selection), כך ששניהם נראים אותו דבר */
+        /* הדגשת גוף הספר בצבע הערכה; בתוצאות עצמן אוצריא משתמשת בצבע השגיאה. */
         :root { --search-hl-bg: color-mix(in srgb, var(--color-primary) 24%, transparent); }
 
-        .search-result-snippet mark,
         .search-highlight {
             background: var(--search-hl-bg);
             color: inherit;
             font-weight: 700;
             border-radius: 3px;
             padding: 0 1px;
+        }
+
+        .search-result-snippet mark {
+            background: transparent;
+            color: var(--color-error);
+            font-size: 18px;
+            font-weight: 700;
         }
 
         /* התוצאה הנוכחית: אותו צבע, מעט עמוק יותר כדי שתבלוט מבין שאר התוצאות - ועדיין רך, בלי טקסט לבן */
@@ -2211,7 +2287,11 @@
 
         .search-empty {
             padding: 18px 16px;
-            color: var(--color-outline);
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-on-surface-variant);
             text-align: center;
             font-size: 0.92rem;
         }

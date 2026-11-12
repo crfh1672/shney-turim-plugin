@@ -206,6 +206,10 @@
 let searchDebounceTimer = null;
         function handleDrawerSearch() {
             if (currentRailTab === 'search') {
+                document.getElementById('drawer-search-book')?.classList.toggle(
+                    'has-query',
+                    Boolean(document.getElementById('book-search')?.value)
+                );
                 // ביטול החיפוש הקודם אם המשתמש עדיין מקליד
                 clearTimeout(searchDebounceTimer);
                 
@@ -216,6 +220,15 @@ let searchDebounceTimer = null;
             } else {
                 filterTOC();
             }
+        }
+
+        function clearBookSearch() {
+            const input = document.getElementById('book-search');
+            input.value = '';
+            document.getElementById('drawer-search-book')?.classList.remove('has-query');
+            clearTimeout(searchDebounceTimer);
+            searchInBook();
+            input.focus();
         }
 
         function refreshSearchIfActive() {
@@ -867,13 +880,17 @@ function buildTOCCore() {
         }
 
         function groupResultsByPath(results) {
-            const groups = new Map();
+            const groups = [];
             results.forEach((result) => {
                 const key = result.path || 'כל הספר';
-                if (!groups.has(key)) groups.set(key, []);
-                groups.get(key).push(result);
+                let group = groups[groups.length - 1];
+                if (!group || group[0] !== key) {
+                    group = [key, []];
+                    groups.push(group);
+                }
+                group[1].push(result);
             });
-            return Array.from(groups.entries());
+            return groups;
         }
 
         // מעבר אל תוצאת חיפוש (אלמנט <mark class="search-highlight">) - גם דרך לחיצה על תוצאה
@@ -909,13 +926,15 @@ function buildTOCCore() {
         let lastSearchedQuery = null;
 
         function updateSearchResultCount() {
-            const countEl = document.getElementById('search-results-count');
-            if (!countEl) return;
-            if (currentSearchResults.length === 0) {
-                countEl.textContent = '';
-            } else {
-                const pos = currentSearchResultIndex >= 0 ? currentSearchResultIndex + 1 : 0;
-                countEl.textContent = `${pos} / ${currentSearchResults.length}`;
+            const title = document.querySelector('.search-results-title');
+            const previousButton = document.getElementById('prev-search-result');
+            const nextButton = document.getElementById('next-search-result');
+            const total = currentSearchResults.length;
+            document.getElementById('drawer-pane-search')?.classList.toggle('has-results', total > 0);
+            if (title) title.textContent = total ? `נמצאו ${total} תוצאות` : '';
+            if (previousButton) previousButton.disabled = !total || currentSearchResultIndex <= 0;
+            if (nextButton) {
+                nextButton.disabled = !total || Math.max(currentSearchResultIndex, 0) >= total - 1;
             }
         }
 
@@ -991,7 +1010,7 @@ function searchInBook() {
             currentSearchResultIndex = -1;
 
             if (!query) {
-                resultsBox.innerHTML = '<div class="search-empty">הקלד מילה לחיפוש בתוכן הספר. התוצאות יופיעו כאן עם נתיב הכותרות והקשר סביב המילה.</div>';
+                resultsBox.innerHTML = '';
                 updateSearchResultCount();
                 if (posState) restorePositionState(posState);
                 return;
@@ -1059,6 +1078,8 @@ function searchInBook() {
                 pathLabel.textContent = path;
                 group.appendChild(pathLabel);
 
+                const items = document.createElement('div');
+                items.className = 'search-result-items';
                 pathResults.forEach((result) => {
                     const item = document.createElement('button');
                     item.type = 'button';
@@ -1072,9 +1093,10 @@ function searchInBook() {
                     item.addEventListener('click', () => {
                         setActiveSearchResult(resultIndex);
                     });
-                    group.appendChild(item);
+                    items.appendChild(item);
                 });
 
+                group.appendChild(items);
                 resultsBox.appendChild(group);
             });
 
