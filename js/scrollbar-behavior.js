@@ -75,11 +75,11 @@
 
     function scheduleHide(state) {
         clearHideTimer(state);
-        if (state.hovered || state.dragging || state.gutterPanning) return;
+        if (state.hovered || state.dragging || state.gutterPanning || state.focused) return;
 
         state.hideTimer = setTimeout(() => {
             state.hideTimer = null;
-            if (!state.hovered && !state.dragging && !state.gutterPanning) {
+            if (!state.hovered && !state.dragging && !state.gutterPanning && !state.focused) {
                 state.track.classList.remove('is-visible');
             }
         }, FADE_DELAY);
@@ -96,12 +96,15 @@
         const element = state.element;
         const trackHeight = element.clientHeight;
         const maxScroll = element.scrollHeight - trackHeight;
+        state.thumb.setAttribute('tabindex',
+            state.hasGutter && trackHeight > 0 && maxScroll > 0 ? '0' : '-1');
 
         if (!state.hasGutter || trackHeight <= 0 || maxScroll <= 0) {
             state.track.style.display = 'none';
             clearHideTimer(state);
             state.track.classList.remove('is-visible', 'is-hovered', 'is-dragging');
             state.hovered = false;
+            state.focused = false;
             state.dragging = false;
             state.gutterPanning = false;
             state.dragPointerId = null;
@@ -143,6 +146,7 @@
             clearHideTimer(state);
             state.track.classList.remove('is-visible', 'is-hovered', 'is-dragging');
             state.hovered = false;
+            state.focused = false;
             state.dragging = false;
             state.gutterPanning = false;
             state.dragPointerId = null;
@@ -281,6 +285,46 @@
         state.gutterPanning = false;
         state.dragPointerId = null;
         scheduleHide(state);
+    }
+
+    function onThumbKeyDown(state, event) {
+        const element = state.element;
+        const lineStep = 40;
+        const pageStep = 0.8 * element.clientHeight;
+        let target;
+
+        switch (event.key) {
+            case 'ArrowDown':
+                target = element.scrollTop + lineStep;
+                break;
+            case 'ArrowUp':
+                target = element.scrollTop - lineStep;
+                break;
+            case 'PageDown':
+                target = element.scrollTop + pageStep;
+                break;
+            case 'PageUp':
+                target = element.scrollTop - pageStep;
+                break;
+            case 'Home':
+                target = 0;
+                break;
+            case 'End':
+                target = element.scrollHeight;
+                break;
+            default:
+                return;
+        }
+
+        event.preventDefault();
+        element.scrollTop = clamp(
+            target,
+            0,
+            element.scrollHeight - element.clientHeight
+        );
+        show(state);
+        scheduleHide(state);
+        updateThumb(state);
     }
 
     function onPointerMove(event) {
@@ -501,7 +545,7 @@
         thumb.setAttribute('aria-valuemin', '0');
         thumb.setAttribute('aria-valuemax', '0');
         thumb.setAttribute('aria-valuenow', '0');
-        thumb.setAttribute('tabindex', '-1');
+        thumb.setAttribute('tabindex', '0');
         thumb.setAttribute('aria-label', 'גלילה');
 
         track.appendChild(thumb);
@@ -515,6 +559,7 @@
             hasGutter: false,
             hideTimer: null,
             hovered: false,
+            focused: false,
             dragging: false,
             gutterPanning: false,
             dragPointerId: null,
@@ -524,6 +569,16 @@
             tapAnimationFrame: null
         };
         states.set(element, state);
+
+        thumb.addEventListener('focus', () => {
+            state.focused = true;
+            show(state);
+        });
+        thumb.addEventListener('blur', () => {
+            state.focused = false;
+            scheduleHide(state);
+        });
+        thumb.addEventListener('keydown', event => onThumbKeyDown(state, event));
 
         updateTrackPosition(state);
     }
