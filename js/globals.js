@@ -13,6 +13,36 @@
         // בטאב אחר (זה בדיוק מה שגרם לכך שרק משיכת הספר האחרונה שנפתחה המשיכה, וכל משיכה קודמת
         // שעדיין הייתה באמצע נעצרה לגמרי - כי כל טאב חדש הזיז את אותו מונה גלובלי יחיד).
 
+
+        // שכבת טעינה (ספינר בלבד) מעל אזור העמודים - ראו #preview-loading ב-index.html.
+        // השכבה משותפת לכל הטאבים, ולכן היא "שייכת" לטאב שהציג אותה: רק הטאב הזה (או קריאה בלי
+        // טאב, למשל במעבר טאב) מסיר אותה - כך עימוד/טעינה של טאב אחר לא חושפים עמודים חלקיים.
+        // previewLoadingToken עולה בכל הצגה/הסתרה ומבטל הסתרות שכבר נקבעו לאחר ציור (rAF) -
+        // כדי שהסתרה ישנה לא תוריד שכבה של טעינה חדשה יותר.
+        let previewLoadingOwner = null;
+        let previewLoadingToken = 0;
+        function showPreviewLoading(tab) {
+            previewLoadingToken++;
+            previewLoadingOwner = tab || null;
+            const el = document.getElementById('preview-loading');
+            if (el) el.classList.add('visible');
+        }
+        function hidePreviewLoading(tab) {
+            if (tab && previewLoadingOwner && previewLoadingOwner !== tab) return;
+            previewLoadingToken++;
+            previewLoadingOwner = null;
+            const el = document.getElementById('preview-loading');
+            if (el) el.classList.remove('visible');
+        }
+        // הסתרה אחרי שהדפדפן צייר את הקפיצה/הגלילה למיקום - כדי שלא יבהבו עמודים במיקום הלא נכון
+        function hidePreviewLoadingAfterPaint(tab) {
+            const token = previewLoadingToken;
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                if (token !== previewLoadingToken) return;
+                hidePreviewLoading(tab);
+            }));
+        }
+
 // פונקציית עזר למציאת מספר העמוד הלבן שמוצג כרגע במרכז הגלילה
         function getScrollCurrentPage() {
             const previewArea = document.getElementById('preview-area');
