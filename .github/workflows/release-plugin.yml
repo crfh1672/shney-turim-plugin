@@ -1,0 +1,145 @@
+name: Package and release Otzaria plugin
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - manifest.json
+
+jobs:
+  package:
+    name: Validate and package plugin
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.version.outputs.changed }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Check out repository history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect manifest version change
+        id: version
+        shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          VERSION="$(jq -er '.version | strings | select(length > 0)' manifest.json)"
+          PREVIOUS_VERSION=""
+
+          if [[ -n "${BEFORE_SHA:-}" ]] &&
+             [[ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
+            if ! git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then
+              git fetch --no-tags origin "$BEFORE_SHA"
+            fi
+            if ! git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then
+              echo "::error::Cannot inspect the commit preceding this push ($BEFORE_SHA)."
+              exit 1
+            fi
+            if git cat-file -e "${BEFORE_SHA}:manifest.json" 2>/dev/null; then
+              PREVIOUS_VERSION="$(git show "${BEFORE_SHA}:manifest.json" | jq -er '.version | strings | select(length > 0)')"
+            fi
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" == "$PREVIOUS_VERSION" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "manifest.json changed, but version stayed at $VERSION; skipping release."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Version changed: ${PREVIOUS_VERSION:-<first version>} -> $VERSION"
+          fi
+
+      - name: Validate and build .otzplugin
+        id: package
+        if: steps.version.outputs.changed == 'true'
+        uses: Otzaria/otzaria-plugin-validator@64ee7c7806a03fcba16c111a7b6c3185e4d92804
+        with:
+          path: .
+          build: 'true'
+          publish: 'false'
+
+      - name: Create SHA-256 checksum file
+        if: steps.version.outputs.changed == 'true'
+        shell: bash
+        env:
+          PLUGIN_FILE: ${{ steps.package.outputs.plugin-file }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$PLUGIN_FILE" || ! -f "$PLUGIN_FILE" || "$PLUGIN_FILE" != *.otzplugin ]]; then
+            echo "::error::The validator did not produce a valid .otzplugin file."
+            exit 1
+          fi
+          PLUGIN_DIR="$(dirname "$PLUGIN_FILE")"
+          PLUGIN_NAME="$(basename "$PLUGIN_FILE")"
+          (cd "$PLUGIN_DIR" && sha256sum "$PLUGIN_NAME" > "${PLUGIN_NAME}.sha256")
+
+      - name: Upload plugin package
+        if: steps.version.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: otzaria-plugin-release
+          path: |
+            ${{ steps.package.outputs.plugin-file }}
+            ${{ steps.package.outputs.plugin-file }}.sha256
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    name: Publish GitHub Release
+    needs: package
+    if: needs.package.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download plugin package
+        uses: actions/download-artifact@v4
+        with:
+          name: otzaria-plugin-release
+          path: dist
+
+      - name: Create GitHub Release and upload plugin
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.package.outputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          TAG="v${VERSION}"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::GitHub Release ${TAG} already exists. Increase manifest.json version before publishing again."
+            exit 1
+          fi
+
+          set +e
+          git ls-remote --exit-code --tags "https://github.com/${GITHUB_REPOSITORY}.git" "refs/tags/${TAG}" >/dev/null 2>&1
+          TAG_LOOKUP_STATUS=$?
+          set -e
+          if [[ "$TAG_LOOKUP_STATUS" -eq 0 ]]; then
+            echo "::error::Git tag ${TAG} already exists. Choose a new manifest.json version."
+            exit 1
+          elif [[ "$TAG_LOOKUP_STATUS" -ne 2 ]]; then
+            echo "::error::Could not verify whether Git tag ${TAG} exists (git ls-remote exit code $TAG_LOOKUP_STATUS)."
+            exit 1
+          fi
+
+          mapfile -t ASSETS < <(find dist -maxdepth 1 -type f \( -name '*.otzplugin' -o -name '*.otzplugin.sha256' \) -print | sort)
+          if [[ "${#ASSETS[@]}" -ne 2 ]]; then
+            echo "::error::Expected exactly one .otzplugin package and its SHA-256 file."
+            exit 1
+          fi
+
+          gh release create "$TAG" "${ASSETS[@]}" \
+            --title "שני טורים ${VERSION}" \
+            --target "$RELEASE_COMMIT" \
+            --generate-notes
