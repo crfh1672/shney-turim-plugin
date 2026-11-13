@@ -3298,16 +3298,21 @@
         }
 
 
-        /* The three navigation-pane lists use a real DOM thumb instead of the
-           WebKit native pseudo-element: Chromium does not animate transitions
-           on ::-webkit-scrollbar-thumb reliably. This lets opacity and hover
-           color follow Flutter Material Scrollbar independently. */
+        /* Port of Otzaria's ScrollbarGutter: reserve the 12px lane only
+           when the scrollable content actually overflows. */
         #toc-scroll-area.drawer-content,
         #search-results-list.drawer-content,
         #page-nav-list.drawer-content {
-            padding-right: 12px;
+            box-sizing: border-box;
+            padding-right: 0;
             scrollbar-width: none;
             scrollbar-color: transparent transparent;
+        }
+
+        #toc-scroll-area.drawer-content.has-scrollbar-gutter,
+        #search-results-list.drawer-content.has-scrollbar-gutter,
+        #page-nav-list.drawer-content.has-scrollbar-gutter {
+            padding-right: 12px;
         }
 
         #toc-scroll-area.drawer-content::-webkit-scrollbar,
