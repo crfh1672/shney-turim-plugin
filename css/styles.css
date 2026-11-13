@@ -3297,6 +3297,68 @@
             background-color: var(--scrollbar-thumb-active);
         }
 
+
+        /* The three navigation-pane lists use a real DOM thumb instead of the
+           WebKit native pseudo-element: Chromium does not animate transitions
+           on ::-webkit-scrollbar-thumb reliably. This lets opacity and hover
+           color follow Flutter Material Scrollbar independently. */
+        #toc-scroll-area.drawer-content,
+        #search-results-list.drawer-content,
+        #page-nav-list.drawer-content {
+            padding-right: 12px;
+            scrollbar-width: none;
+            scrollbar-color: transparent transparent;
+        }
+
+        #toc-scroll-area.drawer-content::-webkit-scrollbar,
+        #search-results-list.drawer-content::-webkit-scrollbar,
+        #page-nav-list.drawer-content::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        .nav-panel-scrollbar-track {
+            position: absolute;
+            z-index: 40;
+            width: 12px;
+            background: transparent;
+            pointer-events: none;
+        }
+
+        .nav-panel-scrollbar-thumb {
+            position: absolute;
+            top: 0;
+            right: 2px;
+            width: 8px;
+            min-height: 48px;
+            border-radius: 4px;
+            background-color: var(--scrollbar-thumb-idle);
+            opacity: 0;
+            cursor: default;
+            pointer-events: none;
+            transition:
+                opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 200ms linear;
+        }
+
+        .nav-panel-scrollbar-track.is-visible .nav-panel-scrollbar-thumb {
+            opacity: 1;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .nav-panel-scrollbar-track.is-hovered .nav-panel-scrollbar-thumb {
+            background-color: var(--scrollbar-thumb-hover);
+        }
+
+        .nav-panel-scrollbar-track.is-dragging .nav-panel-scrollbar-thumb {
+            background-color: var(--scrollbar-thumb-active);
+            transition:
+                opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0ms;
+        }
+
         /* Firefox fallback: it supports color states but not an exact pixel width.
            Keep these properties off WebKit browsers: a non-auto scrollbar-width/color
            can disable their ::-webkit-scrollbar dimensions and thumb styling. */
