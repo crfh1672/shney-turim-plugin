@@ -422,9 +422,12 @@ async function paginateContent(htmlContent, targetTabIndex) {
             // לשמירה במטמון העימוד (ראו pagination-cache.js) בסיום: התוכן הגולמי *לפני* הסינון, כדי
             // שהגיבוב יתאים לזה שמחושב בפתיחה הבאה מתוך tab.rawContent, וחתימת הפריסה כפי שהייתה
             // ברגע תחילת המדידה. קבצים חיצוניים (docx/טקסט מהמחשב) אינם נשמרים - אין להם מקור לאמת מולו.
-            const rawContentForCache = htmlContent;
+            // (נלקח כאן, לפני שהעימוד משנה זמנית את targetTab.footnotes בחיתוך הערות ארוכות)
             const layoutSigAtStart = (typeof PaginationCache !== 'undefined' && PaginationCache.isAvailable() && !targetTab.isExternal && targetTab.id)
                 ? PaginationCache.computeLayoutSignature(targetTab)
+                : null;
+            const fingerprintForCache = layoutSigAtStart
+                ? PaginationCache.contentFingerprint(htmlContent, targetTab.footnotes)
                 : null;
 
             htmlContent = applyTextFilters(htmlContent);
@@ -1006,7 +1009,7 @@ async function paginateContent(htmlContent, targetTabIndex) {
                  // את העמודים מיד בלי למדוד מחדש. השמירה מתבצעת ברקע ואינה משפיעה על התצוגה.
                  if (layoutSigAtStart) {
                      try {
-                         PaginationCache.scheduleSave(targetTab, rawContentForCache, targetTab.cachedPreview, layoutSigAtStart);
+                         PaginationCache.scheduleSave(targetTab, fingerprintForCache, targetTab.cachedPreview, layoutSigAtStart);
                      } catch (e) { /* המטמון אינו קריטי */ }
                  }
                  // עימוד הסתיים - אם חלונית המפרשים פתוחה לטאב הזה (והוא עדיין הטאב הפעיל), טווח

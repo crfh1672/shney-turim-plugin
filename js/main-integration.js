@@ -206,7 +206,12 @@
                 const layoutSig = PaginationCache.computeLayoutSignature(tab);
                 const entry = await PaginationCache.load(tab.id, layoutSig, tab.bookUid);
                 if (!entry) return null;
-                const officialToc = await tocPromise;
+                // לא מחכים ל-TOC הרשמי יותר מרגע קצר: בקשת TOC איטית לא צריכה לעכב את העמודים השמורים.
+                // אם הוא מגיע בזמן - מוצג איתם בלי הבהוב; אחרת העמודים מוצגים מיד והוא מתעדכן כשמגיע.
+                const TOC_PENDING = {};
+                const tocOrPending = await Promise.race([tocPromise, new Promise((r) => setTimeout(() => r(TOC_PENDING), 150))]);
+                const tocIsPending = (tocOrPending === TOC_PENDING);
+                const officialToc = tocIsPending ? null : tocOrPending;
                 if (tab._closed || tab._viewGen !== viewGen) return null;
                 const idx = tabs.indexOf(tab);
                 if (idx === -1) return null;
@@ -248,6 +253,13 @@
                     }
                     if (tab.commentaryPanelOpen) refreshCommentaryPanel(true);
                 }
+                if (tocIsPending) {
+                    tocPromise.then((late) => {
+                        if (tab._closed || tab._viewGen !== viewGen) return;
+                        tab.officialToc = late;
+                        if (tabs[activeTabIndex] === tab && tab.pagesRendered) buildTOC();
+                    }).catch(() => {});
+                }
                 console.info('[שני טורים] נפתח מהמטמון', Math.round(performance.now() - startedAt) + 'ms', '(' + entry.pageCount + ' עמודים)');
                 return { entry, layoutSig };
             } catch (e) {
@@ -278,8 +290,8 @@
                 return;
             }
             const { html: contentForDisplay, footnotes: libFootnotes } = extractLibraryFootnotes(allData);
-            const sameContent = contentForDisplay.length === hit.entry.contentLen &&
-                PaginationCache.hashString(contentForDisplay) === hit.entry.contentHash;
+            const fp = PaginationCache.contentFingerprint(contentForDisplay, libFootnotes);
+            const sameContent = fp.len === hit.entry.contentLen && fp.hash === hit.entry.contentHash;
 
             tab.rawContent = contentForDisplay;
             tab.footnotes = libFootnotes;

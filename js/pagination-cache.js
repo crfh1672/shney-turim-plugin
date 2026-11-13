@@ -23,7 +23,8 @@
     const STORE_META = 'meta';   // רשומות קטנות (מטא-דאטה) - מאפשרות פינוי בלי לטעון את הנתונים הכבדים
     const STORE_DATA = 'data';   // ה-HTML הדחוס עצמו
     // יש להעלות כשמשנים את מבנה הרשומה או את מבנה ה-HTML של עמוד באופן שחתימת הקוד לא תופסת
-    const FORMAT_VERSION = 1;
+    // 2: טביעת האצבע של התוכן כוללת גם את הערות השוליים; חתימת הקוד כוללת את נתוני שמות הקודש
+    const FORMAT_VERSION = 2;
 
     const MAX_LAYOUTS_PER_BOOK = 2;            // כמה הגדרות פריסה שונות נשמרות לאותו ספר
     const MAX_ENTRIES = 30;                    // כמה רשומות בסך הכל
@@ -84,6 +85,14 @@
                 parts.push(name + ':' + (typeof fn === 'function' ? Function.prototype.toString.call(fn) : 'missing'));
             } catch (e) { parts.push(name + ':error'); }
         });
+        // נתוני עזר שהפונקציות למעלה קוראות ושקובעים את הטקסט שמגיע לעימוד (applyTextFilters):
+        // שינוי בהם משנה את העמודים בלי שקוד הפונקציות עצמו ישתנה, ולכן הם נכנסים לחתימה בנפרד
+        try {
+            parts.push('HOLY_NAMES:' + (typeof HOLY_NAMES !== 'undefined' ? JSON.stringify(HOLY_NAMES) : 'missing'));
+            parts.push('HOLY_DIACRITIC_RE_SRC:' + (typeof HOLY_DIACRITIC_RE_SRC !== 'undefined' ? HOLY_DIACRITIC_RE_SRC : 'missing'));
+            parts.push('PREFIX_LETTERS_RE_SRC:' + (typeof PREFIX_LETTERS_RE_SRC !== 'undefined' ? PREFIX_LETTERS_RE_SRC : 'missing'));
+            parts.push('PREFIX_GROUP_RE_SRC:' + (typeof PREFIX_GROUP_RE_SRC !== 'undefined' ? PREFIX_GROUP_RE_SRC : 'missing'));
+        } catch (e) { parts.push('data-error'); }
         cachedCodeSignature = hashString(parts.join('\u0003'));
         return cachedCodeSignature;
     }
@@ -109,7 +118,7 @@
         document.body.appendChild(probe);
         try {
             const pageProps = ['font-family', 'font-size', 'line-height', 'padding-top', 'padding-right', 'padding-bottom',
-                'padding-left', 'column-count', 'column-gap', 'width', 'height', 'text-align', 'word-break',
+                'padding-left', 'column-count', 'column-gap', 'column-fill', 'width', 'height', 'text-align', 'word-break',
                 'overflow-wrap', 'letter-spacing', 'word-spacing', 'direction', 'hyphens', 'font-kerning'];
             const out = [
                 'page{' + readStyle(probe, pageProps) + '}',
@@ -144,6 +153,16 @@
         parts.push(typeof navigator !== 'undefined' ? navigator.userAgent : '');
         parts.push('dpr=' + (typeof devicePixelRatio !== 'undefined' ? devicePixelRatio : 1));
         return hashString(parts.join('\u0002'));
+    }
+
+    // טביעת אצבע של מה שהעמודים נבנים ממנו: גוף הטקסט *וגם* הערות השוליים (העמודים מכילים את
+    // טקסט ההערות עצמו, ולכן שינוי בהערה בלבד חייב לבטל את הרשומה). מחושבת באותה צורה בשמירה
+    // (תחילת העימוד) ובאימות (אחרי המשיכה), כך ששוויון = אותו קלט לעימוד.
+    function contentFingerprint(rawContent, footnotes) {
+        const raw = String(rawContent || '');
+        let fn = '';
+        try { fn = footnotes ? JSON.stringify(footnotes) : ''; } catch (e) { fn = 'unserializable'; }
+        return { hash: hashString(raw) + ':' + hashString(fn, 7), len: raw.length };
     }
 
     /* ------------------------------- אחסון (IndexedDB) ------------------------------- */
@@ -425,8 +444,8 @@
     // נקראת בסיום עימוד מלא של טאב. השמירה עצמה מתבצעת מעט אחר כך (לא חוסמת את הציור/הניווט
     // שאחרי העימוד), ורק אם בינתיים כלום לא השתנה: הטאב לא נסגר, העמודים לא הוחלפו בעימוד חדש,
     // חתימת הפריסה זהה, והגופנים כבר נטענו (עימוד שנמדד לפני שהגופן נטען אינו אמין).
-    function scheduleSave(tab, rawContent, html, layoutSig) {
-        if (!isAvailable() || !tab || tab.isExternal || !tab.id || !html || !rawContent || !layoutSig) return;
+    function scheduleSave(tab, fingerprint, html, layoutSig) {
+        if (!isAvailable() || !tab || tab.isExternal || !tab.id || !html || !fingerprint || !layoutSig) return;
         const key = makeKey(tab.id, layoutSig);
         clearTimeout(pendingSaves.get(key));
         const timer = setTimeout(async () => {
@@ -443,8 +462,8 @@
                     bookId: tab.id,
                     bookUid: tab.bookUid || null,
                     layoutSig,
-                    contentHash: hashString(rawContent),
-                    contentLen: rawContent.length,
+                    contentHash: fingerprint.hash,
+                    contentLen: fingerprint.len,
                     html,
                     pageCount: countPages(html)
                 });
@@ -459,6 +478,7 @@
     window.PaginationCache = {
         isAvailable,
         computeLayoutSignature,
+        contentFingerprint,
         hashString,
         load,
         save,
