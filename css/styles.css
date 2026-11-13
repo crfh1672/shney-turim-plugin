@@ -3351,7 +3351,7 @@
         .nav-panel-scrollbar-track.is-visible .nav-panel-scrollbar-thumb {
             opacity: 1;
             pointer-events: auto;
-            cursor: pointer;
+            cursor: default;
         }
 
         .nav-panel-scrollbar-track.is-hovered .nav-panel-scrollbar-thumb {
