@@ -13,6 +13,21 @@
         // בטאב אחר (זה בדיוק מה שגרם לכך שרק משיכת הספר האחרונה שנפתחה המשיכה, וכל משיכה קודמת
         // שעדיין הייתה באמצע נעצרה לגמרי - כי כל טאב חדש הזיז את אותו מונה גלובלי יחיד).
 
+
+        // שכבת טעינה (ספינר בלבד) מעל אזור העמודים - ראו #preview-loading ב-index.html.
+        function showPreviewLoading() {
+            const el = document.getElementById('preview-loading');
+            if (el) el.classList.add('visible');
+        }
+        function hidePreviewLoading() {
+            const el = document.getElementById('preview-loading');
+            if (el) el.classList.remove('visible');
+        }
+        // הסתרה אחרי שהדפדפן צייר את הקפיצה/הגלילה למיקום - כדי שלא יבהבו עמודים במיקום הלא נכון
+        function hidePreviewLoadingAfterPaint() {
+            requestAnimationFrame(() => requestAnimationFrame(hidePreviewLoading));
+        }
+
 // פונקציית עזר למציאת מספר העמוד הלבן שמוצג כרגע במרכז הגלילה
         function getScrollCurrentPage() {
             const previewArea = document.getElementById('preview-area');

@@ -906,6 +906,13 @@
             <button class="nav-arrow arrow-left" id="book-nav-next" onclick="nextBookPage()" data-tooltip="עמוד הבא (שמאלה)">
                 <i class="ui-icon rotate-90" data-fluent-icon="chevron_down" aria-hidden="true"></i>
             </button>
+            <!-- שכבת טעינה: ספינר בלבד (כמו CircularProgressIndicator באוצריא) בתוך אזור תצוגת העמודים,
+                 אטומה לגמרי - כך שאף עמוד לא נראה מאחוריה. נשלטת ע"י showPreviewLoading/hidePreviewLoading. -->
+            <div id="preview-loading" role="status" aria-live="polite" aria-label="טוען">
+                <svg class="preview-loading-spinner" viewBox="0 0 50 50" aria-hidden="true">
+                    <circle class="preview-loading-path" cx="25" cy="25" r="20" fill="none" stroke-width="4" stroke-linecap="round"></circle>
+                </svg>
+            </div>
             <div id="preview-area">
                 <div class="print-page" style="column-count: 1; text-align: center;">
                     <br><br><br>

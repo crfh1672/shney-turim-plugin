@@ -3029,6 +3029,42 @@
             opacity: 1;
         }
 
+
+        /* --- שכבת טעינה באזור העמודים: ספינר בלבד, בלי עמוד מאחור --- */
+        #preview-loading {
+            display: none;
+            position: absolute;
+            inset: 0;
+            z-index: 40;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--user-bg-color, var(--color-surface));
+        }
+        #preview-loading.visible { display: flex; }
+        .preview-loading-spinner {
+            width: 36px;
+            height: 36px;
+            animation: preview-loading-rotate 1.4s linear infinite;
+        }
+        .preview-loading-path {
+            stroke: var(--color-primary);
+            stroke-dasharray: 1, 200;
+            stroke-dashoffset: 0;
+            animation: preview-loading-dash 1.4s ease-in-out infinite;
+        }
+        @keyframes preview-loading-rotate {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes preview-loading-dash {
+            0%   { stroke-dasharray: 1, 200;  stroke-dashoffset: 0; }
+            50%  { stroke-dasharray: 89, 200; stroke-dashoffset: -35px; }
+            100% { stroke-dasharray: 89, 200; stroke-dashoffset: -124px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .preview-loading-spinner { animation-duration: 3s; }
+        }
+        @media print { #preview-loading { display: none !important; } }
+
         #preview-area {
             flex: 1;
             min-width: 0;

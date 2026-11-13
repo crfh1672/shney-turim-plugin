@@ -482,6 +482,9 @@ async function paginateContent(htmlContent, targetTabIndex) {
                 lastSearchedQuery = null;
                 banner.classList.add('visible');
                 banner.querySelector('span').innerText = 'טוען ומסדר עמודים ראשונים...';
+                // כשממתינים לרינדור עד מיקום מסוים (פתיחה במיקום, שינוי הגדרה) - רק ספינר עד שהעמודים
+                // מגיעים למיקום; העמודים שנבנים בינתיים נשארים מוסתרים מאחורי השכבה
+                if (typeof targetTab.pendingScrollLineIndex === 'number') showPreviewLoading();
             }
 
             const nodesQueue = Array.from(tempContainer.childNodes);
@@ -908,26 +911,41 @@ async function paginateContent(htmlContent, targetTabIndex) {
                     } else {
                         previewArea.appendChild(fragment);
                     }
-                    // בניית תוכן העניינים רק בבאץ' הראשון (כדי שתהיה רשימה מיד) ואז שוב רק בסיום.
-                    // קודם זה נבנה מחדש בכל באץ' - מה שהרס בכל פעם את פריטי ה-DOM שהמשתמש בדיוק
-                    // ניסה ללחוץ עליהם, ואיפס את מצב הפתיחה/כיווץ. זו הייתה הסיבה ש"קופץ" ולא
-                    // מצליחים לפתוח כותרת בזמן שהספר עדיין נטען.
-                    if (batchIterations === 1) {
-                        buildTOC();
-                    } else {
-                        // רשימת הכותרות מתעדכנת אוטומטית עם הכותרות שנטענו (ראו updateTOCProgressive)
-                        updateTOCProgressive();
+                    // בזמן ההמתנה לקפיצה למיקום (שכבת הטעינה מוצגת) אף אחד לא רואה את תוכן העניינים, רשימת
+                    // הדפים והחיפוש - לכן מדלגים עליהם בכל באץ' ומריצים אותם פעם אחת מיד אחרי הקפיצה
+                    const awaitingPosition = (typeof targetTab.pendingScrollLineIndex === 'number');
+                    if (!awaitingPosition) {
+                        // בניית תוכן העניינים רק בבאץ' הראשון (כדי שתהיה רשימה מיד) ואז שוב רק בסיום.
+                        // קודם זה נבנה מחדש בכל באץ' - מה שהרס בכל פעם את פריטי ה-DOM שהמשתמש בדיוק
+                        // ניסה ללחוץ עליהם, ואיפס את מצב הפתיחה/כיווץ. זו הייתה הסיבה ש"קופץ" ולא
+                        // מצליחים לפתוח כותרת בזמן שהספר עדיין נטען.
+                        if (batchIterations === 1) {
+                            buildTOC();
+                        } else {
+                            // רשימת הכותרות מתעדכנת אוטומטית עם הכותרות שנטענו (ראו updateTOCProgressive)
+                            updateTOCProgressive();
+                        }
+                        if (batchIterations !== 1 && currentRailTab === 'pages') {
+                            // רשימת "דפים" (בשונה מעץ הכותרות) היא רשימה שטוחה בלי מצב פתיחה/כיווץ
+                            // לשמר, ולכן אפשר וכדאי לעדכן אותה בכל באץ' - אבל רק אם הלשונית הזו באמת
+                            // מוצגת כרגע, בדיוק כמו בתיקון buildTOC. בלי זה, הרשימה נשארה "תקועה" על
+                            // מה שהיה קיים בבאץ' הראשון בלבד עד לסיום הטעינה המלא של הספר
+                            buildPageNav();
+                        }
+                        refreshSearchIfActive();
                     }
-                    if (batchIterations !== 1 && currentRailTab === 'pages') {
-                        // רשימת "דפים" (בשונה מעץ הכותרות) היא רשימה שטוחה בלי מצב פתיחה/כיווץ
-                        // לשמר, ולכן אפשר וכדאי לעדכן אותה בכל באץ' - אבל רק אם הלשונית הזו באמת
-                        // מוצגת כרגע, בדיוק כמו בתיקון buildTOC. בלי זה, הרשימה נשארה "תקועה" על
-                        // מה שהיה קיים בבאץ' הראשון בלבד עד לסיום הטעינה המלא של הספר
-                        buildPageNav();
-                    }
-                    refreshSearchIfActive();
                     document.getElementById('btn-print').disabled = false;
                     tryEarlyPendingScrollJump(targetTab);
+                    // אין (עוד) מיקום ממתין - העמודים כבר במקומם, אפשר להסיר את שכבת הטעינה
+                    if (typeof targetTab.pendingScrollLineIndex !== 'number') {
+                        hidePreviewLoadingAfterPaint();
+                        if (awaitingPosition) {
+                            // השלמת מה שדולג בבאצ'ים הקודמים
+                            buildTOC();
+                            if (currentRailTab === 'pages') buildPageNav();
+                            refreshSearchIfActive();
+                        }
+                    }
                 }
                 fragment = document.createDocumentFragment();
 

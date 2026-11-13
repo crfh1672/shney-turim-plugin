@@ -251,6 +251,8 @@
                         const pageIdx = locatePageIndexForLineIndex(targetLine);
                         if (pageIdx >= 0) goToPageIndex(pageIdx);
                     }
+                    // העמודים מהמטמון כבר במיקום הנכון - מסירים את שכבת הטעינה
+                    hidePreviewLoadingAfterPaint();
                     if (tab.commentaryPanelOpen) refreshCommentaryPanel(true);
                 }
                 if (tocIsPending) {
@@ -336,11 +338,10 @@
             const previewArea = document.getElementById('preview-area');
 
             document.getElementById('btn-print').disabled = true;
-            previewArea.innerHTML = `
-                <div class="print-page" style="column-count:1;text-align:center;display:flex;flex-direction:column;justify-content:center;">
-                    <h2 id="loading-text" style="color:var(--color-primary);">מושך נתונים מהספר...</h2>
-                    <p>נא להמתין.</p>
-                </div>`;
+            // בזמן משיכת הנתונים, בדיקת/שחזור המטמון וההמתנה לעימוד עד המיקום המבוקש מוצג רק ספינר
+            // בתוך אזור העמודים (שכבה אטומה) - בלי עמוד ובלי טקסט מאחור. מוסתר רק כשהעמודים במיקום הנכון.
+            previewArea.innerHTML = '';
+            showPreviewLoading();
 
             try {
                 const viewStartedAt = performance.now();
@@ -351,11 +352,7 @@
                 // מתחיל, ה-TOC הרשמי (אם קיים) כבר מוכן וישמש את buildTOC מייד, בלי "הבהוב" של
                 // תוכן עניינים מבוסס-כותרות שמוחלף בהמשך. המשיכה מתחילה מיד, במקביל לבדיקת מטמון
                 // העימוד: בפגיעה היא משמשת לאימות ברקע, ובפספוס אין שום עיכוב לעומת קודם.
-                const bookPromise = fetchEntireBook(currentTab.id, (loaded) => {
-                    if (currentTab._closed || targetTabIndex !== activeTabIndex) return;
-                    const lt = document.getElementById('loading-text');
-                    if (lt) lt.innerHTML = `מושך נתונים... (${loaded})`;
-                }, currentTab);
+                const bookPromise = fetchEntireBook(currentTab.id, () => {}, currentTab);
                 bookPromise.catch(() => {}); // השגיאה (אם תהיה) מטופלת ב-Promise.all למטה
                 const tocPromise = fetchOfficialToc(currentTab.id);
 
@@ -370,6 +367,7 @@
                 // טאב שכבר לא קיים; ה-await למעלה כבר עצר את משיכת הנתונים בפועל עצמה (ראו fetchEntireBook)
                 if (currentTab._closed) {
                     currentTab.isRendering = false;
+                    hidePreviewLoading();
                     return;
                 }
 
@@ -383,6 +381,7 @@
 
                 if (!allData) {
                     currentTab.isRendering = false;
+                    hidePreviewLoading();
                     return;
                 }
 
@@ -410,9 +409,12 @@
                     const pageIdx = locatePageIndexForLineIndex(targetLine);
                     if (pageIdx >= 0) goToPageIndex(pageIdx);
                 }
+                // גיבוי: אחרי עימוד מלא שכבת הטעינה תמיד יורדת (גם אם שורת היעד לא נמצאה)
+                hidePreviewLoadingAfterPaint();
 
             } catch (error) {
                 currentTab.isRendering = false;
+                hidePreviewLoading();
                 if (targetTabIndex !== activeTabIndex) return;
                 previewArea.innerHTML = "<div class='print-page'><h3>שגיאה בטעינת הספר.</h3></div>";
             }

@@ -41,6 +41,7 @@
                 targetTab.pendingScrollLineIndex = null;
                 restorePositionState(posState);
             }
+            hidePreviewLoadingAfterPaint();
         }
 
         function triggerRepagination() {
