@@ -415,7 +415,21 @@
             });
         }
 
+// עטיפה בטוחה: אם העימוד נכשל באמצע, שכבת הטעינה לא נשארת מעל העמודים והמיקום הממתין מתנקה
 async function paginateContent(htmlContent, targetTabIndex) {
+    try {
+        return await paginateContentImpl(htmlContent, targetTabIndex);
+    } catch (e) {
+        const failedTab = tabs[targetTabIndex];
+        if (failedTab) {
+            failedTab.pendingScrollLineIndex = null;
+            hidePreviewLoading(failedTab);
+        }
+        throw e;
+    }
+}
+
+async function paginateContentImpl(htmlContent, targetTabIndex) {
             const targetTab = tabs[targetTabIndex];
             if (!targetTab) return;
 
@@ -484,7 +498,7 @@ async function paginateContent(htmlContent, targetTabIndex) {
                 banner.querySelector('span').innerText = 'טוען ומסדר עמודים ראשונים...';
                 // כשממתינים לרינדור עד מיקום מסוים (פתיחה במיקום, שינוי הגדרה) - רק ספינר עד שהעמודים
                 // מגיעים למיקום; העמודים שנבנים בינתיים נשארים מוסתרים מאחורי השכבה
-                if (typeof targetTab.pendingScrollLineIndex === 'number') showPreviewLoading();
+                if (typeof targetTab.pendingScrollLineIndex === 'number') showPreviewLoading(targetTab);
             }
 
             const nodesQueue = Array.from(tempContainer.childNodes);
@@ -938,7 +952,7 @@ async function paginateContent(htmlContent, targetTabIndex) {
                     tryEarlyPendingScrollJump(targetTab);
                     // אין (עוד) מיקום ממתין - העמודים כבר במקומם, אפשר להסיר את שכבת הטעינה
                     if (typeof targetTab.pendingScrollLineIndex !== 'number') {
-                        hidePreviewLoadingAfterPaint();
+                        hidePreviewLoadingAfterPaint(targetTab);
                         if (awaitingPosition) {
                             // השלמת מה שדולג בבאצ'ים הקודמים
                             buildTOC();

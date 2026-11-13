@@ -41,7 +41,7 @@
                 targetTab.pendingScrollLineIndex = null;
                 restorePositionState(posState);
             }
-            hidePreviewLoadingAfterPaint();
+            hidePreviewLoadingAfterPaint(targetTab);
         }
 
         function triggerRepagination() {
@@ -120,6 +120,10 @@
 
 function switchTab(index) {
             if (index === activeTabIndex) return;
+
+            // שכבת הטעינה שייכת לטאב שהציג אותה - במעבר טאב מסירים אותה; אם הטאב החדש צריך טעינה,
+            // generateView מציג אותה מחדש
+            hidePreviewLoading();
 
             resetPageNavThumbnailState();
             

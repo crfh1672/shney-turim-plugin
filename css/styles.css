@@ -3061,7 +3061,9 @@
             100% { stroke-dasharray: 89, 200; stroke-dashoffset: -124px; }
         }
         @media (prefers-reduced-motion: reduce) {
+            /* בלי אנימציית ההתארכות/התקצרות של הקשת - קשת קבועה שמסתובבת לאט, כדי שעדיין יהיה ברור שמשהו נטען */
             .preview-loading-spinner { animation-duration: 3s; }
+            .preview-loading-path { animation: none; stroke-dasharray: 60, 200; }
         }
         @media print { #preview-loading { display: none !important; } }
 

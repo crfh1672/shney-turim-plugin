@@ -252,7 +252,7 @@
                         if (pageIdx >= 0) goToPageIndex(pageIdx);
                     }
                     // העמודים מהמטמון כבר במיקום הנכון - מסירים את שכבת הטעינה
-                    hidePreviewLoadingAfterPaint();
+                    hidePreviewLoadingAfterPaint(tab);
                     if (tab.commentaryPanelOpen) refreshCommentaryPanel(true);
                 }
                 if (tocIsPending) {
@@ -341,7 +341,7 @@
             // בזמן משיכת הנתונים, בדיקת/שחזור המטמון וההמתנה לעימוד עד המיקום המבוקש מוצג רק ספינר
             // בתוך אזור העמודים (שכבה אטומה) - בלי עמוד ובלי טקסט מאחור. מוסתר רק כשהעמודים במיקום הנכון.
             previewArea.innerHTML = '';
-            showPreviewLoading();
+            showPreviewLoading(currentTab);
 
             try {
                 const viewStartedAt = performance.now();
@@ -367,7 +367,7 @@
                 // טאב שכבר לא קיים; ה-await למעלה כבר עצר את משיכת הנתונים בפועל עצמה (ראו fetchEntireBook)
                 if (currentTab._closed) {
                     currentTab.isRendering = false;
-                    hidePreviewLoading();
+                    hidePreviewLoading(currentTab);
                     return;
                 }
 
@@ -381,7 +381,7 @@
 
                 if (!allData) {
                     currentTab.isRendering = false;
-                    hidePreviewLoading();
+                    hidePreviewLoading(currentTab);
                     return;
                 }
 
@@ -410,11 +410,11 @@
                     if (pageIdx >= 0) goToPageIndex(pageIdx);
                 }
                 // גיבוי: אחרי עימוד מלא שכבת הטעינה תמיד יורדת (גם אם שורת היעד לא נמצאה)
-                hidePreviewLoadingAfterPaint();
+                hidePreviewLoadingAfterPaint(currentTab);
 
             } catch (error) {
                 currentTab.isRendering = false;
-                hidePreviewLoading();
+                hidePreviewLoading(currentTab);
                 if (targetTabIndex !== activeTabIndex) return;
                 previewArea.innerHTML = "<div class='print-page'><h3>שגיאה בטעינת הספר.</h3></div>";
             }
