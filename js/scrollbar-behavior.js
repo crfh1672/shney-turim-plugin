@@ -313,7 +313,13 @@
         if (event.button !== 0) return;
 
         for (const state of states.values()) {
+            if (event.pointerType !== 'mouse' &&
+                (event.target === state.element || state.element.contains(event.target))) {
+                cancelTapAnimation(state);
+            }
+
             if (!inTrack(state, event.clientX, event.clientY)) continue;
+            cancelTapAnimation(state);
 
             const opacity = thumbOpacity(state);
             const thumbRect = state.thumb.getBoundingClientRect();
@@ -373,11 +379,15 @@
         return curve(t, y1, y2);
     }
 
-    function animateScrollTo(state, requestedTarget, duration) {
+    function cancelTapAnimation(state) {
         if (state.tapAnimationFrame !== null) {
             cancelAnimationFrame(state.tapAnimationFrame);
             state.tapAnimationFrame = null;
         }
+    }
+
+    function animateScrollTo(state, requestedTarget, duration) {
+        cancelTapAnimation(state);
 
         const element = state.element;
         const start = element.scrollTop;
@@ -415,6 +425,10 @@
 
     function onWheel(event) {
         for (const state of states.values()) {
+            if (event.target === state.element || state.element.contains(event.target)) {
+                cancelTapAnimation(state);
+            }
+
             if (!inTrack(state, event.clientX, event.clientY)) continue;
 
             let delta = event.shiftKey && event.deltaX !== 0
