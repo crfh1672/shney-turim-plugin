@@ -3358,6 +3358,11 @@
             cursor: default;
         }
 
+        .nav-panel-scrollbar-track.is-visible .nav-panel-scrollbar-thumb:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+
         .nav-panel-scrollbar-track.is-hovered .nav-panel-scrollbar-thumb {
             background-color: var(--scrollbar-thumb-hover);
         }
