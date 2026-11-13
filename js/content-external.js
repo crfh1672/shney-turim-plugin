@@ -419,6 +419,17 @@ async function paginateContent(htmlContent, targetTabIndex) {
             const targetTab = tabs[targetTabIndex];
             if (!targetTab) return;
 
+            // לשמירה במטמון העימוד (ראו pagination-cache.js) בסיום: התוכן הגולמי *לפני* הסינון, כדי
+            // שהגיבוב יתאים לזה שמחושב בפתיחה הבאה מתוך tab.rawContent, וחתימת הפריסה כפי שהייתה
+            // ברגע תחילת המדידה. קבצים חיצוניים (docx/טקסט מהמחשב) אינם נשמרים - אין להם מקור לאמת מולו.
+            // (נלקח כאן, לפני שהעימוד משנה זמנית את targetTab.footnotes בחיתוך הערות ארוכות)
+            const layoutSigAtStart = (typeof PaginationCache !== 'undefined' && PaginationCache.isAvailable() && !targetTab.isExternal && targetTab.id)
+                ? PaginationCache.computeLayoutSignature(targetTab)
+                : null;
+            const fingerprintForCache = layoutSigAtStart
+                ? PaginationCache.contentFingerprint(htmlContent, targetTab.footnotes)
+                : null;
+
             htmlContent = applyTextFilters(htmlContent);
 
             targetTab.cachedPreview = ''; // ניקוי מטמון בהתחלה
@@ -994,6 +1005,13 @@ async function paginateContent(htmlContent, targetTabIndex) {
                  banner.classList.remove('visible');
                  targetTab.pagesRendered = true;
                  targetTab.isRendering = false;
+                 // שמירת העימוד המוגמר במטמון, כדי שפתיחה חוזרת של הספר (עם אותן הגדרות פריסה) תציג
+                 // את העמודים מיד בלי למדוד מחדש. השמירה מתבצעת ברקע ואינה משפיעה על התצוגה.
+                 if (layoutSigAtStart) {
+                     try {
+                         PaginationCache.scheduleSave(targetTab, fingerprintForCache, targetTab.cachedPreview, layoutSigAtStart);
+                     } catch (e) { /* המטמון אינו קריטי */ }
+                 }
                  // עימוד הסתיים - אם חלונית המפרשים פתוחה לטאב הזה (והוא עדיין הטאב הפעיל), טווח
                  // השורות המוצג עשוי היה להשתנות (למשל טעינה ראשונית, או שינוי גודל גופן ששינה
                  // כמה שורות נכנסות בכל עמוד) - מרעננים כדי שהתוכן יתאים בדיוק למה שמוצג עכשיו.

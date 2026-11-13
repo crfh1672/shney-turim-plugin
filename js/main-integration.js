@@ -104,6 +104,9 @@
             t.savedPageIndex = undefined;
             t.scrollPosition = 0;
             t.currentLeaf = 0;
+            // סימון דגל "עוקף מטמון": רענון מפורש מהמשתמש חייב למשוך ולעמד מאפס - הוא מבקש אותו
+            // בדיוק כשמשהו נראה לו שבור, ולכן אסור להציג לו שוב את אותם עמודים מהמטמון
+            t._bypassPaginationCache = true;
             const pa = document.getElementById('preview-area');
             if (pa) delete pa.dataset.searchBaseHtml;
 
@@ -190,10 +193,138 @@
             return { html: processedHtml, footnotes: Object.keys(footnotes).length > 0 ? footnotes : null };
         }
 
+        // --- פתיחה מהירה מתוך מטמון העימוד (ראו pagination-cache.js) ---
+        // אם העימוד המוגמר של הספר הזה (עם הגדרות הפריסה הנוכחיות) שמור מפתיחה קודמת - מציגים אותו
+        // מיד וקופצים לשורה המבוקשת, בלי למשוך ולמדוד את כל הספר קודם. משיכת הספר ממשיכה ברקע
+        // ומשמשת לאימות (verifyCachedViewAgainstBook). מחזירה את הרשומה שהוצגה, או null כשאין
+        // מטמון מתאים (או שכל שלב נכשל) - ואז generateView ממשיכה בעימוד הרגיל בדיוק כמו קודם.
+        async function tryRenderFromPaginationCache(tab, viewGen, tocPromise, startedAt) {
+            if (typeof PaginationCache === 'undefined' || !PaginationCache.isAvailable()) return null;
+            if (!tab || tab.isExternal || !tab.id) return null;
+            let rendered = false;
+            try {
+                const layoutSig = PaginationCache.computeLayoutSignature(tab);
+                const entry = await PaginationCache.load(tab.id, layoutSig, tab.bookUid);
+                if (!entry) return null;
+                // לא מחכים ל-TOC הרשמי יותר מרגע קצר: בקשת TOC איטית לא צריכה לעכב את העמודים השמורים.
+                // אם הוא מגיע בזמן - מוצג איתם בלי הבהוב; אחרת העמודים מוצגים מיד והוא מתעדכן כשמגיע.
+                const TOC_PENDING = {};
+                const tocOrPending = await Promise.race([tocPromise, new Promise((r) => setTimeout(() => r(TOC_PENDING), 150))]);
+                const tocIsPending = (tocOrPending === TOC_PENDING);
+                const officialToc = tocIsPending ? null : tocOrPending;
+                if (tab._closed || tab._viewGen !== viewGen) return null;
+                const idx = tabs.indexOf(tab);
+                if (idx === -1) return null;
+                // אם הפריסה השתנתה בזמן ההמתנה (גופן/עמודות...), העימוד השמור כבר אינו מתאים
+                if (PaginationCache.computeLayoutSignature(tab) !== layoutSig) return null;
+
+                tab.cachedPreview = entry.html;
+                tab.cachedPreviewFragment = null;
+                tab.cachedBookViewFragment = null;
+                tab.officialToc = officialToc;
+                tab.pagesRendered = true;
+                tab._tocComplete = true;
+                tab.isRendering = false;
+                rendered = true;
+
+                if (activeTabIndex === idx) {
+                    const previewArea = document.getElementById('preview-area');
+                    const banner = document.getElementById('pagination-banner');
+                    delete previewArea.dataset.searchBaseHtml;
+                    lastSearchedQuery = null;
+                    previewArea.innerHTML = entry.html;
+                    if (currentSettings.isBookView) {
+                        currentLeaf = 0;
+                        buildBookDOM();
+                    }
+                    buildTOC();
+                    refreshSearchIfActive();
+                    document.getElementById('btn-print').disabled = false;
+                    if (banner) {
+                        const span = banner.querySelector('span');
+                        if (span) span.innerText = 'נטען מהמטמון - מאמת מול הספר...';
+                        banner.classList.add('visible');
+                    }
+                    if (typeof tab.pendingScrollLineIndex === 'number') {
+                        const targetLine = tab.pendingScrollLineIndex;
+                        tab.pendingScrollLineIndex = null;
+                        const pageIdx = locatePageIndexForLineIndex(targetLine);
+                        if (pageIdx >= 0) goToPageIndex(pageIdx);
+                    }
+                    if (tab.commentaryPanelOpen) refreshCommentaryPanel(true);
+                }
+                if (tocIsPending) {
+                    tocPromise.then((late) => {
+                        if (tab._closed || tab._viewGen !== viewGen) return;
+                        tab.officialToc = late;
+                        if (tabs[activeTabIndex] === tab && tab.pagesRendered) buildTOC();
+                    }).catch(() => {});
+                }
+                console.info('[שני טורים] נפתח מהמטמון', Math.round(performance.now() - startedAt) + 'ms', '(' + entry.pageCount + ' עמודים)');
+                return { entry, layoutSig };
+            } catch (e) {
+                console.error('פתיחה מהמטמון נכשלה - ממשיכים בעימוד רגיל', e);
+                if (rendered) {
+                    tab.cachedPreview = null;
+                    tab.pagesRendered = false;
+                    tab._tocComplete = false;
+                    tab.isRendering = true;
+                }
+                return null;
+            }
+        }
+
+        // אחרי שהספר הוצג מהמטמון: משווים מול התוכן שנמשך עכשיו מהספרייה. תוכן זהה והגדרות פריסה
+        // זהות - אין מה לעשות (רק משלימים את rawContent וההערות לטובת עימוד מחדש בהמשך). תוכן שונה
+        // (הספר עודכן בספרייה), או שהמשתמש שינה הגדרת פריסה בזמן שהמשיכה רצה (שינויים כאלה נבלעים
+        // כל עוד rawContent ריק) - מעמדים מחדש וחוזרים לאותה שורה.
+        async function verifyCachedViewAgainstBook(tab, hit, allData, officialToc, viewGen) {
+            const banner = document.getElementById('pagination-banner');
+            const hideBanner = () => {
+                if (banner && tabs[activeTabIndex] === tab) banner.classList.remove('visible');
+            };
+            if (tab._closed || tab._viewGen !== viewGen) return;
+            if (!allData) {
+                // משיכה נכשלה - נשארים עם מה שמוצג; ריענון ידני (Ctrl+Shift+T) ינסה שוב מאפס
+                hideBanner();
+                return;
+            }
+            const { html: contentForDisplay, footnotes: libFootnotes } = extractLibraryFootnotes(allData);
+            const fp = PaginationCache.contentFingerprint(contentForDisplay, libFootnotes);
+            const sameContent = fp.len === hit.entry.contentLen && fp.hash === hit.entry.contentHash;
+
+            tab.rawContent = contentForDisplay;
+            tab.footnotes = libFootnotes;
+            tab.officialToc = officialToc;
+
+            const idx = tabs.indexOf(tab);
+            if (idx === -1) return;
+            const layoutUnchanged = PaginationCache.computeLayoutSignature(tab) === hit.layoutSig;
+            if (sameContent && layoutUnchanged) {
+                hideBanner();
+                return;
+            }
+
+            console.info('[שני טורים] מעמדים מחדש אחרי פתיחה מהמטמון:', sameContent ? 'הגדרות הפריסה השתנו' : 'תוכן הספר השתנה');
+            if (!sameContent) PaginationCache.remove(tab.id, hit.layoutSig);
+            const isActive = (activeTabIndex === idx);
+            const posState = isActive ? beginEarlyPositionRestore(tab) : null;
+            await paginateContent(contentForDisplay, idx);
+            if (isActive && activeTabIndex === idx) {
+                buildTOC();
+                finishPositionRestore(tab, posState);
+            }
+        }
+
         async function generateView() {
             const targetTabIndex = activeTabIndex;
             const currentTab = tabs[targetTabIndex];
             if (!currentTab) return;
+
+            // מזהה "דור" לכל הרצה של generateView על הטאב: מאפשר לפתיחה מהמטמון ולאימות שאחריה
+            // לזהות שבינתיים התחילה הרצה חדשה (למשל רענון ידני) ולהפסיק בלי לדרוך עליה
+            currentTab._viewGen = (currentTab._viewGen || 0) + 1;
+            const viewGen = currentTab._viewGen;
 
             currentTab.cachedPreview = null;
             currentTab.cachedPreviewFragment = null;
@@ -212,17 +343,28 @@
                 </div>`;
 
             try {
+                const viewStartedAt = performance.now();
+                const bypassCache = Boolean(currentTab._bypassPaginationCache);
+                currentTab._bypassPaginationCache = false;
+
                 // תוכן הספר ותוכן העניינים הרשמי שלו נמשכים במקביל - כך שברגע שהעימוד הראשוני
                 // מתחיל, ה-TOC הרשמי (אם קיים) כבר מוכן וישמש את buildTOC מייד, בלי "הבהוב" של
-                // תוכן עניינים מבוסס-כותרות שמוחלף בהמשך.
-                const [allData, officialToc] = await Promise.all([
-                    fetchEntireBook(currentTab.id, (loaded) => {
-                        if (currentTab._closed || targetTabIndex !== activeTabIndex) return;
-                        const lt = document.getElementById('loading-text');
-                        if (lt) lt.innerHTML = `מושך נתונים... (${loaded})`;
-                    }, currentTab),
-                    fetchOfficialToc(currentTab.id)
-                ]);
+                // תוכן עניינים מבוסס-כותרות שמוחלף בהמשך. המשיכה מתחילה מיד, במקביל לבדיקת מטמון
+                // העימוד: בפגיעה היא משמשת לאימות ברקע, ובפספוס אין שום עיכוב לעומת קודם.
+                const bookPromise = fetchEntireBook(currentTab.id, (loaded) => {
+                    if (currentTab._closed || targetTabIndex !== activeTabIndex) return;
+                    const lt = document.getElementById('loading-text');
+                    if (lt) lt.innerHTML = `מושך נתונים... (${loaded})`;
+                }, currentTab);
+                bookPromise.catch(() => {}); // השגיאה (אם תהיה) מטופלת ב-Promise.all למטה
+                const tocPromise = fetchOfficialToc(currentTab.id);
+
+                const cacheHit = bypassCache
+                    ? null
+                    : await tryRenderFromPaginationCache(currentTab, viewGen, tocPromise, viewStartedAt);
+
+                const [allData, officialToc] = await Promise.all([bookPromise, tocPromise]);
+                const bookFetchedAt = performance.now();
 
                 // הטאב נסגר בזמן שהמשיכה הייתה באמצע - לא ממשיכים לעבד (עימוד, בניית DOM וכו') בשביל
                 // טאב שכבר לא קיים; ה-await למעלה כבר עצר את משיכת הנתונים בפועל עצמה (ראו fetchEntireBook)
@@ -230,6 +372,14 @@
                     currentTab.isRendering = false;
                     return;
                 }
+
+                if (cacheHit) {
+                    await verifyCachedViewAgainstBook(currentTab, cacheHit, allData, officialToc, viewGen);
+                    return;
+                }
+
+                // הרצה חדשה של generateView על אותו טאב (למשל רענון ידני) כבר השתלטה - היא תטפל בהכל
+                if (currentTab._viewGen !== viewGen) return;
 
                 if (!allData) {
                     currentTab.isRendering = false;
@@ -248,7 +398,9 @@
                 // כבר לא קיימות בתוכן שנמשך עכשיו
                 currentTab.footnotes = libFootnotes;
                 currentTab.officialToc = officialToc;
+                const paginationStartedAt = performance.now();
                 await paginateContent(contentForDisplay, targetTabIndex);
+                console.info('[שני טורים] פתיחה בלי מטמון: משיכה ' + Math.round(bookFetchedAt - viewStartedAt) + 'ms, עימוד ' + Math.round(performance.now() - paginationStartedAt) + 'ms');
 
                 // קפיצה חד-פעמית למיקום המדויק שבו היה המשתמש במסך העיון הרגיל (ראו
                 // setBookSelection) - רק אחרי שהעימוד הסתיים במלואו וכל העמודים כבר קיימים ב-DOM.
