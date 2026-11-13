@@ -539,14 +539,27 @@
             refreshHover(lastPointer);
         });
 
+        function observeContentChildren(state) {
+            // ScrollHeight can change when list items or their direct content
+            // resize (for example after a thumbnail/font finishes loading),
+            // even while the scroll viewport itself keeps the same height.
+            for (const child of state.element.children) {
+                resizeObserver.observe(child);
+            }
+        }
+
         const mutationObserver = new MutationObserver(() => {
-            for (const state of states.values()) updateTrackPosition(state);
+            for (const state of states.values()) {
+                observeContentChildren(state);
+                updateTrackPosition(state);
+            }
             refreshHover(lastPointer);
         });
 
         for (const state of states.values()) {
             resizeObserver.observe(state.element);
             resizeObserver.observe(state.parent);
+            observeContentChildren(state);
             mutationObserver.observe(state.element, {
                 childList: true,
                 subtree: true,
