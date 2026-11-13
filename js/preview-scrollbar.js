@@ -42,6 +42,8 @@
 
         const trackHeight = track.clientHeight;
         if (trackHeight <= 0) return;
+        // Match Otzaria's ScrollablePositionedListScrollbar: the thumb is at
+        // least 5% of the track (not Material Scrollbar's 48px minimum).
         thumbHeight = Math.max(0.05, Math.min(1, previewArea.clientHeight / previewArea.scrollHeight));
         if (!dragging) {
             thumbPosition = metrics.range > 0
