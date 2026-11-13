@@ -109,6 +109,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           VERSION: ${{ needs.package.outputs.version }}
           RELEASE_COMMIT: ${{ github.sha }}
         run: |
