@@ -91,6 +91,11 @@
         const style = getComputedStyle(element);
         if (style.display === 'none' || element.clientHeight === 0) {
             state.track.style.display = 'none';
+            clearHideTimer(state);
+            state.track.classList.remove('is-visible', 'is-hovered', 'is-dragging');
+            state.hovered = false;
+            state.dragging = false;
+            state.dragPointerId = null;
             return;
         }
 
