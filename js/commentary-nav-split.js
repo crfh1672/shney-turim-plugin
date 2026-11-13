@@ -1041,8 +1041,9 @@
        • כותרת הניווט: שם הספר והנתיב ההיררכי הנוכחי; לחצני המעבר מנווטים בין הכותרות
          שמופיעות בתוכן העניינים הרשמי, ובהיעדרו בין כותרות ה-DOM. בריחוף מוצג הנתיב המלא.
        ========================================================================================== */
-    const NAV_CENTER_MAX_WIDTH = 440;
-    const NAV_CENTER_MIN_WIDTH = 150;
+    // רוחב המרכז כולל עכשיו ארבעה חיצים (תחילה/כותרת קודמת/כותרת הבאה/סוף) במקום שניים
+    const NAV_CENTER_MAX_WIDTH = 528;
+    const NAV_CENTER_MIN_WIDTH = 238;
 
     let navBarUpdateQueued = false;
     let navHeadingCache = null;   // { tab, key, items }
@@ -1298,6 +1299,12 @@
             center.classList.toggle('nav-center-empty', items.length === 0);
             prevBtn.disabled = items.length === 0 || state.idx < 0 || (state.idx === 0 && state.atHeading);
             nextBtn.disabled = items.length === 0 || state.idx >= items.length - 1;
+            // חיצי תחילת/סוף הספר פעילים כל עוד יש עמודים (לא תלויים בכותרות)
+            const edgeHasPages = hasBook && previewArea.querySelector('.print-page') !== null;
+            const startEdgeBtn = document.getElementById('btn-book-start');
+            const endEdgeBtn = document.getElementById('btn-book-end');
+            if (startEdgeBtn) startEdgeBtn.disabled = !edgeHasPages;
+            if (endEdgeBtn) endEdgeBtn.disabled = !edgeHasPages;
             const tip = document.getElementById('nav-heading-tooltip');
             if (tip && tip.classList.contains('visible')) tip.textContent = shownTitle;
         }
@@ -1431,7 +1438,8 @@
         // הצד הימני: כפתורי הסרגל; הצד השמאלי: כל הכפתורים (לא מצטמצם)
         let startFixed = 0;
         if (startSide) {
-            startSide.querySelectorAll(':scope > button').forEach(b => { startFixed += b.offsetWidth + 6; });
+            const startGap = parseFloat(getComputedStyle(startSide).columnGap) || 8;
+            startSide.querySelectorAll(':scope > button').forEach(b => { startFixed += b.offsetWidth + startGap; });
         }
         const tbRect = toolbar.getBoundingClientRect();
         const endRight = endSide ? (endSide.getBoundingClientRect().right - tbRect.left) : padding;

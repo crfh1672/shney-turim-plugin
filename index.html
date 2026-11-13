@@ -38,7 +38,7 @@
                 <i class="ui-icon otzaria-icon drawer-toggle-icon drawer-toggle-closed" data-otzaria-icon="text_continuous_rtl" aria-hidden="true"></i>
                 <i class="ui-icon otzaria-icon drawer-toggle-icon drawer-toggle-open" data-otzaria-icon="text_continuous_ltr" data-otzaria-weight="filled" aria-hidden="true"></i>
             </button>
-            <button type="button" class="pin-btn" id="pin-btn" onclick="togglePin()" data-tooltip="נעץ את חלונית הניווט" aria-label="נעץ את חלונית הניווט">
+            <button type="button" class="pin-btn" id="pin-btn" onclick="togglePin()" data-tooltip="נעץ את החלונית" aria-label="נעץ את החלונית">
                 <i class="ui-icon pin-icon-outline" data-fluent-icon="pin" aria-hidden="true"></i>
                 <i class="ui-icon pin-icon-filled" data-fluent-icon="pin" data-fluent-weight="filled" aria-hidden="true"></i>
             </button>
@@ -50,8 +50,11 @@
         <!-- נתיב הספר והכותרת הנוכחית, עם לחצני מעבר לכותרת הקודמת/הבאה - ממורכזים בסרגל
              ברוחב קבוע (ראו layoutNavCenter). מוסתרים כשהסרגל צר מדי ובתצוגה מפוצלת. -->
         <div class="toolbar-nav-center" id="toolbar-nav-center">
+            <button class="nav-heading-btn nav-edge-btn" id="btn-book-start" onclick="goToBookEdge('start')" disabled data-tooltip="תחילת הספר (Ctrl+Home)" aria-label="תחילת הספר">
+                <i class="ui-icon rtl-flip" data-fluent-icon="arrow_previous" data-fluent-weight="filled" aria-hidden="true"></i>
+            </button>
             <button class="nav-heading-btn" id="btn-heading-prev" onclick="goToAdjacentHeading(-1)" disabled data-tooltip="הכותרת הקודמת">
-                <i class="ui-icon rotate-270" data-fluent-icon="chevron_down" aria-hidden="true"></i>
+                <i class="ui-icon" data-fluent-icon="chevron_left" aria-hidden="true"></i>
             </button>
             <div class="nav-heading-title-wrap" id="nav-heading-title-wrap">
                 <span class="nav-heading-title" id="nav-heading-title"></span>
@@ -66,7 +69,10 @@
                        aria-label="הזן מספר דף">
             </div>
             <button class="nav-heading-btn" id="btn-heading-next" onclick="goToAdjacentHeading(1)" disabled data-tooltip="הכותרת הבאה">
-                <i class="ui-icon rotate-90" data-fluent-icon="chevron_down" aria-hidden="true"></i>
+                <i class="ui-icon" data-fluent-icon="chevron_right" aria-hidden="true"></i>
+            </button>
+            <button class="nav-heading-btn nav-edge-btn" id="btn-book-end" onclick="goToBookEdge('end')" disabled data-tooltip="סוף הספר (Ctrl+End)" aria-label="סוף הספר">
+                <i class="ui-icon rtl-flip" data-fluent-icon="arrow_next" data-fluent-weight="filled" aria-hidden="true"></i>
             </button>
         </div>
 
@@ -120,17 +126,17 @@
             <button class="icon-btn" id="btn-toolbar-search" onclick="openSearchFromToolbar()" data-tooltip="חיפוש" aria-label="חיפוש">
                 <i class="ui-icon" data-fluent-icon="search" aria-hidden="true"></i>
             </button>
-            <button class="icon-btn" id="btn-hand-mode" onclick="toggleHandMode()" data-tooltip="מצב יד: גרירה להזזת התצוגה" aria-label="מצב יד" aria-pressed="false">
+            <button class="icon-btn" id="btn-hand-mode" onclick="toggleHandMode()" data-tooltip="מצב יד — גלילה בגרירת העכבר" aria-label="מצב יד" aria-pressed="false">
                 <i class="ui-icon" data-fluent-icon="hand_left" aria-hidden="true"></i>
             </button>
             <div class="font-size-buttons">
-                <button class="font-size-btn large" id="btn-increase-font" onclick="zoomIn()" data-tooltip="הגדל תצוגת דף (זום)">
+                <button class="font-size-btn large" id="btn-increase-font" onclick="zoomIn()" data-tooltip="הגדל את התצוגה">
                     <i class="ui-icon" data-fluent-icon="zoom_in" aria-hidden="true"></i>
                 </button>
-                <button class="font-size-btn small" id="btn-decrease-font" onclick="zoomOut()" data-tooltip="הקטן תצוגת דף (זום)">
+                <button class="font-size-btn small" id="btn-decrease-font" onclick="zoomOut()" data-tooltip="הקטן את התצוגה">
                     <i class="ui-icon" data-fluent-icon="zoom_out" aria-hidden="true"></i>
                 </button>
-                <button class="font-size-btn" id="btn-fit-width" onclick="toggleFitMode()" data-tooltip="התאם לרוחב המסך">
+                <button class="font-size-btn" id="btn-fit-width" onclick="toggleFitMode()" data-tooltip="התאם לרוחב">
                     <i class="ui-icon" data-fluent-icon="arrow_autofit_width" aria-hidden="true"></i>
                 </button>
             </div>

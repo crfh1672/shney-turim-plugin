@@ -443,7 +443,7 @@
             if (!button) return;
             const fitsPageNext = nextFitMode === 'page';
             button.innerHTML = fluentIconHTML(fitsPageNext ? 'arrow_autofit_height' : 'arrow_autofit_width');
-            button.setAttribute('data-tooltip', fitsPageNext ? 'התאם לעמוד שלם' : 'התאם לרוחב המסך');
+            button.setAttribute('data-tooltip', fitsPageNext ? 'התאם לעמוד שלם' : 'התאם לרוחב');
         }
 
         function toggleFitMode() {
@@ -462,6 +462,7 @@
                 button.classList.toggle('active', handModeEnabled);
                 button.setAttribute('aria-pressed', String(handModeEnabled));
                 button.innerHTML = fluentIconHTML('hand_left', '', handModeEnabled);
+                button.setAttribute('data-tooltip', handModeEnabled ? 'מצב יד פעיל — לחץ לחזרה לסימון טקסט' : 'מצב יד — גלילה בגרירת העכבר');
             }
         }
 

@@ -1070,8 +1070,8 @@ const previewArea = document.getElementById('preview-area');
             pinButton.classList.toggle('visible', isOpen && availableWidth >= 500);
             pinButton.classList.toggle('pinned', isPinned);
             pinButton.setAttribute('aria-pressed', String(isPinned));
-            pinButton.setAttribute('aria-label', isPinned ? 'בטל נעיצת חלונית הניווט' : 'נעץ את חלונית הניווט');
-            pinButton.dataset.tooltip = isPinned ? 'בטל נעיצה' : 'נעץ את חלונית הניווט';
+            pinButton.setAttribute('aria-label', isPinned ? 'בטל נעיצה' : 'נעץ את החלונית');
+            pinButton.dataset.tooltip = isPinned ? 'בטל נעיצה' : 'נעץ את החלונית';
             updateFloatingTocSearch();
         }
 
@@ -1457,6 +1457,28 @@ const previewArea = document.getElementById('preview-area');
             setTimeout(() => { isScrollingFromTOC = false; }, 1500);
             if (window.innerWidth < 800) closeAllDrawers();
         }
+
+        // קפיצה לתחילת/סוף הספר (כמו "תחילת הספר"/"סוף הספר" בסרגל ה-PDF של אוצריא): העמוד הראשון
+        // או האחרון שעומד כרגע. בזמן עימוד שעדיין רץ, "הסוף" הוא העמוד האחרון שכבר קיים.
+        function goToBookEdge(edge) {
+            const previewArea = document.getElementById('preview-area');
+            if (!previewArea) return;
+            const pages = previewArea.querySelectorAll('.print-page');
+            if (pages.length === 0) return;
+            goToPageIndex(edge === 'start' ? 0 : pages.length - 1);
+        }
+
+        // Ctrl+Home / Ctrl+End - אותם קיצורים שמוצגים בטולטיפ של הכפתורים (כמו באוצריא)
+        document.addEventListener('keydown', (e) => {
+            if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+            if (e.key !== 'Home' && e.key !== 'End') return;
+            const targetTag = (e.target && e.target.tagName || '').toLowerCase();
+            if (targetTag === 'input' || targetTag === 'textarea' || (e.target && e.target.isContentEditable)) return;
+            const tab = tabs[activeTabIndex];
+            if (!tab || tab.isNewBookTab) return;
+            e.preventDefault();
+            goToBookEdge(e.key === 'Home' ? 'start' : 'end');
+        });
 
         // איתור אינדקס העמוד (בתוך העימוד הנוכחי) שמכיל שורה נתונה מהטקסט הגולמי (ראו data-line-idx
         // ב-fetchEntireBook) - מוצא את התכונה עם הערך הגדול ביותר שעדיין קטן/שווה ליעד, כדי לתמוד

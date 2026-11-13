@@ -265,15 +265,15 @@
             transition: background 0.2s, opacity 0.2s;
         }
 
-        .icon-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
-        .icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .icon-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--color-primary) 8%, transparent); }
+        .icon-btn:disabled { color: color-mix(in srgb, var(--color-on-surface) 38%, transparent); cursor: not-allowed; }
         .icon-btn .ui-icon { width: 20px; font-size: 20px; height: 20px; color: currentColor; }
 
         /* מצב "פעיל" (מסומן) לכפתורי סרגל כלים בודדים (למשל חלונית מפרשים פתוחה) - אותו עיצוב
            בדיוק כמו .drawer-icon-btn.active למעלה, לשמירה על עקביות חזותית באפליקציה */
         .icon-btn.active {
             background: color-mix(in srgb, var(--color-on-surface) 12%, transparent);
-            color: var(--color-on-surface);
+            color: var(--color-on-secondary-container);
         }
 
         /* ============================================================================
@@ -793,7 +793,7 @@
 
         .font-size-buttons {
             display: flex;
-            gap: 6px;
+            gap: 4px;
             align-items: center;
         }
 
@@ -815,8 +815,8 @@
             transition: background 0.2s, opacity 0.2s;
         }
 
-        .font-size-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
-        .font-size-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .font-size-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--color-primary) 8%, transparent); }
+        .font-size-btn:disabled { color: color-mix(in srgb, var(--color-on-surface) 38%, transparent); cursor: not-allowed; }
         .font-size-btn .ui-icon { width: 20px; font-size: 20px; height: 20px; color: currentColor; }
 
         #preview-area.hand-mode,
@@ -1270,11 +1270,11 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 2px;
+            gap: 4px;
             z-index: 1;
         }
         .toolbar-nav-center.nav-center-hidden { display: none; }
-        .toolbar-nav-center.nav-center-empty .nav-heading-btn { visibility: hidden; }
+        .toolbar-nav-center.nav-center-empty .nav-heading-btn:not(.nav-edge-btn) { visibility: hidden; }
 
         .nav-heading-btn {
             flex: 0 0 auto;
@@ -1293,8 +1293,8 @@
             transition: background 0.2s, opacity 0.2s;
         }
         .nav-heading-btn .ui-icon { width: 20px; font-size: 20px; height: 20px; }
-        .nav-heading-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
-        .nav-heading-btn:disabled { opacity: 0.3; cursor: default; }
+        .nav-heading-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--color-primary) 8%, transparent); }
+        .nav-heading-btn:disabled { color: color-mix(in srgb, var(--color-on-surface) 38%, transparent); cursor: default; }
         body.compact-toolbar .nav-heading-btn { width: 36px; height: 36px; padding: 8px; }
         body.compact-toolbar .nav-heading-btn .ui-icon { width: 18px; font-size: 18px; height: 18px; }
         body.app-compact-density .toolbar:not(.compact-toolbar) .icon-btn,
@@ -1320,8 +1320,8 @@
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
-            font-size: 1.05rem;
-            font-weight: 500;
+            font-size: 18px;
+            font-weight: 600;
             color: var(--color-on-surface);
             cursor: default;
         }
@@ -1680,13 +1680,12 @@
             border-radius:  var(--radius-pill);
             background: transparent;
             border: none;
-            color: var(--color-on-surface);
+            color: var(--color-on-surface-variant);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            opacity: 0.55;
-            transition: background 0.15s, opacity 0.15s;
+            transition: background 0.15s, color 0.15s;
             flex-shrink: 0;
         }
         .toolbar-side-start > .pin-btn {
@@ -1695,14 +1694,14 @@
         .toolbar-side-start > .pin-btn.visible {
             display: flex;
         }
-        .pin-btn:hover { opacity: 0.85; }
         .pin-btn .pin-icon-filled { display: none; }
         .pin-btn.pinned .pin-icon-outline { display: none; }
         .pin-btn.pinned .pin-icon-filled { display: inline-block; }
+        /* נעוץ = כפתור אייקון "נבחר" של M3 באוצריא (AppIconButton.isSelected): האייקון בצבע הראשי
+           והרקע שקוף. קודם היה כאן רקע כהה (surface-container-highest) שאין באוצריא. */
         .pin-btn.pinned {
             color: var(--color-primary);
-            opacity: 1;
-            background: var(--color-surface-container-highest);
+            background: transparent;
         }
         .pin-btn.pinned .ui-icon {
             color: var(--color-primary);
@@ -4171,3 +4170,42 @@
 
         /* --- הסתרת סרגל הטאבים: כל מופע מכיל ספר אחד בלבד --- */
         .tab-bar-outer { display: none !important; }
+
+
+/* ==========================================================================================
+   התאמת הסרגל העליון לסרגל העיון של אוצריא (AppTopBar / BarButton / AppIconButton)
+   ========================================================================================== */
+
+/* גובה הסרגל 1 (Material elevation) עם צל כהה רק מתחתיו, כמו ב-AppTopBar */
+.toolbar-main {
+    box-shadow: 0 1px 3px color-mix(in srgb, #000 22%, transparent),
+                0 1px 1px color-mix(in srgb, #000 14%, transparent);
+}
+
+/* ריווח: בין פריטים בצד ההתחלה 8px (קומפקטי 4px); בין כפתורי סרגל 4px (2px מכל צד) */
+.toolbar-main .toolbar-side { gap: 4px; }
+.toolbar-main .toolbar-side-start { gap: 8px; }
+body.app-compact-density .toolbar-main { padding-inline: 6px; }
+body.app-compact-density .toolbar-main .toolbar-side-start { gap: 4px; }
+
+/* כפתור פתיחת/סגירת חלונית הניווט: onSecondaryContainer (NavPanelToggleButton) */
+.toolbar-main .drawer-toggle-btn { color: var(--color-on-secondary-container); }
+
+/* חיצי תחילת/סוף ספר: האייקון (arrow_previous/next) מתהפך ב-RTL כמו RtlIcon (flipInRtl) */
+html[dir="rtl"] .ui-icon.rtl-flip { transform: scaleX(-1); }
+
+/* לחיצה (pressed) וטבעת פוקוס מקלדת = שכבת primary 12%, כמו _hoverButtonStyle ו-AppFocusRing */
+.toolbar-main :is(.icon-btn, .font-size-btn, .nav-heading-btn, .pin-btn):active:not(:disabled) {
+    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+.toolbar-main :is(.icon-btn, .font-size-btn, .nav-heading-btn, .pin-btn):focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+/* מצב "נבחר" + ריחוף: שכבת הריחוף מעל רקע הבחירה (ב-Flutter ה-overlay מצויר מעל הרקע) */
+.toolbar-main .icon-btn.active:hover:not(:disabled) {
+    background: linear-gradient(color-mix(in srgb, var(--color-primary) 8%, transparent),
+                                color-mix(in srgb, var(--color-primary) 8%, transparent)),
+                color-mix(in srgb, var(--color-on-surface) 12%, transparent);
+}
