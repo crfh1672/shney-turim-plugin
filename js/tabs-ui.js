@@ -796,7 +796,7 @@ const previewArea = document.getElementById('preview-area');
             }
         }
 
-        function setBookSelection(id, title, targetLineIndex, bookUid) {
+        function setBookSelection(id, title, targetLineIndex, bookUid, restoreProps) {
             const pendingScrollLineIndex = (typeof targetLineIndex === 'number' && targetLineIndex >= 0) ? targetLineIndex : null;
 
             const existingIdx = tabs.findIndex(t => t.id === id);
@@ -839,7 +839,8 @@ const previewArea = document.getElementById('preview-area');
                     isRendering: false,
                     pagesRendered: false,
                     pendingScrollLineIndex,
-                    bookUid: bookUid || null
+                    bookUid: bookUid || null,
+                    ...(restoreProps || {})
                 };
                 // אילוץ עדכון - מאפסים את activeTabIndex ואז קוראים לswitchTab
                 const targetIndex = activeTabIndex;
@@ -852,7 +853,7 @@ const previewArea = document.getElementById('preview-area');
                 switchTab(targetIndex);
             } else {
                 // כל מופע מכיל ספר אחד בלבד - מחליפים את הטאב הנוכחי בספר החדש
-                tabs = [{ id, title, cachedPreview: null, rawContent: "", cols: "2", fontSize: currentSettings.fontSize || 14, isRendering: false, pagesRendered: false, pendingScrollLineIndex, bookUid: bookUid || null }];
+                tabs = [{ id, title, cachedPreview: null, rawContent: "", cols: "2", fontSize: currentSettings.fontSize || 14, isRendering: false, pagesRendered: false, pendingScrollLineIndex, bookUid: bookUid || null, ...(restoreProps || {}) }];
                 activeTabIndex = -1;
                 // ראו הערה מעל - switchTab כבר קורא ל-generateView בעצמו, אין לקרוא לה שוב כאן
                 switchTab(0);

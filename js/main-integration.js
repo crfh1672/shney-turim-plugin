@@ -445,15 +445,20 @@
         }
 
         // אתחול ראשוני והאזנה ל-API
-        loadSettings().then(() => loadPdfExportFontAndRehydrate());
+        const settingsReadyPromise = loadSettings().then(() => loadPdfExportFontAndRehydrate());
 
         // אתחול התוסף רץ גם במצבי תצוגה שבהם Otzaria SDK אינו זמין.
         if (typeof Otzaria !== 'undefined' && Otzaria && typeof Otzaria.on === 'function') {
             Otzaria.on('plugin.boot', async (payload) => {
                 applyTheme(payload.theme);
-                // דף הבית של התוסף הוא מסך בחירת ספרים בלבד - אין פתיחה אוטומטית של ספר.
-                // הספר מגיע דרך reader.toolbar_item_clicked (כפתור הקורא) או plugin.page_opened (מדף הבית).
-                openNewBookTab();
+                // פתיחה רגילה: מסך בחירת ספרים בלבד - הספר מגיע דרך reader.toolbar_item_clicked (כפתור
+                // הקורא) או plugin.page_opened (מדף הבית). אבל כשהדף נטען מחדש עבור לשונית שכבר הייתה
+                // קיימת - אחרי סגירה ופתיחה של התוכנה, פינוי זיכרון, קריסה או טעינה מחדש - אוצריא
+                // מוסרת ב-payload.restore את המצב ששמרנו (session-restore.js), והספר חוזר כמו שהיה.
+                let restored = false;
+                try { restored = await SessionRestore.restoreFromBoot(payload); } catch (e) { restored = false; }
+                if (!restored) await openNewBookTab();
+                SessionRestore.start();
             });
 
             // plugin.boot נורה רק בטעינה ראשונה של ה-webview של התוסף. אם המשתמש כבר פתח את התוסף
@@ -514,8 +519,8 @@
 
             Otzaria.on('theme.changed', (theme) => applyTheme(theme));
         }
-// שמירת הגדרות חירום בעת סגירה פתאומית או מעבר לשונית באוצריא (בכוונה בלי שמירת/שחזור טאבים
-// פתוחים - התוסף לא אמור לזכור מה היה פתוח בהפעלה קודמת)
+// שמירת הגדרות חירום בעת סגירה פתאומית או מעבר לשונית באוצריא. מה שפתוח במופע נשמר בנפרד
+// דרך plugin.setRestoreState ומשוחזר ב-plugin.boot (ראו session-restore.js)
         window.addEventListener('pagehide', () => {
             saveSettings();
         });
