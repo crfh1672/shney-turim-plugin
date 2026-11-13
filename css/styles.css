@@ -3328,7 +3328,11 @@
             z-index: 40;
             width: 12px;
             background: transparent;
-            pointer-events: none;
+            /* The gutter is its own touch hit target. Prevent the browser from
+               taking over the pointer stream before our drag forwarding runs. */
+            pointer-events: auto;
+            touch-action: none;
+            user-select: none;
         }
 
         .nav-panel-scrollbar-thumb {
