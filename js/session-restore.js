@@ -20,6 +20,8 @@
     let lastSavedJson = undefined; // undefined = עוד לא נשמר כלום; 'null' = נוקה
     let lineDirty = true;          // נדרש חישוב מחדש של השורה הנוכחית מה-DOM
     let saving = false;
+    let pendingPush = false;
+    let pendingForce = false;
     let pollTimer = null;
     let boundScroll = false;
 
@@ -88,9 +90,10 @@
         if (!tab || tab.isNewBookTab || tab.isExternal || !tab.id) return null;
 
         let line = null;
-        if (tab.pagesRendered && lineDirty && typeof tab._restoreLine === 'number' && isLineVisible(tab._restoreLine)) {
-            // השורה ששמורה עדיין על המסך (למשל אחרי קפיצה אוטומטית לשורה מדויקת באמצע עמוד) - לא מזיזים אותה
-            // לראש העמוד: אחרת כל פתיחה/שחזור היה גורם לסחף קטן אחורה בכל פעם
+        if (tab.pagesRendered && lineDirty && !tab._anchorReleased && typeof tab._restoreLine === 'number' && isLineVisible(tab._restoreLine)) {
+            // עד הקלט הראשון של המשתמש (גלגלת/מגע/עכבר/מקלדת): השורה ששמורה עדיין על המסך (למשל אחרי קפיצה
+            // אוטומטית לשורה מדויקת באמצע עמוד) - לא מזיזים אותה לראש העמוד, אחרת כל פתיחה/שחזור היה גורם
+            // לסחף קטן אחורה. מרגע שהמשתמש זז, השורה העליונה מחושבת מחדש בכל פעם (גם בגלילה למעלה)
             lineDirty = false;
         } else if (tab.pagesRendered && lineDirty) {
             line = computeCurrentLine(tab);
@@ -116,7 +119,14 @@
     }
 
     async function pushState(force) {
-        if (!armed || !hasHost() || saving) return;
+        if (!armed || !hasHost()) return;
+        if (saving) {
+            // שמירה קודמת עדיין בדרך: לא זורקים את הבקשה (למשל שטיפת חירום ב-pagehide) אלא מריצים
+            // אותה מיד כשהשמירה הנוכחית מסתיימת, עם המצב העדכני ביותר
+            pendingPush = true;
+            pendingForce = pendingForce || Boolean(force);
+            return;
+        }
         let state;
         try { state = collectState(); } catch (e) { return; }
         const json = JSON.stringify(state);
@@ -130,6 +140,11 @@
             // כשל בשמירה לא קריטי - ננסה שוב בבדיקה הבאה (lastSavedJson לא עודכן)
         } finally {
             saving = false;
+            if (pendingPush) {
+                const f = pendingForce;
+                pendingPush = false; pendingForce = false;
+                pushState(f);
+            }
         }
     }
 
@@ -141,9 +156,14 @@
             boundScroll = true;
             const pa = document.getElementById('preview-area');
             if (pa) pa.addEventListener('scroll', markLineDirty, { passive: true });
-            // מעבר עמוד בתצוגת ספר ושינויי פריסה לא תמיד מייצרים אירוע גלילה
-            document.addEventListener('click', markLineDirty, true);
-            document.addEventListener('keydown', markLineDirty, true);
+            // קלט אמיתי של המשתמש משחרר את "עוגן" השורה השמורה ומחשב את השורה העליונה מחדש.
+            // גלילה בלבד (גם אוטומטית, אחרי קפיצה) רק מסמנת שינוי - היא לא משחררת את העוגן.
+            const userInput = () => {
+                const t = (typeof tabs !== 'undefined') ? tabs[activeTabIndex] : null;
+                if (t) t._anchorReleased = true;
+                markLineDirty();
+            };
+            ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach((ev) => document.addEventListener(ev, userInput, { capture: true, passive: true }));
             const flush = () => { markLineDirty(); pushState(true); };
             document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
             window.addEventListener('pagehide', flush);
