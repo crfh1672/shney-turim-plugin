@@ -578,7 +578,19 @@
             state.focused = false;
             scheduleHide(state);
         });
-        thumb.addEventListener('keydown', event => onThumbKeyDown(state, event));
+        thumb.addEventListener('keydown', event => {
+            // Keep pane-scrollbar navigation keys from reaching the reader's
+            // document-level handler (which pages or pans the book). Preserve
+            // modified shortcuts for the reader.
+            const isNavigationKey = [
+                'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+                'PageUp', 'PageDown', 'Home', 'End'
+            ].includes(event.key);
+            if (isNavigationKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+                event.stopPropagation();
+            }
+            onThumbKeyDown(state, event);
+        });
 
         updateTrackPosition(state);
     }
