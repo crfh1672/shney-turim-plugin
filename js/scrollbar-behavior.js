@@ -211,7 +211,9 @@
             if (!insideScrollbarLane(state, event.clientX, event.clientY)) continue;
 
             const thumbRect = state.thumb.getBoundingClientRect();
-            const onThumb = event.clientY >= thumbRect.top &&
+            const onThumb = event.clientX >= thumbRect.left &&
+                event.clientX <= thumbRect.right &&
+                event.clientY >= thumbRect.top &&
                 event.clientY <= thumbRect.bottom;
 
             event.preventDefault();
@@ -302,7 +304,6 @@
 
         const track = document.createElement('div');
         track.className = 'nav-panel-scrollbar-track';
-        track.setAttribute('aria-hidden', 'true');
 
         const thumb = document.createElement('div');
         thumb.className = 'nav-panel-scrollbar-thumb';
