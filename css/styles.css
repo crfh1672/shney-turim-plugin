@@ -422,10 +422,17 @@
                direction remain unchanged. */
             direction: ltr;
             padding: 0 14px;
+            /* Keep the scrollbar at the physical right edge like Otzaria's
+               ScrollablePositionedListScrollbar, while preserving RTL content below. */
+            direction: ltr;
             /* WebKit uses the custom thumb rules below. The reader color is set
                only in the non-WebKit fallback, where scrollbar-color is supported. */
             scrollbar-color: auto;
         }
+        .commentary-panel-body > * {
+            direction: rtl;
+        }
+
         .commentary-panel-body > * {
             direction: rtl;
         }
@@ -3312,6 +3319,83 @@
 
         ::-webkit-scrollbar-thumb:active {
             background-color: var(--scrollbar-thumb-active);
+        }
+
+
+        /* Port of Otzaria's ScrollbarGutter: reserve the 12px lane only
+           when the scrollable content actually overflows. */
+        #toc-scroll-area.drawer-content,
+        #search-results-list.drawer-content,
+        #page-nav-list.drawer-content {
+            box-sizing: border-box;
+            padding-right: 0;
+            scrollbar-width: none;
+            scrollbar-color: transparent transparent;
+        }
+
+        #toc-scroll-area.drawer-content.has-scrollbar-gutter,
+        #search-results-list.drawer-content.has-scrollbar-gutter,
+        #page-nav-list.drawer-content.has-scrollbar-gutter {
+            padding-right: 12px;
+        }
+
+        #toc-scroll-area.drawer-content::-webkit-scrollbar,
+        #search-results-list.drawer-content::-webkit-scrollbar,
+        #page-nav-list.drawer-content::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        .nav-panel-scrollbar-track {
+            position: absolute;
+            z-index: 40;
+            width: 12px;
+            background: transparent;
+            /* The gutter is its own touch hit target. Prevent the browser from
+               taking over the pointer stream before our drag forwarding runs. */
+            pointer-events: auto;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .nav-panel-scrollbar-thumb {
+            position: absolute;
+            top: 0;
+            right: 2px;
+            width: 8px;
+            border-radius: 4px;
+            background-color: var(--scrollbar-thumb-idle);
+            opacity: 0;
+            cursor: default;
+            pointer-events: none;
+            touch-action: none;
+            user-select: none;
+            transition:
+                opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 200ms linear;
+        }
+
+        .nav-panel-scrollbar-track.is-visible .nav-panel-scrollbar-thumb {
+            opacity: 1;
+            pointer-events: auto;
+            cursor: default;
+        }
+
+        .nav-panel-scrollbar-track.is-visible .nav-panel-scrollbar-thumb:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+
+        .nav-panel-scrollbar-track.is-hovered .nav-panel-scrollbar-thumb {
+            background-color: var(--scrollbar-thumb-hover);
+        }
+
+        .nav-panel-scrollbar-track.is-dragging .nav-panel-scrollbar-thumb {
+            background-color: var(--scrollbar-thumb-active);
+            transition:
+                opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0ms;
         }
 
         /* Firefox fallback: it supports color states but not an exact pixel width.
