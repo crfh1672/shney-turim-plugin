@@ -62,8 +62,8 @@ jobs:
           PLUGIN_FILE: ${{ steps.package.outputs.plugin-file }}
         run: |
           set -euo pipefail
-          if [[ -z "$PLUGIN_FILE" || ! -f "$PLUGIN_FILE" ]]; then
-            echo "::error::The validator did not produce a .otzplugin file."
+          if [[ -z "$PLUGIN_FILE" || ! -f "$PLUGIN_FILE" || "$PLUGIN_FILE" != *.otzplugin ]]; then
+            echo "::error::The validator did not produce a valid .otzplugin file."
             exit 1
           fi
 
@@ -91,8 +91,6 @@ jobs:
             exit 1
           fi
 
-          PLUGIN_DIR="$(dirname "$PLUGIN_FILE")"
-          PLUGIN_NAME="$(basename "$PLUGIN_FILE")"
           CHECKSUM_FILE="${PLUGIN_FILE}.sha256"
           if [[ ! -f "$CHECKSUM_FILE" ]]; then
             echo "::error::Checksum file was not created."
