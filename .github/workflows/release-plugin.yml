@@ -78,6 +78,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
           PLUGIN_FILE: ${{ steps.package.outputs.plugin-file }}
+          RELEASE_COMMIT: ${{ github.sha }}
         run: |
           set -euo pipefail
           TAG="v${VERSION}"
@@ -101,4 +102,5 @@ jobs:
             "$PLUGIN_FILE" \
             "$CHECKSUM_FILE" \
             --title "שני טורים ${VERSION}" \
+            --target "$RELEASE_COMMIT" \
             --generate-notes
