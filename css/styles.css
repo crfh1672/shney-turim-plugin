@@ -416,10 +416,18 @@
         .commentary-panel-body {
             flex: 1;
             overflow-y: auto;
+            /* Keep the scroll track on the physical right edge, like Otzaria's
+               ScrollablePositionedListScrollbar (the leading edge in RTL).
+               Restore RTL on each rendered content root so text and layout
+               direction remain unchanged. */
+            direction: ltr;
             padding: 0 14px;
             /* WebKit uses the custom thumb rules below. The reader color is set
                only in the non-WebKit fallback, where scrollbar-color is supported. */
             scrollbar-color: auto;
+        }
+        .commentary-panel-body > * {
+            direction: rtl;
         }
 
         .commentary-panel-empty {
@@ -701,7 +709,16 @@
             white-space: nowrap;
         }
         .commentary-picker-pill:hover { background: var(--color-secondary-subtle); }
-        .commentary-picker-list { flex: 1; overflow-y: auto; margin: 0 -14px; padding: 0 14px; }
+        /* The picker has its own scrolling list; keep its scrollbar on the
+           same right-hand edge while preserving RTL for every list row. */
+        .commentary-picker-list {
+            flex: 1;
+            overflow-y: auto;
+            margin: 0 -14px;
+            padding: 0 14px;
+            direction: ltr;
+        }
+        .commentary-picker-list > * { direction: rtl; }
         .commentary-picker-master-row {
             display: flex;
             align-items: center;
