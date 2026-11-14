@@ -582,23 +582,28 @@
             margin: 0;
             accent-color: var(--color-primary);
         }
+        /* Mirrors LinksListView: outer Wrap (16px between type/era groups),
+           with each compactFilterChips group wrapping its own chips (4px). */
         .commentary-links-chip-groups {
             display: flex;
-            flex-direction: row;
-            flex-wrap: wrap;
+            flex-flow: row wrap;
             align-items: center;
             justify-content: center;
             column-gap: 16px;
             row-gap: 0;
-            padding: 0;
+            padding: 0 8px 4px;
             margin-bottom: 8px;
         }
         .commentary-links-chip-row {
             display: flex;
+            flex: 0 1 auto;
             flex-wrap: wrap;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            width: max-content;
+            max-width: 100%;
+            column-gap: 4px;
+            row-gap: 4px;
             padding: 4px 0;
         }
         .commentary-links-chip-row[hidden] { display: none !important; }
@@ -635,6 +640,7 @@
 
         .commentary-panel-body {
             flex: 1;
+            min-height: 0;
             overflow-y: auto;
             /* Keep the scroll track on the physical right edge, like Otzaria's
                ScrollablePositionedListScrollbar (the leading edge in RTL).
@@ -651,6 +657,7 @@
         }
 
         .commentary-panel-empty {
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -659,6 +666,18 @@
             margin: 0 -14px;
             padding: 12px 16px;
             text-align: center;
+        }
+        /* The empty Notes state occupies the panel's remaining height instead
+           of sizing itself from its own text and leaving a short strip behind. */
+        .commentary-panel-body[data-subtab="notes"] {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .commentary-panel-body[data-subtab="notes"] > .commentary-panel-empty {
+            flex: 1 1 auto;
+            min-height: 0;
+            height: auto;
         }
         .commentary-panel-empty-icon {
             width: 36px;

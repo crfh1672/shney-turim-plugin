@@ -376,7 +376,7 @@
         backButton.className = 'commentary-picker-back-btn';
         backButton.setAttribute('aria-label', 'חזרה למפרשים');
         backButton.setAttribute('data-tooltip', 'חזרה למפרשים');
-        backButton.innerHTML = fluentIconHTML('arrow_previous');
+        backButton.innerHTML = fluentIconHTML('arrow_left');
         backButton.addEventListener('click', closeCommentaryPickerScreen);
 
         const title = document.createElement('span');

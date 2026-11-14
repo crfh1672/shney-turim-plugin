@@ -1,6 +1,7 @@
         // Glyph code points from fluentui_system_icons 1.1.273, used by Otzaria.
         const FLUENT_ICON_GLYPHS = Object.freeze({
             arrow_next: [0xF16B, 0xF16B],
+            arrow_left: [0xF15C, 0xF15C],
             arrow_previous: [0xF16D, 0xF16D],
             arrow_autofit_height: [0xF8CD, 0xF8E5],
             arrow_autofit_width: [0xF8CE, 0xF8E6],
