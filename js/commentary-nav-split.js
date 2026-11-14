@@ -652,8 +652,8 @@
 
     function normalizedLinkEra(value) {
         const raw = String(value || '').trim().replace(/["״]/g, '');
-        if (raw.includes('תורה שבכתב')) return 'תורה שבכתב';
-        if (raw.includes('חז') || raw.toLowerCase().includes('chazal')) return 'חז״ל';
+        if (raw.includes('תורה שבכתב') || raw.includes('תנ״ך') || raw.toLowerCase().includes('torah shebichtav')) return 'תורה שבכתב';
+        if (raw.includes('חז') || raw.includes('תנאים') || raw.includes('אמוראים') || raw.toLowerCase().includes('chazal')) return 'חז״ל';
         if (raw.includes('ראשונ') || raw.toLowerCase().includes('rishon')) return 'ראשונים';
         if (raw.includes('אחרונ') || raw.toLowerCase().includes('acharon')) return 'אחרונים';
         if (raw.includes('זמנ') || raw.toLowerCase().includes('modern')) return 'מחברי זמננו';
@@ -1245,9 +1245,11 @@
     function refreshCommentaryLinksSubTab(tab, force) {
         const range = getVisibleLineRange();
         if (!range) {
+            tab.linksReqToken = (tab.linksReqToken || 0) + 1;
             tab.linksEntries = [];
             tab.linksLastRangeKey = null;
             tab.linksLoadError = false;
+            tab.linksContentLoading = false;
             renderCommentaryLinksFilters(tab);
             renderCommentaryBody(tab);
             return;
