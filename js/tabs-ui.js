@@ -1075,8 +1075,8 @@ const previewArea = document.getElementById('preview-area');
             pinButton.classList.toggle('visible', isOpen && availableWidth >= 500);
             pinButton.classList.toggle('pinned', isPinned);
             pinButton.setAttribute('aria-pressed', String(isPinned));
-            pinButton.setAttribute('aria-label', isPinned ? 'בטל נעיצת חלונית הניווט' : 'נעץ את חלונית הניווט');
-            pinButton.dataset.tooltip = isPinned ? 'בטל נעיצה' : 'נעץ את חלונית הניווט';
+            pinButton.setAttribute('aria-label', isPinned ? 'בטל נעיצה' : 'נעץ את החלונית');
+            pinButton.dataset.tooltip = isPinned ? 'בטל נעיצה' : 'נעץ את החלונית';
             updateFloatingTocSearch();
         }
 
@@ -1463,6 +1463,33 @@ const previewArea = document.getElementById('preview-area');
             if (window.innerWidth < 800) closeAllDrawers();
         }
 
+        // קפיצה לתחילת/סוף הספר (כמו "תחילת הספר"/"סוף הספר" בסרגל ה-PDF של אוצריא): העמוד הראשון
+        // או האחרון שעומד כרגע. בזמן עימוד שעדיין רץ, "הסוף" הוא העמוד האחרון שכבר קיים.
+        function goToBookEdge(edge) {
+            const previewArea = document.getElementById('preview-area');
+            if (!previewArea) return;
+            const pages = previewArea.querySelectorAll('.print-page');
+            if (pages.length === 0) return;
+            goToPageIndex(edge === 'start' ? 0 : pages.length - 1);
+        }
+
+        // הטולטיפ של כפתורי תחילת/סוף הספר מציג את הקיצור הנוכחי (גם אם שונה בהגדרות), כמו באוצריא.
+        // הקיצורים עצמם (bookStart / bookEnd) רשומים ב-SHORTCUT_DEFS ומטופלים במאזין המקלדת הראשי.
+        function refreshBookEdgeTooltips() {
+            [['btn-book-start', 'bookStart', 'תחילת הספר'], ['btn-book-end', 'bookEnd', 'סוף הספר']].forEach(([id, action, label]) => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                const combo = getShortcutCombo(action);
+                btn.dataset.tooltip = combo && combo.key ? `${label} (${comboToLabel(combo)})` : label;
+            });
+        }
+        ['btn-book-start', 'btn-book-end'].forEach((id) => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            btn.addEventListener('pointerenter', refreshBookEdgeTooltips);
+            btn.addEventListener('focus', refreshBookEdgeTooltips);
+        });
+
         // איתור אינדקס העמוד (בתוך העימוד הנוכחי) שמכיל שורה נתונה מהטקסט הגולמי (ראו data-line-idx
         // ב-fetchEntireBook) - מוצא את התכונה עם הערך הגדול ביותר שעדיין קטן/שווה ליעד, כדי לתמוד
         // גם ביעד שנופל על שורה ריקה שלא קיבלה תכונה משלה (למשל רווח בין פסקאות).
@@ -1575,7 +1602,6 @@ const previewArea = document.getElementById('preview-area');
            קיצורי מקשים, ונבדק בפועל בתוך מאזין המקלדת הראשי (ראו matchesShortcutAction). */
         const SHORTCUT_DEFS = [
             { id: 'fullscreen', label: 'מסך מלא', combo: { ctrl: true, shift: true, key: 'M' } },
-            { id: 'toolbarToggle', label: 'הצג/הסתר סרגל כלים', combo: { ctrl: true, shift: true, key: 'J' } },
             { id: 'searchPanel', label: 'פתיחת חיפוש בספר', combo: { ctrl: true, shift: true, key: 'F' } },
             { id: 'headingsPanel', label: 'פתיחת ניווט כותרות', combo: { ctrl: true, shift: true, key: 'L' } },
             { id: 'pagesPanel', label: 'פתיחת לשונית דפים', combo: { ctrl: true, shift: true, key: 'K' } },
@@ -1592,6 +1618,8 @@ const previewArea = document.getElementById('preview-area');
             { id: 'prevTab', label: 'מעבר לטאב הקודם (Tab)', combo: { ctrl: true, shift: true, key: 'Tab' } },
             { id: 'closeAllTabs', label: 'סגירת כל הטאבים', combo: { ctrl: true, shift: true, key: 'W' } },
             { id: 'closeTab', label: 'סגירת הטאב הנוכחי', combo: { ctrl: true, key: 'W' } },
+            { id: 'bookStart', label: 'מעבר לתחילת הספר', combo: { ctrl: true, key: 'Home' } },
+            { id: 'bookEnd', label: 'מעבר לסוף הספר', combo: { ctrl: true, key: 'End' } },
             { id: 'zoomIn', label: 'הגדלת זום', combo: { ctrl: true, key: '=' } },
             { id: 'zoomOut', label: 'הקטנת זום', combo: { ctrl: true, key: '-' } }
         ];

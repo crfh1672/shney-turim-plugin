@@ -1041,8 +1041,9 @@
        • כותרת הניווט: שם הספר והנתיב ההיררכי הנוכחי; לחצני המעבר מנווטים בין הכותרות
          שמופיעות בתוכן העניינים הרשמי, ובהיעדרו בין כותרות ה-DOM. בריחוף מוצג הנתיב המלא.
        ========================================================================================== */
-    const NAV_CENTER_MAX_WIDTH = 440;
-    const NAV_CENTER_MIN_WIDTH = 150;
+    // רוחב המרכז כולל עכשיו ארבעה חיצים (תחילה/כותרת קודמת/כותרת הבאה/סוף) במקום שניים
+    const NAV_CENTER_MAX_WIDTH = 528;
+    const NAV_CENTER_MIN_WIDTH = 238;
 
     let navBarUpdateQueued = false;
     let navHeadingCache = null;   // { tab, key, items }
@@ -1298,8 +1299,12 @@
             center.classList.toggle('nav-center-empty', items.length === 0);
             prevBtn.disabled = items.length === 0 || state.idx < 0 || (state.idx === 0 && state.atHeading);
             nextBtn.disabled = items.length === 0 || state.idx >= items.length - 1;
-            const tip = document.getElementById('nav-heading-tooltip');
-            if (tip && tip.classList.contains('visible')) tip.textContent = shownTitle;
+            // חיצי תחילת/סוף הספר פעילים כל עוד יש עמודים (לא תלויים בכותרות)
+            const edgeHasPages = hasBook && previewArea.querySelector('.print-page') !== null;
+            const startEdgeBtn = document.getElementById('btn-book-start');
+            const endEdgeBtn = document.getElementById('btn-book-end');
+            if (startEdgeBtn) startEdgeBtn.disabled = !edgeHasPages;
+            if (endEdgeBtn) endEdgeBtn.disabled = !edgeHasPages;
         }
         layoutNavCenter();
     }
@@ -1431,7 +1436,8 @@
         // הצד הימני: כפתורי הסרגל; הצד השמאלי: כל הכפתורים (לא מצטמצם)
         let startFixed = 0;
         if (startSide) {
-            startSide.querySelectorAll(':scope > button').forEach(b => { startFixed += b.offsetWidth + 6; });
+            const startGap = parseFloat(getComputedStyle(startSide).columnGap) || 8;
+            startSide.querySelectorAll(':scope > button').forEach(b => { startFixed += b.offsetWidth + startGap; });
         }
         const tbRect = toolbar.getBoundingClientRect();
         const endRight = endSide ? (endSide.getBoundingClientRect().right - tbRect.left) : padding;
@@ -1458,31 +1464,6 @@
     // ---- בועת הכותרת המלאה בריחוף ----
     (function initNavBar() {
         if (window.top !== window.self) document.body.classList.add('split-pane-b');
-
-        const tip = document.createElement('div');
-        tip.id = 'nav-heading-tooltip';
-        tip.className = 'no-print';
-        document.body.appendChild(tip);
-
-        const wrap = document.getElementById('nav-heading-title-wrap');
-        if (wrap) {
-            wrap.addEventListener('mouseenter', () => {
-                const full = (document.getElementById('nav-heading-title') || {}).textContent || '';
-                if (!full) return;
-                tip.textContent = full;
-                const toolbar = document.getElementById('main-toolbar');
-                const tbRect = toolbar ? toolbar.getBoundingClientRect() : wrap.getBoundingClientRect();
-                const wRect = wrap.getBoundingClientRect();
-                tip.style.top = (tbRect.bottom + 4) + 'px';
-                tip.style.left = '0px';
-                tip.classList.add('visible');
-                const tw = tip.offsetWidth;
-                let left = wRect.left + wRect.width / 2 - tw / 2;
-                left = Math.max(6, Math.min(left, window.innerWidth - tw - 6));
-                tip.style.left = left + 'px';
-            });
-            wrap.addEventListener('mouseleave', () => tip.classList.remove('visible'));
-        }
 
         const previewArea = document.getElementById('preview-area');
         if (previewArea) {

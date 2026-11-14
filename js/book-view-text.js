@@ -72,11 +72,11 @@ function updateBookViewPages(skipPanReset) {
         // הריק שמסביב לספר - הוא נשאר נראה היטב.
         function updateNavArrowOverlap() {
             if (!currentSettings.isBookView) {
-                document.querySelectorAll('.nav-arrow.over-book, .toolbar-reveal-arrow.over-book').forEach(el => el.classList.remove('over-book'));
+                document.querySelectorAll('.nav-arrow.over-book').forEach(el => el.classList.remove('over-book'));
                 return;
             }
             const wrapper = document.querySelector('.book-wrapper');
-            const arrows = document.querySelectorAll('.nav-arrow, .toolbar-reveal-arrow');
+            const arrows = document.querySelectorAll('.nav-arrow');
             if (!wrapper || arrows.length === 0) return;
             const b = wrapper.getBoundingClientRect();
             arrows.forEach(arrow => {
@@ -211,7 +211,6 @@ function appendPagesToBookDOM(fragment) {
         function updateCompactToolbarSetting(isChecked) {
             currentSettings.compactToolbar = isChecked;
             document.body.classList.toggle('compact-toolbar', isChecked);
-            requestAnimationFrame(positionToolbarRevealArrow);
         }
 
 function updateHeaderSetting(val) {
