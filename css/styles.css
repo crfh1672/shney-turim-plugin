@@ -1311,6 +1311,13 @@
             color: var(--color-on-surface-variant);
             font-size: 36px;
         }
+        .commentary-picker-empty.full-panel {
+            box-sizing: border-box;
+            flex: 1 1 0;
+            align-self: stretch;
+            width: 100%;
+            min-height: 0;
+        }
 
         .font-size-buttons {
             display: flex;

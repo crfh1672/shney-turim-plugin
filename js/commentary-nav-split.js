@@ -632,8 +632,11 @@
             return (aIndex < 0 ? groupOrder.length : aIndex) - (bIndex < 0 ? groupOrder.length : bIndex);
         });
         if (groups.length === 0) {
+            chips.hidden = true;
+            const searchRow = document.getElementById('commentary-picker-search-row');
+            if (searchRow) searchRow.hidden = true;
             const empty = document.createElement('div');
-            empty.className = 'commentary-picker-empty';
+            empty.className = 'commentary-picker-empty full-panel';
             empty.innerHTML = otzariaIconHTML('links', 'commentary-picker-empty-icon');
             const label = document.createElement('div');
             label.textContent = 'אין מפרשים';
@@ -643,9 +646,12 @@
             return;
         }
 
+        chips.hidden = false;
+        const searchRow = document.getElementById('commentary-picker-search-row');
+        if (searchRow) searchRow.hidden = !(tab.commentaryPickerSearchOpen || tab.commentaryPickerSearchTerm);
         const selected = new Set(tab.activeCommentators || []);
         const selectedTopics = new Set(tab.commentaryPickerSelectedGroups || []);
-        const searchTerm = normalizedCommentarySearchText(tab.commentaryPickerSearchTerm || '');
+        const searchTerm = tab.commentaryPickerSearchTerm || '';
         const bookTopic = 'על ' + (tab.title || '');
         const rare = tab.commentaryRare instanceof Set ? tab.commentaryRare : new Set(tab.commentaryRare || []);
         const lineRelevant = tab.commentaryPickerLineRelevant instanceof Set
@@ -668,7 +674,12 @@
             (byType[type] || []).forEach(name => allowedByType.add(name));
         });
 
-        const eraChipItems = groups.map(group => group.title || 'שאר מפרשים');
+        // זהה ל-_eraChipItems של אוצריא: חמש תקופות בלבד, ובנוסף "על הספר".
+        // "שאר מפרשים" היא קבוצת ברירת מחדל ברשימה, לא צ'יפ סינון.
+        const eraTopics = ['תורה שבכתב', 'חז״ל', 'ראשונים', 'אחרונים', 'מחברי זמננו'];
+        const eraChipItems = eraTopics.filter(topic =>
+            groups.some(group => commentaryPickerTopicKey(group.title) === commentaryPickerTopicKey(topic))
+        );
         eraChipItems.push(bookTopic);
 
         const axes = document.createElement('div');
@@ -725,7 +736,7 @@
             const names = (group.commentators || []).filter(name => {
                 if (rare.has(name) && lineRelevant && !lineRelevant.has(name)) return false;
                 if (effectiveTypes.size && !allowedByType.has(name)) return false;
-                if (term && !normalizedCommentarySearchText(name).includes(term)) return false;
+                if (term && !String(name).includes(term)) return false;
                 if (selectedTopics.size) {
                     const groupTopic = commentaryPickerTopicKey(label);
                     const onBookTopic = commentaryPickerTopicKey(bookTopic);
@@ -775,17 +786,21 @@
         const allVisibleNames = visibleEntries.flatMap(entry => entry.names);
         const uniqueVisibleNames = Array.from(new Set(allVisibleNames));
         if (uniqueVisibleNames.length === 0) {
-            const empty = document.createElement('div');
-            empty.className = 'commentary-picker-empty';
-            const icon = document.createElement('i');
-            icon.className = 'ui-icon otzaria-icon commentary-picker-empty-icon';
-            icon.textContent = String.fromCodePoint(otzariaIconCodePoint('search_in_library'));
-            icon.setAttribute('aria-hidden', 'true');
-            empty.appendChild(icon);
-            const label = document.createElement('div');
-            label.textContent = term ? 'לא נמצאו מפרשים תואמים' : 'אין מפרשים בקבוצות שנבחרו';
-            empty.appendChild(label);
-            list.appendChild(empty);
+            // באוצריא מוצג מצב ריק רק כשהחיפוש עצמו לא מצא התאמות.
+            // סינון לפי צ'יפים ללא התאמות משאיר את הרשימה ריקה מתחת לכותרת.
+            if (term) {
+                const empty = document.createElement('div');
+                empty.className = 'commentary-picker-empty search-empty';
+                const icon = document.createElement('i');
+                icon.className = 'ui-icon otzaria-icon commentary-picker-empty-icon';
+                icon.textContent = String.fromCodePoint(otzariaIconCodePoint('search_in_library'));
+                icon.setAttribute('aria-hidden', 'true');
+                empty.appendChild(icon);
+                const label = document.createElement('div');
+                label.textContent = 'לא נמצאו מפרשים תואמים';
+                empty.appendChild(label);
+                list.appendChild(empty);
+            }
             syncCommentaryPickerFloatingSearch();
             return;
         }
