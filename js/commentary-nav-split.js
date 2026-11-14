@@ -257,9 +257,65 @@
             btn.classList.toggle('active', btn.dataset.subtab === effectiveTabName);
         });
         const toolbarRow = document.getElementById('commentary-toolbar-row');
-        if (toolbarRow) toolbarRow.style.display = isPicker ? 'none' : '';
+        const searchRow = document.getElementById('commentary-search-row');
+        const linksTools = document.getElementById('commentary-links-tools');
+        if (toolbarRow) toolbarRow.hidden = isPicker || effectiveTabName !== 'commentary';
+        if (searchRow) searchRow.hidden = isPicker || effectiveTabName !== 'commentary' || !tab || !tab.commentarySearchOpen;
+        if (linksTools) linksTools.hidden = isPicker || effectiveTabName !== 'links';
         const pickerAnchor = document.getElementById('commentary-picker-anchor');
-        if (pickerAnchor) pickerAnchor.style.display = (effectiveTabName === 'commentary') ? '' : 'none';
+        if (pickerAnchor) pickerAnchor.style.display = effectiveTabName === 'commentary' ? '' : 'none';
+        const searchInput = document.getElementById('commentary-search-input');
+        if (searchInput && searchInput.value !== ((tab && tab.commentarySearchQuery) || '')) {
+            searchInput.value = (tab && tab.commentarySearchQuery) || '';
+        }
+        if (tab && effectiveTabName === 'links') renderCommentaryLinksFilters(tab);
+    }
+
+
+    function normalizedCommentarySearchText(value) {
+        return String(value || '').toLowerCase()
+            .replace(/[\u0591-\u05C7]/g, '')
+            .replace(/["'״׳’”“\x60]/g, '')
+            .replace(/[-–־,.]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function commentaryEntryPlainText(html) {
+        const holder = document.createElement('div');
+        holder.innerHTML = String(html || '');
+        return holder.textContent || holder.innerText || '';
+    }
+
+    function toggleCommentarySearch() {
+        const tab = getActiveCommentaryTab();
+        if (!tab) return;
+        tab.commentarySearchOpen = !tab.commentarySearchOpen;
+        if (!tab.commentarySearchOpen) tab.commentarySearchQuery = '';
+        syncCommentarySubTabButtonsUI(tab);
+        if (tab.commentarySearchOpen) {
+            document.getElementById('commentary-search-input')?.focus();
+        } else {
+            renderCommentaryBody(tab);
+        }
+    }
+
+    function updateCommentarySearch(value) {
+        const tab = getActiveCommentaryTab();
+        if (!tab) return;
+        tab.commentarySearchQuery = value || '';
+        renderCommentaryBody(tab);
+    }
+
+    function closeCommentarySearch() {
+        const tab = getActiveCommentaryTab();
+        if (!tab) return;
+        tab.commentarySearchOpen = false;
+        tab.commentarySearchQuery = '';
+        const input = document.getElementById('commentary-search-input');
+        if (input) input.value = '';
+        syncCommentarySubTabButtonsUI(tab);
+        renderCommentaryBody(tab);
     }
 
     function switchCommentarySubTab(name) {
@@ -511,9 +567,256 @@
         return typeof state === 'boolean' ? state : subTabKey !== 'links';
     }
 
-    function getLinkEntryKey(entry) {
-        return JSON.stringify([entry.sourceLine, entry.targetTitle, entry.targetHeRef, entry.content]);
+
+    function normalizeLinkType(value) {
+        const type = String(value || 'OTHER').trim().toUpperCase().replace(/[\s-]+/g, '_');
+        const aliases = {
+            NONE: 'OTHER',
+            ESSAY: 'OTHER',
+            QUOTATION_AUTO: 'QUOTATION',
+            QUOTATION_AUTO_TANAKH: 'QUOTATION',
+            RELATED_PASSAGE: 'RELATED',
+            EXPLICATION: 'ELUCIDATION',
+            SUPERCOMMENTARY: 'SUPER_COMMENTARY',
+            'EIN_MISHPAT_/_NER_MITSVAH': 'EIN_MISHPAT',
+            'EIN_MISHPAT_/_NER_MITZVAH': 'EIN_MISHPAT',
+            SIFREI_MITSVOT: 'SIFREI_MITZVOT',
+            FOOTNOTE: 'FOOTNOTES'
+        };
+        return aliases[type] || type || 'OTHER';
     }
+
+    const COMMENTARY_LINK_TYPE_LABELS = {
+        SOURCE: 'מקור',
+        EIN_MISHPAT: 'עין משפט',
+        SIFREI_MITZVOT: 'ספרי מצוות',
+        MESORAT_HASHAS: 'מסורת הש״ס',
+        MISHNAH_IN_TALMUD: 'משנה בתלמוד',
+        QUOTATION: 'ציטוט',
+        LAW: 'פסיקת הלכה',
+        LITURGY: 'תפילה',
+        SUMMARY: 'סיכום',
+        FOOTNOTES: 'הערות שוליים',
+        ALLUSION: 'אזכור',
+        ALT_TOC: 'חלוקה חלופית',
+        COMMENTARY: 'פירוש',
+        SUPER_COMMENTARY: 'פירוש על פירוש',
+        TARGUM: 'תרגום',
+        MIDRASH: 'מדרש',
+        PARSHANUT: 'פרשנות',
+        DIBUR_HAMATCHIL: 'דיבור המתחיל',
+        ELUCIDATION: 'ביאור',
+        OTHER: 'לא מסווג',
+        LINKER: 'אוטומטי'
+    };
+    const COMMENTARY_LINK_TYPE_ORDER = [
+        'SOURCE', 'EIN_MISHPAT', 'SIFREI_MITZVOT', 'MESORAT_HASHAS',
+        'MISHNAH_IN_TALMUD', 'QUOTATION', 'LAW', 'LITURGY', 'SUMMARY',
+        'FOOTNOTES', 'ALLUSION', 'ALT_TOC', 'ON_BOOK'
+    ];
+    const LINK_ERA_ORDER = ['תורה שבכתב', 'חז״ל', 'ראשונים', 'אחרונים', 'מחברי זמננו', 'ספרים נוספים'];
+    const LINK_ERA_GROUPED_TYPES = new Set(['OTHER', 'RELATED', 'REFERENCE', 'LINKER']);
+
+    function linkTargetBookKey(entry) {
+        return JSON.stringify([
+            entry.targetTitle || '',
+            entry.targetCategoryId ?? null,
+            Boolean(entry.targetIsUserBook)
+        ]);
+    }
+
+    function linkTargetIdentity(entry) {
+        return JSON.stringify([
+            entry.targetTitle || '',
+            entry.targetLine ?? null,
+            entry.targetLineEnd ?? null,
+            Boolean(entry.targetIsUserBook),
+            entry.targetCategoryId ?? null,
+            normalizeLinkType(entry.connectionType)
+        ]);
+    }
+
+    function getLinkEntryKey(entry) {
+        return linkTargetIdentity(entry);
+    }
+
+    function dedupeCommentaryLinkEntries(entries) {
+        const seen = new Set();
+        return (entries || []).filter(entry => {
+            const key = linkTargetIdentity(entry);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }
+
+    function normalizedLinkEra(value) {
+        const raw = String(value || '').trim().replace(/["״]/g, '');
+        if (raw.includes('תורה שבכתב')) return 'תורה שבכתב';
+        if (raw.includes('חז') || raw.toLowerCase().includes('chazal')) return 'חז״ל';
+        if (raw.includes('ראשונ') || raw.toLowerCase().includes('rishon')) return 'ראשונים';
+        if (raw.includes('אחרונ') || raw.toLowerCase().includes('acharon')) return 'אחרונים';
+        if (raw.includes('זמנ') || raw.toLowerCase().includes('modern')) return 'מחברי זמננו';
+        return 'ספרים נוספים';
+    }
+
+    async function ensureLinkTargetEras(tab, entries) {
+        if (!tab.linkEraCache) tab.linkEraCache = {};
+        if (!tab.linkEraPending) tab.linkEraPending = {};
+        const targets = new Map();
+        (entries || []).forEach(entry => {
+            if (!entry.targetTitle) return;
+            targets.set(linkTargetBookKey(entry), entry);
+        });
+        const keys = Array.from(targets.keys());
+        let nextIndex = 0;
+        const worker = async () => {
+            while (nextIndex < keys.length) {
+                const key = keys[nextIndex++];
+                if (Object.prototype.hasOwnProperty.call(tab.linkEraCache, key)) continue;
+                if (!tab.linkEraPending[key]) {
+                    const target = targets.get(key);
+                    const args = { bookId: target.targetTitle };
+                    if (target.targetCategoryId != null) args.categoryId = target.targetCategoryId;
+                    tab.linkEraPending[key] = Otzaria.call('library.getBookDetails', args)
+                        .then(({ data }) => normalizedLinkEra(data && (data.generation || data.era)))
+                        .catch(() => 'ספרים נוספים')
+                        .then(era => {
+                            tab.linkEraCache[key] = era;
+                            delete tab.linkEraPending[key];
+                            return era;
+                        });
+                }
+                await tab.linkEraPending[key];
+            }
+        };
+        await Promise.all(Array.from({ length: Math.min(6, keys.length) }, () => worker()));
+    }
+
+    function linkEraForEntry(tab, entry) {
+        const key = linkTargetBookKey(entry);
+        return (tab.linkEraCache && tab.linkEraCache[key]) || 'ספרים נוספים';
+    }
+
+    function sortCommentaryLinkEntries(tab, entries) {
+        const eraRank = entry => Math.max(0, LINK_ERA_ORDER.indexOf(linkEraForEntry(tab, entry)));
+        return entries.slice().sort((a, b) => {
+            const eraCompare = eraRank(a) - eraRank(b);
+            if (eraCompare) return eraCompare;
+            const titleCompare = String(a.targetTitle || '').localeCompare(String(b.targetTitle || ''), 'he');
+            if (titleCompare) return titleCompare;
+            const lineCompare = (Number(a.targetLine) || 0) - (Number(b.targetLine) || 0);
+            if (lineCompare) return lineCompare;
+            return (Number(a.sourceLine) || 0) - (Number(b.sourceLine) || 0);
+        });
+    }
+
+    function linkFilterKeysForEntry(tab, entry) {
+        const type = normalizeLinkType(entry.connectionType);
+        const keys = new Set();
+        if (LINK_ERA_GROUPED_TYPES.has(type)) {
+            keys.add('ERA:' + linkEraForEntry(tab, entry));
+        } else {
+            keys.add(type);
+        }
+        const openBookTitle = String(tab.title || tab.bookTitle || tab.id || '').trim();
+        if (openBookTitle && String(entry.targetTitle || '').includes('על ' + openBookTitle)) {
+            keys.add('ON_BOOK');
+        }
+        return Array.from(keys);
+    }
+
+    function linkFilterLabel(key, tab) {
+        if (key === 'ON_BOOK') return 'על ' + String(tab.title || tab.bookTitle || tab.id || '').trim();
+        if (key.startsWith('ERA:')) return key.slice(4);
+        return COMMENTARY_LINK_TYPE_LABELS[key] || key;
+    }
+
+    function buildCommentaryLinkChipKeys(tab, entries) {
+        const typeKeys = new Set();
+        const eraKeys = new Set();
+        (entries || []).forEach(entry => {
+            linkFilterKeysForEntry(tab, entry).forEach(key => {
+                (key.startsWith('ERA:') ? eraKeys : typeKeys).add(key);
+            });
+        });
+        const types = Array.from(typeKeys).sort((a, b) => {
+            const ai = COMMENTARY_LINK_TYPE_ORDER.indexOf(a);
+            const bi = COMMENTARY_LINK_TYPE_ORDER.indexOf(b);
+            if (ai !== bi) {
+                if (ai === -1) return 1;
+                if (bi === -1) return -1;
+                return ai - bi;
+            }
+            return a.localeCompare(b);
+        });
+        const eras = Array.from(eraKeys).sort((a, b) =>
+            LINK_ERA_ORDER.indexOf(a.slice(4)) - LINK_ERA_ORDER.indexOf(b.slice(4))
+        );
+        return { types, eras };
+    }
+
+    function effectiveCommentaryLinkFilters(tab, entries) {
+        const chips = buildCommentaryLinkChipKeys(tab, entries);
+        const available = new Set([...chips.types, ...chips.eras]);
+        return new Set((tab.selectedLinkTypes || []).filter(key => available.has(key)));
+    }
+
+    function renderCommentaryLinksFilters(tab) {
+        const typeRow = document.getElementById('commentary-links-type-chips');
+        const eraRow = document.getElementById('commentary-links-era-chips');
+        const searchInput = document.getElementById('commentary-links-search-input');
+        const contentRow = document.getElementById('commentary-links-search-content-row');
+        const contentCheckbox = document.getElementById('commentary-links-search-in-content');
+        if (!typeRow || !eraRow) return;
+        const entries = dedupeCommentaryLinkEntries(tab.linksEntries || []);
+        const chips = buildCommentaryLinkChipKeys(tab, entries);
+        typeRow.replaceChildren();
+        eraRow.replaceChildren();
+        const selected = effectiveCommentaryLinkFilters(tab, entries);
+        const addChip = (row, key) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'commentary-filter-chip' + (selected.has(key) ? ' selected' : '');
+            button.textContent = linkFilterLabel(key, tab);
+            button.setAttribute('aria-pressed', selected.has(key) ? 'true' : 'false');
+            button.addEventListener('click', () => {
+                const current = new Set(tab.selectedLinkTypes || []);
+                if (current.has(key)) current.delete(key);
+                else current.add(key);
+                tab.selectedLinkTypes = Array.from(current);
+                renderCommentaryLinksFilters(tab);
+                renderCommentaryBody(tab);
+            });
+            row.appendChild(button);
+        };
+        chips.types.forEach(key => addChip(typeRow, key));
+        chips.eras.forEach(key => addChip(eraRow, key));
+        const total = chips.types.length + chips.eras.length;
+        typeRow.hidden = total <= 1 || chips.types.length === 0;
+        eraRow.hidden = total <= 1 || chips.eras.length === 0;
+        const query = tab.linksSearchQuery || '';
+        if (searchInput && searchInput.value !== query) searchInput.value = query;
+        if (contentRow) contentRow.hidden = !query.trim();
+        if (contentCheckbox) contentCheckbox.checked = Boolean(tab.linksSearchInContent);
+    }
+
+    function updateCommentaryLinkSearch(value) {
+        const tab = getActiveCommentaryTab();
+        if (!tab) return;
+        tab.linksSearchQuery = value || '';
+        renderCommentaryLinksFilters(tab);
+        renderCommentaryBody(tab);
+    }
+
+    function updateCommentaryLinkContentSearch(checked) {
+        const tab = getActiveCommentaryTab();
+        if (!tab) return;
+        tab.linksSearchInContent = Boolean(checked);
+        renderCommentaryBody(tab);
+    }
+
+
 
     // מזהי הקבוצות והקישורים המוצגים, לפי סדר הרינדור, עבור כפתור "הרחב/כווץ הכל".
     function getCommentaryGroupNamesForSubTab(tab, subTabKey) {
@@ -616,8 +919,9 @@
         groupEl.appendChild(headerEl);
 
         const contentWrapEl = document.createElement('div');
-        contentWrapEl.className = 'commentary-entry-group-content';
-        if (!isExpanded) contentWrapEl.style.display = 'none';
+        contentWrapEl.className = 'commentary-entry-group-content' + (isExpanded ? '' : ' collapsed');
+        const innerEl = document.createElement('div');
+        innerEl.className = 'commentary-entry-group-inner';
 
         forThis.forEach(entry => {
             const entryEl = document.createElement('div');
@@ -637,8 +941,9 @@
                 contentEl.innerHTML = applyCommentaryTextFilters(entry.content || '');
             }
             entryEl.appendChild(contentEl);
-            contentWrapEl.appendChild(entryEl);
+            innerEl.appendChild(entryEl);
         });
+        contentWrapEl.appendChild(innerEl);
 
         groupEl.appendChild(contentWrapEl);
         return groupEl;
@@ -699,8 +1004,14 @@
             return;
         }
         const entries = tab.commentaryEntries || [];
-        if (entries.length === 0) {
-            renderCommentaryEmptyState(body, 'links', 'לא נמצאו מפרשים מהנבחרים לקטע זה');
+        const query = normalizedCommentarySearchText(tab.commentarySearchQuery);
+        const visibleEntries = query
+            ? entries.filter(entry => normalizedCommentarySearchText(
+                (entry.targetTitle || '') + ' ' + (entry.targetHeRef || '') + ' ' + commentaryEntryPlainText(entry.content)
+            ).includes(query))
+            : entries;
+        if (visibleEntries.length === 0) {
+            renderCommentaryEmptyState(body, 'links', query ? 'לא נמצאו מפרשים התואמים לחיפוש' : 'לא נמצאו מפרשים מהנבחרים לקטע זה');
             return;
         }
 
@@ -709,7 +1020,7 @@
         // ה"פגיעות" שלו על הטווח המוצג, ממוינות לפי שורת המקור. הקבוצות פתוחות כברירת מחדל,
         // כמו ברשימת המפרשים באוצריא.
         tab.activeCommentators.forEach(name => {
-            const forThis = entries.filter(e => e.targetTitle === name).sort((a, b) => a.sourceLine - b.sourceLine);
+            const forThis = visibleEntries.filter(e => e.targetTitle === name).sort((a, b) => a.sourceLine - b.sourceLine);
             if (forThis.length === 0) return;
             body.appendChild(buildCommentaryEntryGroupEl(tab, 'commentary', name, forThis));
         });
@@ -729,26 +1040,40 @@
             renderCommentaryPanelStatus(body, 'שגיאה בטעינת הקישורים');
             return;
         }
-        const entries = tab.linksEntries || [];
+        const entries = dedupeCommentaryLinkEntries(tab.linksEntries || []);
         if (entries.length === 0) {
             renderCommentaryEmptyState(body, 'links', 'אין קישורים לטקסט הנראה במסך');
             return;
         }
 
-        body.innerHTML = '';
-        entries.slice().sort((a, b) => a.sourceLine - b.sourceLine).forEach(entry => {
-            const entryKey = getLinkEntryKey(entry);
-            body.appendChild(buildCommentaryEntryGroupEl(
-                tab,
-                'links',
-                entryKey,
-                [entry],
-                entry.targetTitle
-            ));
-        });
-        if (!body.firstChild) {
-            renderCommentaryEmptyState(body, 'links', 'אין קישורים לטקסט הנראה במסך');
+        const selected = effectiveCommentaryLinkFilters(tab, entries);
+        const typeFiltered = selected.size === 0
+            ? entries
+            : entries.filter(entry => linkFilterKeysForEntry(tab, entry).some(key => selected.has(key)));
+        if (typeFiltered.length === 0) {
+            renderCommentaryEmptyState(body, 'links', 'לא נמצאו קישורים מהסוגים שנבחרו');
+            return;
         }
+
+        const query = normalizedCommentarySearchText(tab.linksSearchQuery);
+        const visibleEntries = query
+            ? typeFiltered.filter(entry => {
+                const titleAndRef = normalizedCommentarySearchText((entry.targetTitle || '') + ' ' + (entry.targetHeRef || ''));
+                if (titleAndRef.includes(query)) return true;
+                return Boolean(tab.linksSearchInContent) &&
+                    normalizedCommentarySearchText(commentaryEntryPlainText(entry.content)).includes(query);
+            })
+            : typeFiltered;
+        if (visibleEntries.length === 0) {
+            renderCommentaryEmptyState(body, 'links', 'לא נמצאו קישורים התואמים לחיפוש');
+            return;
+        }
+
+        body.innerHTML = '';
+        sortCommentaryLinkEntries(tab, visibleEntries).forEach(entry => {
+            const entryKey = getLinkEntryKey(entry);
+            body.appendChild(buildCommentaryEntryGroupEl(tab, 'links', entryKey, [entry], entry.targetTitle));
+        });
     }
 
     // לשונית "הערות" - תצוגה בלבד. אוצריא כן חושפת API לקריאת הערות אישיות (notes.list), אבל אין
@@ -922,6 +1247,8 @@
         if (!range) {
             tab.linksEntries = [];
             tab.linksLastRangeKey = null;
+            tab.linksLoadError = false;
+            renderCommentaryLinksFilters(tab);
             renderCommentaryBody(tab);
             return;
         }
@@ -934,17 +1261,25 @@
         tab.linksContentLoading = true;
         renderCommentaryBody(tab);
 
-        loadNonCommentaryLinksForRange(tab, range.start, range.end).then(entries => {
+        loadNonCommentaryLinksForRange(tab, range.start, range.end).then(async entries => {
+            await ensureLinkTargetEras(tab, entries);
             if (tab.linksReqToken !== myToken) return;
-            tab.linksEntries = entries;
+            tab.linksEntries = sortCommentaryLinkEntries(tab, dedupeCommentaryLinkEntries(entries));
+            tab.linksLoadError = false;
             tab.linksContentLoading = false;
-            if (getActiveCommentaryTab() === tab && tab.commentaryPanelOpen && tab.commentaryActiveSubTab === 'links') renderCommentaryBody(tab);
+            if (getActiveCommentaryTab() === tab && tab.commentaryPanelOpen && tab.commentaryActiveSubTab === 'links') {
+                renderCommentaryLinksFilters(tab);
+                renderCommentaryBody(tab);
+            }
         }).catch(() => {
             if (tab.linksReqToken !== myToken) return;
             tab.linksEntries = [];
             tab.linksLoadError = true;
             tab.linksContentLoading = false;
-            if (getActiveCommentaryTab() === tab && tab.commentaryPanelOpen && tab.commentaryActiveSubTab === 'links') renderCommentaryBody(tab);
+            if (getActiveCommentaryTab() === tab && tab.commentaryPanelOpen && tab.commentaryActiveSubTab === 'links') {
+                renderCommentaryLinksFilters(tab);
+                renderCommentaryBody(tab);
+            }
         });
     }
 
@@ -990,6 +1325,11 @@
                 sourceLine: l.sourceLine,
                 targetTitle: l.targetTitle,
                 targetHeRef: l.targetHeRef,
+                targetLine: l.targetLine,
+                targetLineEnd: l.targetLineEnd,
+                targetIsUserBook: l.targetIsUserBook,
+                targetCategoryId: l.targetCategoryId,
+                connectionType: l.connectionType,
                 content: item.content
             });
         });
