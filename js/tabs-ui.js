@@ -1468,16 +1468,21 @@ const previewArea = document.getElementById('preview-area');
             goToPageIndex(edge === 'start' ? 0 : pages.length - 1);
         }
 
-        // Ctrl+Home / Ctrl+End - אותם קיצורים שמוצגים בטולטיפ של הכפתורים (כמו באוצריא)
-        document.addEventListener('keydown', (e) => {
-            if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
-            if (e.key !== 'Home' && e.key !== 'End') return;
-            const targetTag = (e.target && e.target.tagName || '').toLowerCase();
-            if (targetTag === 'input' || targetTag === 'textarea' || (e.target && e.target.isContentEditable)) return;
-            const tab = tabs[activeTabIndex];
-            if (!tab || tab.isNewBookTab) return;
-            e.preventDefault();
-            goToBookEdge(e.key === 'Home' ? 'start' : 'end');
+        // הטולטיפ של כפתורי תחילת/סוף הספר מציג את הקיצור הנוכחי (גם אם שונה בהגדרות), כמו באוצריא.
+        // הקיצורים עצמם (bookStart / bookEnd) רשומים ב-SHORTCUT_DEFS ומטופלים במאזין המקלדת הראשי.
+        function refreshBookEdgeTooltips() {
+            [['btn-book-start', 'bookStart', 'תחילת הספר'], ['btn-book-end', 'bookEnd', 'סוף הספר']].forEach(([id, action, label]) => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                const combo = getShortcutCombo(action);
+                btn.dataset.tooltip = combo && combo.key ? `${label} (${comboToLabel(combo)})` : label;
+            });
+        }
+        ['btn-book-start', 'btn-book-end'].forEach((id) => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            btn.addEventListener('pointerenter', refreshBookEdgeTooltips);
+            btn.addEventListener('focus', refreshBookEdgeTooltips);
         });
 
         // איתור אינדקס העמוד (בתוך העימוד הנוכחי) שמכיל שורה נתונה מהטקסט הגולמי (ראו data-line-idx
@@ -1609,6 +1614,8 @@ const previewArea = document.getElementById('preview-area');
             { id: 'prevTab', label: 'מעבר לטאב הקודם (Tab)', combo: { ctrl: true, shift: true, key: 'Tab' } },
             { id: 'closeAllTabs', label: 'סגירת כל הטאבים', combo: { ctrl: true, shift: true, key: 'W' } },
             { id: 'closeTab', label: 'סגירת הטאב הנוכחי', combo: { ctrl: true, key: 'W' } },
+            { id: 'bookStart', label: 'מעבר לתחילת הספר', combo: { ctrl: true, key: 'Home' } },
+            { id: 'bookEnd', label: 'מעבר לסוף הספר', combo: { ctrl: true, key: 'End' } },
             { id: 'zoomIn', label: 'הגדלת זום', combo: { ctrl: true, key: '=' } },
             { id: 'zoomOut', label: 'הקטנת זום', combo: { ctrl: true, key: '-' } }
         ];

@@ -859,6 +859,20 @@
                 return;
             }
 
+            // Ctrl+Home / Ctrl+End - לתחילת/סוף הספר (ניתנים להתאמה בהגדרות הקיצורים)
+            if (!isTypingContext && activeTabIndex !== -1 && tabs[activeTabIndex] && !tabs[activeTabIndex].isNewBookTab) {
+                if (matchesShortcutAction(e, 'bookStart')) {
+                    e.preventDefault();
+                    goToBookEdge('start');
+                    return;
+                }
+                if (matchesShortcutAction(e, 'bookEnd')) {
+                    e.preventDefault();
+                    goToBookEdge('end');
+                    return;
+                }
+            }
+
             // חצי מקלדת ימינה/שמאלה - דפדוף בין עמודים (גם בתצוגת ספר וגם בתצוגת גלילה)
             // ימינה = לכיוון תחילת הספר (אחורה), שמאלה = לכיוון סוף הספר (קדימה) - בהתאם לכיווניות RTL
             if (activeTabIndex !== -1 && tabs[activeTabIndex] && !tabs[activeTabIndex].isNewBookTab) {

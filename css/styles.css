@@ -1699,10 +1699,12 @@
         .pin-btn.pinned .pin-icon-filled { display: inline-block; }
         /* נעוץ = כפתור אייקון "נבחר" של M3 באוצריא (AppIconButton.isSelected): האייקון בצבע הראשי
            והרקע שקוף. קודם היה כאן רקע כהה (surface-container-highest) שאין באוצריא. */
+        .pin-btn:hover { background: color-mix(in srgb, var(--color-primary) 8%, transparent); }
         .pin-btn.pinned {
             color: var(--color-primary);
             background: transparent;
         }
+        .pin-btn.pinned:hover { background: color-mix(in srgb, var(--color-primary) 8%, transparent); }
         .pin-btn.pinned .ui-icon {
             color: var(--color-primary);
             transform: rotate(-45deg);
@@ -1730,7 +1732,7 @@
             color: var(--color-on-secondary-container);
         }
         .drawer-toggle-btn:hover:not(:disabled) {
-            background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
+            background: color-mix(in srgb, var(--color-primary) 8%, transparent);
         }
 
         /* תוכן הפאנל */
@@ -4176,12 +4178,6 @@
    התאמת הסרגל העליון לסרגל העיון של אוצריא (AppTopBar / BarButton / AppIconButton)
    ========================================================================================== */
 
-/* גובה הסרגל 1 (Material elevation) עם צל כהה רק מתחתיו, כמו ב-AppTopBar */
-.toolbar-main {
-    box-shadow: 0 1px 3px color-mix(in srgb, #000 22%, transparent),
-                0 1px 1px color-mix(in srgb, #000 14%, transparent);
-}
-
 /* ריווח: בין פריטים בצד ההתחלה 8px (קומפקטי 4px); בין כפתורי סרגל 4px (2px מכל צד) */
 .toolbar-main .toolbar-side { gap: 4px; }
 .toolbar-main .toolbar-side-start { gap: 8px; }
@@ -4201,6 +4197,9 @@ html[dir="rtl"] .ui-icon.rtl-flip { transform: scaleX(-1); }
 .toolbar-main :is(.icon-btn, .font-size-btn, .nav-heading-btn, .pin-btn):focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
+}
+/* שכבת הפוקוס (12%) רק על כפתור שאינו "נבחר", כדי לא להסתיר את רקע הבחירה */
+.toolbar-main :is(.icon-btn, .font-size-btn, .nav-heading-btn, .pin-btn):focus-visible:not(.active) {
     background: color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 /* מצב "נבחר" + ריחוף: שכבת הריחוף מעל רקע הבחירה (ב-Flutter ה-overlay מצויר מעל הרקע) */
@@ -4208,4 +4207,26 @@ html[dir="rtl"] .ui-icon.rtl-flip { transform: scaleX(-1); }
     background: linear-gradient(color-mix(in srgb, var(--color-primary) 8%, transparent),
                                 color-mix(in srgb, var(--color-primary) 8%, transparent)),
                 color-mix(in srgb, var(--color-on-surface) 12%, transparent);
+}
+
+/* מצבים קומפקטיים (הגדרת "סרגל מצומצם" או צפיפות קומפקטית של אוצריא): כל כפתורי הסרגל - כולל
+   הנעיצה וחיצי הניווט - ב-36px עם אייקון 18/20, כמו BarButton(compact) באוצריא */
+body.compact-toolbar .toolbar-main .pin-btn,
+body.app-compact-density .toolbar-main .pin-btn,
+body.compact-toolbar .toolbar-main .nav-heading-btn,
+body.app-compact-density .toolbar-main .nav-heading-btn {
+    width: 36px;
+    height: 36px;
+}
+body.compact-toolbar .toolbar-main .pin-btn .ui-icon,
+body.app-compact-density .toolbar-main .pin-btn .ui-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+}
+body.compact-toolbar .toolbar-main .nav-heading-btn .ui-icon,
+body.app-compact-density .toolbar-main .nav-heading-btn .ui-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
 }
