@@ -574,6 +574,7 @@
             label: 'הצג את כל המפרשים',
             kind: 'category',
             checked: masterSelected,
+            selectedRow: masterSelected,
             onClick: () => toggleVisibleNames(uniqueVisibleNames)
         }));
         list.appendChild(masterCard);
@@ -590,6 +591,7 @@
                 label: 'הצג את כל ' + (group.title || 'המפרשים'),
                 kind: 'category',
                 checked: groupSelected,
+                selectedRow: groupSelected,
                 onClick: () => toggleVisibleNames(names)
             }));
 

@@ -966,7 +966,9 @@
             display: flex;
             align-items: center;
             gap: 4px;
-            padding: 8px 4px 4px 14px;
+            padding-block: 8px 4px;
+            padding-inline-start: 14px;
+            padding-inline-end: 4px;
             flex-shrink: 0;
         }
         .commentary-picker-search-row[hidden] { display: none !important; }
@@ -4282,7 +4284,7 @@
             align-items: center;
             gap: 10px;
             padding: 22px 12px;
-            border: 2px solid var(--color-outline);
+            border: 1.5px solid var(--color-outline);
             border-radius: var(--radius-md);
             color: var(--color-on-surface-subtle);
             margin-bottom: 14px;
