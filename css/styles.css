@@ -1311,6 +1311,10 @@
             color: var(--color-on-surface-variant);
             font-size: 36px;
         }
+.commentary-picker-list.full-panel {
+            display: flex;
+            flex-direction: column;
+        }
         .commentary-picker-empty.full-panel {
             box-sizing: border-box;
             flex: 1 1 0;

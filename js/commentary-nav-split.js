@@ -631,6 +631,7 @@
             const bIndex = groupOrder.findIndex(title => commentaryPickerTopicKey(title) === bKey);
             return (aIndex < 0 ? groupOrder.length : aIndex) - (bIndex < 0 ? groupOrder.length : bIndex);
         });
+        list.classList.toggle('full-panel', groups.length === 0);
         if (groups.length === 0) {
             chips.hidden = true;
             const searchRow = document.getElementById('commentary-picker-search-row');
@@ -676,7 +677,7 @@
 
         // זהה ל-_eraChipItems של אוצריא: חמש תקופות בלבד, ובנוסף "על הספר".
         // "שאר מפרשים" היא קבוצת ברירת מחדל ברשימה, לא צ'יפ סינון.
-        const eraTopics = ['תורה שבכתב', 'חז״ל', 'ראשונים', 'אחרונים', 'מחברי זמננו'];
+        const eraTopics = ['תורה שבכתב', 'חז"ל', 'ראשונים', 'אחרונים', 'מחברי זמננו'];
         const eraChipItems = eraTopics.filter(topic =>
             groups.some(group => commentaryPickerTopicKey(group.title) === commentaryPickerTopicKey(topic))
         );
