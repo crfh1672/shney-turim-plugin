@@ -470,7 +470,7 @@
         }
         body.app-compact-density .commentary-search-field input {
             height: 36px;
-            padding-left: 32px;
+            padding: 0 36px 0 32px;
             font-size: 13px;
         }
         .commentary-search-field input:focus {
@@ -592,30 +592,43 @@
         }
         .commentary-search-row .icon-btn .ui-icon { width: 16px; height: 16px; font-size: 16px; }
 
+        /* LinksListView: the search field and optional checkbox share one
+           all-around 8px padding; the chip Wrap is a separate sibling. */
         .commentary-links-tools {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 0;
+            padding: 0;
+            flex-shrink: 0;
+        }
+        .commentary-links-search-tools {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
             padding: 8px;
             flex-shrink: 0;
         }
         .commentary-links-search-content {
             display: flex;
             align-items: center;
-            gap: 8px;
-            min-height: 24px;
+            gap: 0;
+            min-height: 40px;
+            margin-top: 8px;
             padding: 0;
             color: var(--color-on-surface);
-            font-size: 13px;
+            font-size: 14px;
             cursor: pointer;
         }
         .commentary-links-search-content[hidden] { display: none !important; }
         .commentary-links-search-content input {
             width: 18px;
             height: 18px;
-            margin: 0;
+            margin: 0 11px;
             accent-color: var(--color-primary);
+            flex-shrink: 0;
         }
+        body.app-compact-density .commentary-links-search-content { min-height: 32px; }
+        body.app-compact-density .commentary-links-search-content input { margin-inline: 7px; }
         /* Mirrors LinksListView: outer Wrap (16px between type/era groups),
            with each compactFilterChips group wrapping its own chips (4px). */
         .commentary-links-chip-groups {
@@ -944,6 +957,10 @@
 
         /* === לשונית בחירת המפרשים === */
         /* בורר המפרשים — מקביל ל-CommentatorsFilterScreen ולעץ NavTree באוצריא. */
+        #commentary-panel-body[data-subtab="picker"] {
+            overflow: hidden;
+            padding-inline: 0;
+        }
         .commentary-picker-screen {
             position: relative;
             display: flex;
@@ -1057,6 +1074,10 @@
             background: var(--color-secondary-container);
             color: var(--color-on-secondary-container);
             font-weight: 600;
+        }
+        .commentary-picker-chip:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 1px;
         }
         .commentary-picker-era-chip,
         .commentary-picker-type-chip {
@@ -1228,7 +1249,7 @@
             cursor: pointer;
         }
         .commentary-picker-tree-row + .commentary-picker-tree-row {
-            border-top: 1px solid var(--color-outline-variant, var(--color-border-subtle));
+            border-top: 1.5px solid var(--commentary-panel-bg-color);
         }
         .commentary-picker-tree-row:hover {
             background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
@@ -1236,6 +1257,19 @@
         .commentary-picker-tree-row.selected {
             background: var(--color-secondary-container);
             font-weight: 700;
+        }
+        .commentary-picker-tree-row.selected:hover {
+            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-secondary-container));
+        }
+        .commentary-picker-tree-row:active {
+            background: color-mix(in srgb, var(--color-on-surface) 12%, transparent);
+        }
+        .commentary-picker-tree-row.selected:active {
+            background: color-mix(in srgb, var(--color-on-surface) 12%, var(--color-secondary-container));
+        }
+        .commentary-picker-tree-row:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: -2px;
         }
         .commentary-picker-tree-row.category { font-weight: 700; }
         .commentary-picker-tree-row.book { font-weight: 500; }
@@ -1270,7 +1304,7 @@
             width: 18px;
             height: 18px;
             box-sizing: border-box;
-            border: 1.5px solid var(--color-outline);
+            border: 2px solid var(--color-outline);
             border-radius: 2px;
             background: transparent;
             color: #fff;
@@ -1299,7 +1333,7 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            padding: 24px 16px;
+            padding: 12px 16px;
             color: var(--color-on-surface);
             font-size: 14px;
             font-weight: 600;
@@ -1311,6 +1345,7 @@
             color: var(--color-on-surface-variant);
             font-size: 36px;
         }
+        .commentary-picker-empty.search-empty { margin-top: 24px; }
 .commentary-picker-list.full-panel {
             display: flex;
             flex-direction: column;

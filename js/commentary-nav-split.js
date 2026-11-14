@@ -356,6 +356,51 @@
     // נכנסים אליה רק דרך לחיצה על כפתור בחירת המפרשים (היא אינה אחת מלשוניות הכותרת הרגילות),
     // ויוצאים ממנה רק דרך חץ החזרה שבראשה - שמחזיר בדיוק ללשונית שממנה נכנסו (בפועל תמיד
     // "מפרשים", כי כפתור בחירת המפרשים מוצג רק שם).
+    async function fetchCommentaryPickerTypeLinksWindow(tab, startLine, endLine, connectionTypes) {
+        try {
+            const { data } = await Otzaria.call('library.getLinks', {
+                bookId: tab.id,
+                startLine,
+                endLine,
+                connectionTypes
+            });
+            const links = data && Array.isArray(data.links) ? data.links : [];
+            if (!data || !data.truncated) return { links, complete: Boolean(data) };
+            if (startLine >= endLine) return { links, complete: false };
+
+            // אם חלון צפוף נחתך במגבלת הרשומות, מחלקים אותו כדי לא לאבד סוגי
+            // קישור שמופיעים בהמשך הטווח. כל תת-חלון נשאר בתוך מגבלת 200 השורות.
+            const middle = Math.floor((startLine + endLine) / 2);
+            const [left, right] = await Promise.all([
+                fetchCommentaryPickerTypeLinksWindow(tab, startLine, middle, connectionTypes),
+                fetchCommentaryPickerTypeLinksWindow(tab, middle + 1, endLine, connectionTypes)
+            ]);
+            return {
+                links: [...left.links, ...right.links],
+                complete: left.complete && right.complete
+            };
+        } catch (error) {
+            return { links: [], complete: false };
+        }
+    }
+
+    async function loadCommentaryPickerTypeLinks(tab, startLine, endLine, connectionTypes) {
+        const windows = [];
+        for (let start = startLine; start <= endLine; start += 200) {
+            windows.push([
+                start,
+                Math.min(endLine, start + 199)
+            ]);
+        }
+        const results = await Promise.all(windows.map(([start, end]) =>
+            fetchCommentaryPickerTypeLinksWindow(tab, start, end, connectionTypes)
+        ));
+        return {
+            links: results.flatMap(result => result.links),
+            complete: results.every(result => result.complete)
+        };
+    }
+
     function loadCommentaryPickerContext(tab, force = false) {
         const range = getVisibleLineRange();
         const rangeKey = range ? `${range.start}-${range.end}` : 'empty';
@@ -379,52 +424,59 @@
         }
 
         const requestToken = (tab.commentaryPickerContextToken = (tab.commentaryPickerContextToken || 0) + 1);
-        const endLine = Math.min(range.end, range.start + 199);
-        const dependentTypes = [
-            'COMMENTARY', 'SUPER_COMMENTARY', 'TARGUM', 'MIDRASH',
-            'PARSHANUT', 'DIBUR_HAMATCHIL', 'ELUCIDATION', 'EXPLICATION', 'FOOTNOTES'
-        ];
+        const filterTypeOrder = ['TARGUM', 'MIDRASH', 'PARSHANUT', 'DIBUR_HAMATCHIL', 'ELUCIDATION'];
+        const endLine = range.end;
 
-        const contextPromise = Otzaria.call('library.getLinks', {
+        // ה-API הייעודי מחזיר בדיוק את המפרשים שיש להם קישור בטווח השורות,
+        // בלי להסתמך על getLinks שעלול להיחתך במגבלת הרשומות.
+        const relevantPromise = Otzaria.call('library.getCommentators', {
             bookId: tab.id,
             startLine: range.start,
+            endLine
+        }).then(({ data }) => data && Array.isArray(data.commentators) ? data.commentators : null)
+            .catch(() => null);
+
+        // ציר סוגי המפרשים משתמש רק בחמשת הסוגים שאוצריא מגדירה לסינון.
+        // commentary ו-super-commentary אינם צ'יפים; explication ממופה בשרת
+        // לסוג הקנוני ELUCIDATION.
+        const typeLinksPromise = loadCommentaryPickerTypeLinks(
+            tab,
+            range.start,
             endLine,
-            connectionTypes: dependentTypes
-        }).then(({ data }) => {
+            filterTypeOrder
+        ).catch(() => null);
+
+        const contextPromise = Promise.all([relevantPromise, typeLinksPromise]).then(([relevant, linkData]) => {
             if (tab.commentaryPickerContextToken !== requestToken) return;
-            const links = ((data && data.links) || []).filter(link => link.isCommentary === true);
-            const lineRelevant = new Set();
+
+            // null פירושו כשל, ולא רשימה ריקה — במקרה כזה לא מסתירים מפרשים נדירים.
+            tab.commentaryPickerLineRelevant = relevant === null
+                ? null
+                : new Set(relevant.map(item => item && item.title).filter(Boolean));
+
             const byType = {};
-            const filterTypeOrder = ['TARGUM', 'MIDRASH', 'PARSHANUT', 'DIBUR_HAMATCHIL', 'ELUCIDATION'];
-
-            links.forEach(link => {
-                if (link.targetTitle) lineRelevant.add(link.targetTitle);
-                const type = normalizeLinkType(link.connectionType);
-                if (!filterTypeOrder.includes(type) || !link.targetTitle) return;
-                if (!byType[type]) byType[type] = new Set();
-                byType[type].add(link.targetTitle);
-            });
-
-            tab.commentaryPickerLinks = links;
-            // בתשובה שנחתכה לא ניתן להסיק שמפרש נדיר אינו רלוונטי, וגם מפת סוגים אינה מלאה.
-            tab.commentaryPickerLineRelevant = data && data.truncated ? null : lineRelevant;
-            tab.commentaryPickerCommentatorsByType = data && data.truncated ? {} : byType;
-            tab.commentaryPickerContextTruncated = Boolean(data && data.truncated);
-            tab.commentaryPickerContextLoaded = true;
-            if (getActiveCommentaryTab() === tab && tab.commentaryPanelOpen && tab.commentaryActiveSubTab === 'picker') {
-                renderCommentaryPickerListOnly(tab);
+            const linksComplete = Boolean(linkData && linkData.complete && Array.isArray(linkData.links));
+            if (linksComplete) {
+                linkData.links.forEach(link => {
+                    if (!link || !link.targetTitle) return;
+                    const type = normalizeLinkType(link.connectionType);
+                    if (!filterTypeOrder.includes(type)) return;
+                    if (!byType[type]) byType[type] = new Set();
+                    byType[type].add(link.targetTitle);
+                });
             }
-        }).catch(() => {
-            if (tab.commentaryPickerContextToken !== requestToken) return;
-            // בכשל טעינה לא מסתירים מפרשים נדירים על סמך מידע חלקי.
-            tab.commentaryPickerLineRelevant = null;
-            tab.commentaryPickerCommentatorsByType = {};
-            tab.commentaryPickerContextError = true;
+
+            tab.commentaryPickerLinks = linksComplete ? linkData.links : [];
+            tab.commentaryPickerCommentatorsByType = byType;
+            tab.commentaryPickerContextTruncated = Boolean(linkData && !linkData.complete);
+            tab.commentaryPickerContextError = relevant === null || !linksComplete;
             tab.commentaryPickerContextLoaded = true;
+
             if (getActiveCommentaryTab() === tab && tab.commentaryPanelOpen && tab.commentaryActiveSubTab === 'picker') {
                 renderCommentaryPickerListOnly(tab);
             }
         });
+
         tab.commentaryPickerContextPromise = contextPromise;
         return contextPromise;
     }
@@ -464,9 +516,16 @@
             .trim();
     }
 
-    function orderCommentarySelection(tab, names) {
+    function orderCommentarySelection(tab, names, visibleOrder = []) {
         const remaining = new Set(names);
         const ordered = [];
+        visibleOrder.forEach(name => {
+            if (remaining.delete(name)) ordered.push(name);
+        });
+        // מפרשים מוסתרים נשארים בבחירה ובסדר שבו כבר נשמרו.
+        (tab.activeCommentators || []).forEach(name => {
+            if (remaining.delete(name)) ordered.push(name);
+        });
         (tab.commentaryGroups || []).forEach(group => {
             (group.commentators || []).forEach(name => {
                 if (remaining.delete(name)) ordered.push(name);
@@ -621,16 +680,9 @@
             return;
         }
 
-        const groupOrder = ['תורה שבכתב', 'חז״ל', 'ראשונים', 'אחרונים', 'מחברי זמננו', 'שאר מפרשים'];
         const groups = (tab.commentaryGroups || []).filter(group =>
             Array.isArray(group.commentators) && group.commentators.length > 0
-        ).slice().sort((a, b) => {
-            const aKey = commentaryPickerTopicKey(a.title || '');
-            const bKey = commentaryPickerTopicKey(b.title || '');
-            const aIndex = groupOrder.findIndex(title => commentaryPickerTopicKey(title) === aKey);
-            const bIndex = groupOrder.findIndex(title => commentaryPickerTopicKey(title) === bKey);
-            return (aIndex < 0 ? groupOrder.length : aIndex) - (bIndex < 0 ? groupOrder.length : bIndex);
-        });
+        );
         list.classList.toggle('full-panel', groups.length === 0);
         if (groups.length === 0) {
             chips.hidden = true;
@@ -835,7 +887,7 @@
                 if (allSelected) next.delete(name);
                 else next.add(name);
             });
-            tab.activeCommentators = orderCommentarySelection(tab, Array.from(next));
+            tab.activeCommentators = orderCommentarySelection(tab, Array.from(next), uniqueVisibleNames);
             saveActiveCommentatorsForBook(tab);
             refreshCommentaryPanel(true);
             renderCommentaryPickerListOnly(tab);
@@ -879,7 +931,7 @@
                         const next = new Set(tab.activeCommentators || []);
                         if (next.has(name)) next.delete(name);
                         else next.add(name);
-                        tab.activeCommentators = orderCommentarySelection(tab, Array.from(next));
+                        tab.activeCommentators = orderCommentarySelection(tab, Array.from(next), uniqueVisibleNames);
                         saveActiveCommentatorsForBook(tab);
                         refreshCommentaryPanel(true);
                         renderCommentaryPickerListOnly(tab);
@@ -967,7 +1019,7 @@
         SOURCE: 'מקור',
         EIN_MISHPAT: 'עין משפט',
         SIFREI_MITZVOT: 'ספרי מצוות',
-        MESORAT_HASHAS: 'מסורת הש״ס',
+        MESORAT_HASHAS: 'מסורת הש"ס',
         MISHNAH_IN_TALMUD: 'משנה בתלמוד',
         QUOTATION: 'ציטוט',
         LAW: 'פסיקת הלכה',
@@ -991,20 +1043,33 @@
         'MISHNAH_IN_TALMUD', 'QUOTATION', 'LAW', 'LITURGY', 'SUMMARY',
         'FOOTNOTES', 'ALLUSION', 'ALT_TOC', 'ON_BOOK'
     ];
-    const LINK_ERA_ORDER = ['תורה שבכתב', 'חז״ל', 'ראשונים', 'אחרונים', 'מחברי זמננו', 'ספרים נוספים'];
+    const LINK_ERA_ORDER = ['TORAH_SHEBICHTAV', 'CHAZAL', 'RISHONIM', 'ACHARONIM', 'MODERN', 'OTHER'];
+    const LINK_ERA_LABELS = Object.freeze({
+        TORAH_SHEBICHTAV: 'תורה שבכתב',
+        CHAZAL: 'חז"ל',
+        RISHONIM: 'ראשונים',
+        ACHARONIM: 'אחרונים',
+        MODERN: 'מחברי זמננו',
+        OTHER: 'ספרים נוספים'
+    });
     const LINK_ERA_GROUPED_TYPES = new Set(['OTHER', 'RELATED', 'REFERENCE', 'LINKER']);
+
+    function linkSourceKey(entry) {
+        return entry.targetSource || (entry.targetIsUserBook ? 'u' : 'o');
+    }
 
     function linkTargetBookKey(entry) {
         return JSON.stringify([
             entry.targetTitle || '',
-            entry.targetCategoryId ?? null,
-            Boolean(entry.targetIsUserBook)
+            linkSourceKey(entry),
+            entry.targetCategoryId ?? null
         ]);
     }
 
     function linkTargetIdentity(entry) {
         return JSON.stringify([
             entry.targetTitle || '',
+            linkSourceKey(entry),
             entry.targetLine ?? null,
             entry.targetLineEnd ?? null,
             Boolean(entry.targetIsUserBook),
@@ -1027,14 +1092,22 @@
         });
     }
 
+    // BookDetails.generation uses the same Hebrew era categories as splitByEra.
+    // For multiple categories, prefer the earliest one, as CommentaryService does.
     function normalizedLinkEra(value) {
-        const raw = String(value || '').trim().replace(/["״]/g, '');
-        if (raw.includes('תורה שבכתב') || raw.includes('תנ״ך') || raw.toLowerCase().includes('torah shebichtav')) return 'תורה שבכתב';
-        if (raw.includes('חז') || raw.includes('תנאים') || raw.includes('אמוראים') || raw.toLowerCase().includes('chazal')) return 'חז״ל';
-        if (raw.includes('ראשונ') || raw.toLowerCase().includes('rishon')) return 'ראשונים';
-        if (raw.includes('אחרונ') || raw.toLowerCase().includes('acharon')) return 'אחרונים';
-        if (raw.includes('זמנ') || raw.toLowerCase().includes('modern')) return 'מחברי זמננו';
-        return 'ספרים נוספים';
+        const normalize = text => String(text || '').trim().replace(/["״׳]/g, '').replace(/\s+/g, ' ');
+        const categories = new Set(String(value || '').split(',').map(normalize).filter(Boolean));
+        const ordered = [
+            ['TORAH_SHEBICHTAV', 'תורה שבכתב'],
+            ['CHAZAL', 'חז"ל'],
+            ['RISHONIM', 'ראשונים'],
+            ['ACHARONIM', 'אחרונים'],
+            ['MODERN', 'מחברי זמננו']
+        ];
+        for (const [key, label] of ordered) {
+            if (categories.has(label)) return key;
+        }
+        return 'OTHER';
     }
 
     async function ensureLinkTargetEras(tab, entries) {
@@ -1055,9 +1128,10 @@
                     const target = targets.get(key);
                     const args = { bookId: target.targetTitle };
                     if (target.targetCategoryId != null) args.categoryId = target.targetCategoryId;
+                    if (target.targetSource) args.source = target.targetSource;
                     tab.linkEraPending[key] = Otzaria.call('library.getBookDetails', args)
-                        .then(({ data }) => normalizedLinkEra(data && (data.generation || data.era)))
-                        .catch(() => 'ספרים נוספים')
+                        .then(({ data }) => normalizedLinkEra(data && data.generation))
+                        .catch(() => 'OTHER')
                         .then(era => {
                             tab.linkEraCache[key] = era;
                             delete tab.linkEraPending[key];
@@ -1072,19 +1146,51 @@
 
     function linkEraForEntry(tab, entry) {
         const key = linkTargetBookKey(entry);
-        return (tab.linkEraCache && tab.linkEraCache[key]) || 'ספרים נוספים';
+        return (tab.linkEraCache && tab.linkEraCache[key]) || 'OTHER';
     }
 
+    function notesBookBaseTitle(title) {
+        const prefix = 'הערות על ';
+        if (!String(title || '').startsWith(prefix)) return null;
+        const base = String(title).slice(prefix.length).trim();
+        return base || null;
+    }
+
+    // Matches CommentaryService.sortLinksByEraSync: era -> base title ->
+    // base book before its notes -> notes title -> target line.
     function sortCommentaryLinkEntries(tab, entries) {
-        const eraRank = entry => Math.max(0, LINK_ERA_ORDER.indexOf(linkEraForEntry(tab, entry)));
+        const presentTitles = new Set(entries.map(entry => entry.targetTitle).filter(Boolean));
+        const entryByTitle = new Map();
+        entries.forEach(entry => {
+            if (entry.targetTitle && !entryByTitle.has(entry.targetTitle)) entryByTitle.set(entry.targetTitle, entry);
+        });
+        const baseByTitle = new Map();
+        presentTitles.forEach(title => {
+            const base = notesBookBaseTitle(title);
+            baseByTitle.set(title, base && presentTitles.has(base) ? base : null);
+        });
+        const compareText = (a, b) => a < b ? -1 : (a > b ? 1 : 0);
+        const anchorFor = title => baseByTitle.get(title) || title;
+        const eraForTitle = title => {
+            const anchorTitle = anchorFor(title);
+            const anchorEntry = entryByTitle.get(anchorTitle) || entryByTitle.get(title);
+            return anchorEntry ? linkEraForEntry(tab, anchorEntry) : 'OTHER';
+        };
         return entries.slice().sort((a, b) => {
-            const eraCompare = eraRank(a) - eraRank(b);
+            const titleA = String(a.targetTitle || '');
+            const titleB = String(b.targetTitle || '');
+            const anchorA = anchorFor(titleA);
+            const anchorB = anchorFor(titleB);
+            const eraCompare = LINK_ERA_ORDER.indexOf(eraForTitle(titleA)) - LINK_ERA_ORDER.indexOf(eraForTitle(titleB));
             if (eraCompare) return eraCompare;
-            const titleCompare = String(a.targetTitle || '').localeCompare(String(b.targetTitle || ''), 'he');
+            const anchorCompare = compareText(anchorA, anchorB);
+            if (anchorCompare) return anchorCompare;
+            const noteA = baseByTitle.get(titleA) ? 1 : 0;
+            const noteB = baseByTitle.get(titleB) ? 1 : 0;
+            if (noteA !== noteB) return noteA - noteB;
+            const titleCompare = compareText(titleA, titleB);
             if (titleCompare) return titleCompare;
-            const lineCompare = (Number(a.targetLine) || 0) - (Number(b.targetLine) || 0);
-            if (lineCompare) return lineCompare;
-            return (Number(a.sourceLine) || 0) - (Number(b.sourceLine) || 0);
+            return (Number(a.targetLine) || 0) - (Number(b.targetLine) || 0);
         });
     }
 
@@ -1105,7 +1211,7 @@
 
     function linkFilterLabel(key, tab) {
         if (key === 'ON_BOOK') return 'על ' + String(tab.title || tab.bookTitle || tab.id || '').trim();
-        if (key.startsWith('ERA:')) return key.slice(4);
+        if (key.startsWith('ERA:')) return LINK_ERA_LABELS[key.slice(4)] || 'ספרים נוספים';
         return COMMENTARY_LINK_TYPE_LABELS[key] || key;
     }
 
@@ -1174,7 +1280,7 @@
         eraRow.hidden = total <= 1 || chips.eras.length === 0;
         const query = tab.linksSearchQuery || '';
         if (searchInput && searchInput.value !== query) searchInput.value = query;
-        if (contentRow) contentRow.hidden = !query.trim();
+        if (contentRow) contentRow.hidden = !query;
         if (contentCheckbox) contentCheckbox.checked = Boolean(tab.linksSearchInContent);
     }
 
@@ -1730,6 +1836,7 @@
                     targetLine: l.targetLine,
                     targetLineEnd: l.targetLineEnd,
                     targetIsUserBook: l.targetIsUserBook,
+                    targetSource: l.targetSource,
                     targetCategoryId: l.targetCategoryId
                 }))
             });
@@ -1748,6 +1855,7 @@
                 targetLine: l.targetLine,
                 targetLineEnd: l.targetLineEnd,
                 targetIsUserBook: l.targetIsUserBook,
+                targetSource: l.targetSource,
                 targetCategoryId: l.targetCategoryId,
                 connectionType: l.connectionType,
                 content: item.content

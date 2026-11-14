@@ -972,14 +972,16 @@
                 </button>
             </div>
             <div class="commentary-links-tools" id="commentary-links-tools" hidden>
-                <div class="commentary-links-search-row">
-                    <span class="commentary-links-search-icon" aria-hidden="true"><i class="ui-icon otzaria-icon" data-otzaria-icon="search_in_titles"></i></span>
-                    <input id="commentary-links-search-input" type="search" placeholder="חפש בתוך הקישורים המוצגים..." oninput="updateCommentaryLinkSearch(this.value)" aria-label="חיפוש בקישורים"><button type="button" id="commentary-links-search-clear" class="commentary-links-search-clear" hidden onclick="clearCommentaryLinksSearch()" aria-label="נקה חיפוש" data-tooltip="נקה חיפוש"><i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i></button>
+                <div class="commentary-links-search-tools">
+                    <div class="commentary-links-search-row">
+                        <span class="commentary-links-search-icon" aria-hidden="true"><i class="ui-icon otzaria-icon" data-otzaria-icon="search_in_titles"></i></span>
+                        <input id="commentary-links-search-input" type="search" placeholder="חפש בתוך הקישורים המוצגים..." oninput="updateCommentaryLinkSearch(this.value)" aria-label="חיפוש בקישורים"><button type="button" id="commentary-links-search-clear" class="commentary-links-search-clear" hidden onclick="clearCommentaryLinksSearch()" aria-label="נקה חיפוש" data-tooltip="נקה חיפוש"><i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i></button>
+                    </div>
+                    <label class="commentary-links-search-content" id="commentary-links-search-content-row" hidden>
+                        <input id="commentary-links-search-in-content" type="checkbox" onchange="updateCommentaryLinkContentSearch(this.checked)">
+                        <span>חפש גם בתוכן הקישורים</span>
+                    </label>
                 </div>
-                <label class="commentary-links-search-content" id="commentary-links-search-content-row" hidden>
-                    <input id="commentary-links-search-in-content" type="checkbox" onchange="updateCommentaryLinkContentSearch(this.checked)">
-                    <span>חפש גם בתוכן הקישורים</span>
-                </label>
                 <div class="commentary-links-chip-groups" id="commentary-links-chip-groups">
                     <div class="commentary-links-chip-row" id="commentary-links-type-chips"></div>
                     <div class="commentary-links-chip-row" id="commentary-links-era-chips"></div>
