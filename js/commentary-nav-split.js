@@ -1305,8 +1305,6 @@
             const endEdgeBtn = document.getElementById('btn-book-end');
             if (startEdgeBtn) startEdgeBtn.disabled = !edgeHasPages;
             if (endEdgeBtn) endEdgeBtn.disabled = !edgeHasPages;
-            const tip = document.getElementById('nav-heading-tooltip');
-            if (tip && tip.classList.contains('visible')) tip.textContent = shownTitle;
         }
         layoutNavCenter();
     }
@@ -1466,31 +1464,6 @@
     // ---- בועת הכותרת המלאה בריחוף ----
     (function initNavBar() {
         if (window.top !== window.self) document.body.classList.add('split-pane-b');
-
-        const tip = document.createElement('div');
-        tip.id = 'nav-heading-tooltip';
-        tip.className = 'no-print';
-        document.body.appendChild(tip);
-
-        const wrap = document.getElementById('nav-heading-title-wrap');
-        if (wrap) {
-            wrap.addEventListener('mouseenter', () => {
-                const full = (document.getElementById('nav-heading-title') || {}).textContent || '';
-                if (!full) return;
-                tip.textContent = full;
-                const toolbar = document.getElementById('main-toolbar');
-                const tbRect = toolbar ? toolbar.getBoundingClientRect() : wrap.getBoundingClientRect();
-                const wRect = wrap.getBoundingClientRect();
-                tip.style.top = (tbRect.bottom + 4) + 'px';
-                tip.style.left = '0px';
-                tip.classList.add('visible');
-                const tw = tip.offsetWidth;
-                let left = wRect.left + wRect.width / 2 - tw / 2;
-                left = Math.max(6, Math.min(left, window.innerWidth - tw - 6));
-                tip.style.left = left + 'px';
-            });
-            wrap.addEventListener('mouseleave', () => tip.classList.remove('visible'));
-        }
 
         const previewArea = document.getElementById('preview-area');
         if (previewArea) {

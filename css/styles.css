@@ -1127,56 +1127,6 @@
             display: none;
         }
 
-        /* מצב מסך מלא + Ctrl+Shift+J: מסתיר גם את סרגל הכלים העליון, ומשאיר רק חץ קטן ושקוף לחשיפתו מחדש */
-        body.toolbar-hidden .toolbar {
-            display: none !important;
-        }
-
-        .toolbar-reveal-arrow {
-            display: flex;
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 44px;
-            height: 14px;
-            border: 1px solid var(--color-border-subtle);
-            border-radius: 0 0 10px 10px;
-            background-color: var(--color-surface-container-highest);
-            color: var(--color-on-surface);
-            opacity: 0.1;
-            cursor: pointer;
-            z-index: 220;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s, opacity 0.15s ease, top 0.2s ease;
-        }
-
-        /* בתצוגת ספר דו-עמודי החץ נראה יותר (0.75) על הרקע הריק שמסביב לספר - וכשהוא יושב פיזית
-           מעל הספר עצמו (זום גדול/מסך צר) חוזר להיות שקוף כדי לא להסתיר טקסט, בדיוק כמו שממומש
-           עבור חצי הדפדוף (nav-arrow.over-book). בתצוגת גלילה רגילה החץ שקוף כברירת מחדל תמיד
-           (התוכן מתחיל כמעט מיד מתחת לסרגל), ומתגלה במלואו רק בריחוף (ראו :hover למטה) */
-        body.book-view-active .toolbar-reveal-arrow {
-            opacity: 0.75;
-        }
-
-        body.book-view-active .toolbar-reveal-arrow.over-book {
-            opacity: 0.1;
-        }
-
-        .toolbar-reveal-arrow:hover {
-            background-color: var(--color-primary-subtle);
-            color: var(--color-primary);
-            opacity: 1 !important;
-        }
-
-        .toolbar-reveal-arrow .ui-icon {
-            width: 16px;
-            height: 16px;
-            font-size: 16px;
-            color: currentColor;
-        }
-
         /* --- סרגל כלים מצומצם (אופציונלי, דרך ההגדרות) - מקטין מעט את עובי הסרגל העליון --- */
         body.compact-toolbar .toolbar {
             height: 44px;
@@ -1326,26 +1276,6 @@
             cursor: default;
         }
 
-        /* בועת הכותרת המלאה בריחוף - עיצוב "פיל" עם מסגרת דקה */
-        #nav-heading-tooltip {
-            position: fixed;
-            z-index: 10001;
-            max-width: min(92vw, 900px);
-            padding: 4px 14px;
-            border-radius: 12px;
-            border: 1px solid color-mix(in srgb, var(--color-on-surface) 22%, transparent);
-            background: var(--color-surface-container);
-            color: var(--color-on-surface);
-            font-size: 1.05rem;
-            font-weight: 400;
-            line-height: 1.5;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.12s ease;
-        }
-        #nav-heading-tooltip.visible { opacity: 1; }
 
         .toolbar-main > .toolbar-side-start { max-width: var(--nav-start-max, none); }
 

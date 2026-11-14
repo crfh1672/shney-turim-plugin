@@ -543,9 +543,6 @@
             } catch (e) { /* ignore */ }
             // התכונה הנוספת שלנו: הסתרת שורת הטאבים כדי לפנות עוד קצת מקום לתוכן
             document.body.classList.add('fullscreen-mode');
-            // שורת הטאבים נעלמת ברגע זה, כך שהסרגל העליון "עולה" - יש למקם את חץ ההסתרה/הצגה
-            // מחדש כדי שיישאר דבוק לסרגל הכלים במקומו החדש ולא יישאר תלוי באוויר במיקום הישן
-            requestAnimationFrame(positionToolbarRevealArrow);
         }
 
         function exitFullscreenMode() {
@@ -553,8 +550,6 @@
                 document.exitFullscreen().catch(() => {});
             }
             document.body.classList.remove('fullscreen-mode');
-            // שורת הטאבים חוזרת להופיע - יש למקם מחדש את החץ כדי שיישאר דבוק לסרגל הכלים
-            requestAnimationFrame(positionToolbarRevealArrow);
         }
 
         function toggleFullscreen() {
@@ -565,67 +560,10 @@
             }
         }
 
-        // Ctrl+Shift+J במסך מלא: הסתרת סרגל הכלים העליון, עם חץ קטן ושקוף לחשיפתו חזרה
-        function toggleToolbarHiddenInFullscreen() {
-            if (!isInFullscreenMode()) return;
-            document.body.classList.toggle('toolbar-hidden');
-        }
-
-        function revealToolbarInFullscreen() {
-            document.body.classList.remove('toolbar-hidden');
-            positionToolbarRevealArrow();
-        }
-
-        // הצגה/הסתרה של סרגל הכלים באמצעות החץ הצף - פועל תמיד (גם מחוץ למסך מלא), בניגוד
-        // ל-Ctrl+Shift+J שמוגבל למצב מסך מלא בלבד
-        function toggleToolbarVisibility() {
-            document.body.classList.toggle('toolbar-hidden');
-            positionToolbarRevealArrow();
-            requestAnimationFrame(updateNavArrowOverlap);
-        }
-
-        // ממקם את חץ ההסתרה/הצגה תמיד תלוי מתחת לסרגל הכלים הנראה כרגע (הראשי או סרגל "בחר ספר") -
-        // כשסרגל הכלים מוסתר, אין תחתיו לתלות אליו ולכן הוא חוזר לראש המסך
-        function positionToolbarRevealArrow() {
-            const arrow = document.querySelector('.toolbar-reveal-arrow');
-            const shell = document.querySelector('.app-shell');
-            if (!arrow || !shell) return;
-
-            if (document.body.classList.contains('toolbar-hidden')) {
-                // הסרגל מוסתר - תולים את החץ מתחת לשורת הטאבים (אם היא גלויה), ולא קופצים לראש המסך
-                const tabBarOuter = document.querySelector('.tab-bar-outer');
-                if (tabBarOuter && tabBarOuter.offsetParent !== null) {
-                    const tRect = tabBarOuter.getBoundingClientRect();
-                    const sRect = shell.getBoundingClientRect();
-                    arrow.style.top = Math.max(0, tRect.bottom - sRect.top) + 'px';
-                } else {
-                    arrow.style.top = '0px';
-                }
-                return;
-            }
-
-            let visibleToolbar = null;
-            document.querySelectorAll('.toolbar').forEach(t => {
-                if (!visibleToolbar && t.offsetParent !== null) visibleToolbar = t;
-            });
-
-            if (visibleToolbar) {
-                const tRect = visibleToolbar.getBoundingClientRect();
-                const sRect = shell.getBoundingClientRect();
-                arrow.style.top = Math.max(0, tRect.bottom - sRect.top) + 'px';
-            } else {
-                arrow.style.top = '0px';
-            }
-        }
-
-        window.addEventListener('resize', positionToolbarRevealArrow);
-        requestAnimationFrame(positionToolbarRevealArrow);
-
         // אם המשתמש יוצא ממסך מלא אמיתי בדרך אחרת (כפתור מערכת וכד') - נסנכרן ונחזיר את שורת הטאבים
         document.addEventListener('fullscreenchange', () => {
             if (!document.fullscreenElement) {
                 document.body.classList.remove('fullscreen-mode');
-                requestAnimationFrame(positionToolbarRevealArrow);
             }
         });
 
@@ -714,17 +652,6 @@
                 exitFullscreenMode();
                 return;
             }
-            // Ctrl+Shift+J - הסתרת/הצגת סרגל הכלים העליון (עובד גם בתוך שדות טקסט, כמו F11).
-            // פועל תמיד, גם בלי מסך מלא קודם - קודם זה היה מותנה ב-isInFullscreenMode() ולכן
-            // הקיצור פשוט לא הגיב אם לא נכנסים למסך מלא לפני כן. כעת הוא קורא לאותה פונקציה בדיוק
-            // שמפעיל כפתור החץ הצף עצמו (toggleToolbarVisibility) - וזו גם דואגת למקם את החץ
-            // מחדש מתחת לסרגל בכל פעם, כך שהחץ כבר לא נשאר "תקוע" במיקום הישן שלו אחרי הקיצור.
-            if (matchesShortcutAction(e, 'toolbarToggle')) {
-                e.preventDefault();
-                toggleToolbarVisibility();
-                return;
-            }
-
             // Ctrl + Shift + F / L / K - מעבר בין חיפוש / כותרות / דפים בפאנל הצד. אלו חייבים
             // להיבדק גם כאן, לפני בדיקת isTypingContext למטה: פתיחת הפאנל ממקדת (focus) את שדה
             // החיפוש/הסינון שבתוכו, כך שברגע שהפאנל כבר פתוח על אחת הלשוניות, ה-focus כבר נמצא
