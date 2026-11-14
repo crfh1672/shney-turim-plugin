@@ -257,9 +257,60 @@
             btn.classList.toggle('active', btn.dataset.subtab === effectiveTabName);
         });
         const toolbarRow = document.getElementById('commentary-toolbar-row');
-        if (toolbarRow) toolbarRow.style.display = isPicker ? 'none' : '';
+        const searchRow = document.getElementById('commentary-search-row');
+        const linksTools = document.getElementById('commentary-links-tools');
+        if (toolbarRow) toolbarRow.hidden = isPicker || effectiveTabName !== 'commentary';
+        if (searchRow) searchRow.hidden = isPicker || effectiveTabName !== 'commentary' || !tab.commentarySearchOpen;
+        if (linksTools) linksTools.hidden = isPicker || effectiveTabName !== 'links';
         const pickerAnchor = document.getElementById('commentary-picker-anchor');
         if (pickerAnchor) pickerAnchor.style.display = (effectiveTabName === 'commentary') ? '' : 'none';
+        if (effectiveTabName === 'links') renderCommentaryLinksFilters(tab);
+    }
+
+    function normalizedCommentarySearchText(value) {
+        return String(value || '').toLowerCase()
+            .replace(/[\\u0591-\\u05C7]/g, '')
+            .replace(/\\s+/g, ' ')
+            .trim();
+    }
+
+    function commentaryEntryPlainText(html) {
+        const holder = document.createElement('div');
+        holder.innerHTML = String(html || '');
+        return holder.textContent || holder.innerText || '';
+    }
+
+    function toggleCommentarySearch() {
+        const tab = getActiveCommentaryTab();
+        if (!tab) return;
+        tab.commentarySearchOpen = !tab.commentarySearchOpen;
+        syncCommentarySubTabButtonsUI(tab);
+        if (tab.commentarySearchOpen) {
+            document.getElementById('commentary-search-input')?.focus();
+        } else {
+            tab.commentarySearchQuery = '';
+            const input = document.getElementById('commentary-search-input');
+            if (input) input.value = '';
+            renderCommentaryBody(tab);
+        }
+    }
+
+    function updateCommentarySearch(value) {
+        const tab = getActiveCommentaryTab();
+        if (!tab) return;
+        tab.commentarySearchQuery = value || '';
+        renderCommentaryBody(tab);
+    }
+
+    function closeCommentarySearch() {
+        const tab = getActiveCommentaryTab();
+        if (!tab) return;
+        tab.commentarySearchOpen = false;
+        tab.commentarySearchQuery = '';
+        const input = document.getElementById('commentary-search-input');
+        if (input) input.value = '';
+        syncCommentarySubTabButtonsUI(tab);
+        renderCommentaryBody(tab);
     }
 
     function switchCommentarySubTab(name) {
@@ -512,7 +563,214 @@
     }
 
     function getLinkEntryKey(entry) {
-        return JSON.stringify([entry.sourceLine, entry.targetTitle, entry.targetHeRef, entry.content]);
+        return linkTargetIdentity(entry);
+    }
+
+    function normalizeLinkType(value) {
+        const type = String(value || 'OTHER').trim().toUpperCase().replace(/[\\s-]+/g, '_');
+        const aliases = {
+            NONE: 'OTHER',
+            ESSAY: 'OTHER',
+            QUOTATION_AUTO: 'QUOTATION',
+            QUOTATION_AUTO_TANAKH: 'QUOTATION',
+            RELATED_PASSAGE: 'RELATED',
+            EXPLICATION: 'ELUCIDATION',
+            SUPERCOMMENTARY: 'SUPER_COMMENTARY'
+        };
+        return aliases[type] || type || 'OTHER';
+    }
+
+    const COMMENTARY_LINK_TYPE_LABELS = {
+        TARGUM: 'תרגום',
+        MIDRASH: 'מדרש',
+        PARSHANUT: 'פרשנות',
+        DIBUR_HAMATCHIL: 'דיבור המתחיל',
+        ELUCIDATION: 'ביאור',
+        COMMENTARY: 'פירוש',
+        SUPER_COMMENTARY: 'פירוש על פירוש',
+        QUOTATION: 'ציטוט',
+        MESORAT_HASHAS: 'מסורת הש״ס',
+        EIN_MISHPAT: 'עין משפט',
+        MISHNAH_IN_TALMUD: 'משנה בתלמוד',
+        SOURCE: 'מקור',
+        OTHER: 'לא מסווג',
+        ALLUSION: 'אזכור',
+        LAW: 'פסיקת הלכה',
+        FOOTNOTES: 'הערות שוליים',
+        LITURGY: 'תפילה',
+        SUMMARY: 'סיכום',
+        SIFREI_MITZVOT: 'ספרי מצוות',
+        LINKER: 'אוטומטי'
+    };
+    const LINK_ERA_ORDER = ['תורה שבכתב', 'חז״ל', 'ראשונים', 'אחרונים', 'מחברי זמננו', 'ספרים נוספים'];
+    const LINK_ERA_GROUPED_TYPES = new Set(['OTHER', 'RELATED', 'REFERENCE', 'LINKER']);
+
+    function normalizedLinkEra(value) {
+        const raw = String(value || '').trim().replace(/["״]/g, '');
+        if (raw.includes('תורה שבכתב')) return 'תורה שבכתב';
+        if (raw.includes('חז') || raw.toLowerCase().includes('chazal')) return 'חז״ל';
+        if (raw.includes('ראשונ') || raw.toLowerCase().includes('rishon')) return 'ראשונים';
+        if (raw.includes('אחרונ') || raw.toLowerCase().includes('acharon')) return 'אחרונים';
+        if (raw.includes('זמנ') || raw.toLowerCase().includes('modern')) return 'מחברי זמננו';
+        return 'ספרים נוספים';
+    }
+
+    function linkTargetIdentity(entry) {
+        return JSON.stringify([
+            entry.targetTitle || '',
+            entry.targetLine ?? null,
+            entry.targetLineEnd ?? null,
+            Boolean(entry.targetIsUserBook),
+            entry.targetCategoryId ?? null,
+            normalizeLinkType(entry.connectionType)
+        ]);
+    }
+
+    function dedupeCommentaryLinkEntries(entries) {
+        const seen = new Set();
+        return (entries || []).filter(entry => {
+            const key = linkTargetIdentity(entry);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }
+
+    async function ensureLinkTargetEras(tab, entries) {
+        if (!tab.linkEraCache) tab.linkEraCache = {};
+        if (!tab.linkEraPending) tab.linkEraPending = {};
+        const titles = Array.from(new Set((entries || []).map(entry => entry.targetTitle).filter(Boolean)));
+        let next = 0;
+        const worker = async () => {
+            while (next < titles.length) {
+                const title = titles[next++];
+                if (Object.prototype.hasOwnProperty.call(tab.linkEraCache, title)) continue;
+                if (!tab.linkEraPending[title]) {
+                    tab.linkEraPending[title] = Otzaria.call('library.getBookDetails', { bookId: title })
+                        .then(({ data }) => normalizedLinkEra(data && (data.generation || data.era)))
+                        .catch(() => 'ספרים נוספים')
+                        .then(era => {
+                            tab.linkEraCache[title] = era;
+                            delete tab.linkEraPending[title];
+                            return era;
+                        });
+                }
+                await tab.linkEraPending[title];
+            }
+        };
+        await Promise.all(Array.from({ length: Math.min(6, titles.length) }, () => worker()));
+    }
+
+    function sortCommentaryLinkEntries(tab, entries) {
+        const eraRank = title => Math.max(0, LINK_ERA_ORDER.indexOf((tab.linkEraCache && tab.linkEraCache[title]) || 'ספרים נוספים'));
+        return entries.slice().sort((a, b) => {
+            const eraCompare = eraRank(a.targetTitle) - eraRank(b.targetTitle);
+            if (eraCompare) return eraCompare;
+            const titleCompare = String(a.targetTitle || '').localeCompare(String(b.targetTitle || ''), 'he');
+            if (titleCompare) return titleCompare;
+            const lineCompare = (Number(a.targetLine) || 0) - (Number(b.targetLine) || 0);
+            if (lineCompare) return lineCompare;
+            return (Number(a.sourceLine) || 0) - (Number(b.sourceLine) || 0);
+        });
+    }
+
+    function linkFilterKeysForEntry(tab, entry) {
+        const type = normalizeLinkType(entry.connectionType);
+        const keys = new Set();
+        if (LINK_ERA_GROUPED_TYPES.has(type)) {
+            keys.add('ERA:' + ((tab.linkEraCache && tab.linkEraCache[entry.targetTitle]) || 'ספרים נוספים'));
+        } else {
+            keys.add(type);
+        }
+        const openBookTitle = String(tab.title || tab.bookTitle || '').trim();
+        if (openBookTitle && String(entry.targetTitle || '').includes('על ' + openBookTitle)) keys.add('ON_BOOK');
+        return Array.from(keys);
+    }
+
+    function linkFilterLabel(key, tab) {
+        if (key === 'ON_BOOK') return 'על ' + String(tab.title || tab.bookTitle || '').trim();
+        if (key.startsWith('ERA:')) return key.slice(4);
+        return COMMENTARY_LINK_TYPE_LABELS[key] || key;
+    }
+
+    function buildCommentaryLinkChipKeys(tab, entries) {
+        const typeKeys = new Set(), eraKeys = new Set();
+        (entries || []).forEach(entry => linkFilterKeysForEntry(tab, entry).forEach(key => {
+            (key.startsWith('ERA:') ? eraKeys : typeKeys).add(key);
+        }));
+        const typeOrder = Object.keys(COMMENTARY_LINK_TYPE_LABELS);
+        const types = Array.from(typeKeys).sort((a, b) => {
+            if (a === 'ON_BOOK') return 1;
+            if (b === 'ON_BOOK') return -1;
+            const ai = typeOrder.indexOf(a), bi = typeOrder.indexOf(b);
+            if (ai < 0 && bi < 0) return a.localeCompare(b);
+            if (ai < 0) return 1;
+            if (bi < 0) return -1;
+            return ai - bi;
+        });
+        const eras = Array.from(eraKeys).sort((a, b) => LINK_ERA_ORDER.indexOf(a.slice(4)) - LINK_ERA_ORDER.indexOf(b.slice(4)));
+        return { types, eras };
+    }
+
+    function effectiveCommentaryLinkFilters(tab, entries) {
+        const chips = buildCommentaryLinkChipKeys(tab, entries);
+        const available = new Set([...chips.types, ...chips.eras]);
+        return new Set((tab.selectedLinkTypes || []).filter(key => available.has(key)));
+    }
+
+    function renderCommentaryLinksFilters(tab) {
+        const typeRow = document.getElementById('commentary-links-type-chips');
+        const eraRow = document.getElementById('commentary-links-era-chips');
+        const tools = document.getElementById('commentary-links-tools');
+        const searchInput = document.getElementById('commentary-links-search-input');
+        const contentRow = document.getElementById('commentary-links-search-content-row');
+        const contentCheckbox = document.getElementById('commentary-links-search-in-content');
+        if (!typeRow || !eraRow || !tools) return;
+        const entries = dedupeCommentaryLinkEntries(tab.linksEntries || []);
+        const chips = buildCommentaryLinkChipKeys(tab, entries);
+        typeRow.replaceChildren();
+        eraRow.replaceChildren();
+        const selected = effectiveCommentaryLinkFilters(tab, entries);
+        const addChip = (row, key) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'commentary-filter-chip' + (selected.has(key) ? ' selected' : '');
+            button.textContent = linkFilterLabel(key, tab);
+            button.setAttribute('aria-pressed', selected.has(key) ? 'true' : 'false');
+            button.addEventListener('click', () => {
+                const current = new Set(tab.selectedLinkTypes || []);
+                if (current.has(key)) current.delete(key);
+                else current.add(key);
+                tab.selectedLinkTypes = Array.from(current);
+                renderCommentaryLinksFilters(tab);
+                renderCommentaryBody(tab);
+            });
+            row.appendChild(button);
+        };
+        chips.types.forEach(key => addChip(typeRow, key));
+        chips.eras.forEach(key => addChip(eraRow, key));
+        const total = chips.types.length + chips.eras.length;
+        typeRow.hidden = total <= 1 || chips.types.length === 0;
+        eraRow.hidden = total <= 1 || chips.eras.length === 0;
+        const query = tab.linksSearchQuery || '';
+        if (searchInput && searchInput.value !== query) searchInput.value = query;
+        if (contentRow) contentRow.hidden = !query.trim();
+        if (contentCheckbox) contentCheckbox.checked = Boolean(tab.linksSearchInContent);
+    }
+
+    function updateCommentaryLinkSearch(value) {
+        const tab = getActiveCommentaryTab();
+        if (!tab) return;
+        tab.linksSearchQuery = value || '';
+        renderCommentaryLinksFilters(tab);
+        renderCommentaryBody(tab);
+    }
+
+    function updateCommentaryLinkContentSearch(checked) {
+        const tab = getActiveCommentaryTab();
+        if (!tab) return;
+        tab.linksSearchInContent = Boolean(checked);
+        renderCommentaryBody(tab);
     }
 
     // מזהי הקבוצות והקישורים המוצגים, לפי סדר הרינדור, עבור כפתור "הרחב/כווץ הכל".
@@ -575,7 +833,6 @@
     // בונה קבוצת מפרשים או פריט קישור, עם כותרת לחיצה ותוכן נפתח.
     function buildCommentaryEntryGroupEl(tab, subTabKey, name, forThis, displayTitle = name) {
         const isExpanded = isCommentaryGroupExpanded(tab, subTabKey, name);
-
         const groupEl = document.createElement('div');
         groupEl.className = 'commentary-entry-group';
         groupEl.dataset.subtab = subTabKey;
@@ -596,7 +853,7 @@
         titleEl.className = 'commentary-entry-group-title';
         titleEl.textContent = displayTitle;
         headingEl.appendChild(titleEl);
-        if (subTabKey === 'links' && forThis[0].targetHeRef) {
+        if (subTabKey === 'links' && forThis[0] && forThis[0].targetHeRef) {
             const subtitleEl = document.createElement('span');
             subtitleEl.className = 'commentary-entry-group-subtitle';
             subtitleEl.textContent = forThis[0].targetHeRef;
@@ -607,7 +864,7 @@
         headerEl.appendChild(headingEl);
         const onToggle = () => toggleCommentaryGroupExpand(tab, subTabKey, name);
         headerEl.addEventListener('click', onToggle);
-        headerEl.addEventListener('keydown', (e) => {
+        headerEl.addEventListener('keydown', e => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 onToggle();
@@ -616,9 +873,9 @@
         groupEl.appendChild(headerEl);
 
         const contentWrapEl = document.createElement('div');
-        contentWrapEl.className = 'commentary-entry-group-content';
-        if (!isExpanded) contentWrapEl.style.display = 'none';
-
+        contentWrapEl.className = 'commentary-entry-group-content' + (isExpanded ? '' : ' collapsed');
+        const innerEl = document.createElement('div');
+        innerEl.className = 'commentary-entry-group-inner';
         forThis.forEach(entry => {
             const entryEl = document.createElement('div');
             entryEl.className = 'commentary-entry';
@@ -637,9 +894,9 @@
                 contentEl.innerHTML = applyCommentaryTextFilters(entry.content || '');
             }
             entryEl.appendChild(contentEl);
-            contentWrapEl.appendChild(entryEl);
+            innerEl.appendChild(entryEl);
         });
-
+        contentWrapEl.appendChild(innerEl);
         groupEl.appendChild(contentWrapEl);
         return groupEl;
     }
@@ -699,8 +956,14 @@
             return;
         }
         const entries = tab.commentaryEntries || [];
-        if (entries.length === 0) {
-            renderCommentaryEmptyState(body, 'links', 'לא נמצאו מפרשים מהנבחרים לקטע זה');
+        const query = normalizedCommentarySearchText(tab.commentarySearchQuery);
+        const visibleEntries = query
+            ? entries.filter(entry => normalizedCommentarySearchText(
+                (entry.targetTitle || '') + ' ' + (entry.targetHeRef || '') + ' ' + commentaryEntryPlainText(entry.content)
+            ).includes(query))
+            : entries;
+        if (visibleEntries.length === 0) {
+            renderCommentaryEmptyState(body, 'links', query ? 'לא נמצאו מפרשים התואמים לחיפוש' : 'לא נמצאו מפרשים מהנבחרים לקטע זה');
             return;
         }
 
@@ -709,7 +972,7 @@
         // ה"פגיעות" שלו על הטווח המוצג, ממוינות לפי שורת המקור. הקבוצות פתוחות כברירת מחדל,
         // כמו ברשימת המפרשים באוצריא.
         tab.activeCommentators.forEach(name => {
-            const forThis = entries.filter(e => e.targetTitle === name).sort((a, b) => a.sourceLine - b.sourceLine);
+            const forThis = visibleEntries.filter(e => e.targetTitle === name).sort((a, b) => a.sourceLine - b.sourceLine);
             if (forThis.length === 0) return;
             body.appendChild(buildCommentaryEntryGroupEl(tab, 'commentary', name, forThis));
         });
@@ -729,26 +992,37 @@
             renderCommentaryPanelStatus(body, 'שגיאה בטעינת הקישורים');
             return;
         }
-        const entries = tab.linksEntries || [];
-        if (entries.length === 0) {
+        const allEntries = dedupeCommentaryLinkEntries(tab.linksEntries || []);
+        if (allEntries.length === 0) {
             renderCommentaryEmptyState(body, 'links', 'אין קישורים לטקסט הנראה במסך');
             return;
         }
-
-        body.innerHTML = '';
-        entries.slice().sort((a, b) => a.sourceLine - b.sourceLine).forEach(entry => {
-            const entryKey = getLinkEntryKey(entry);
-            body.appendChild(buildCommentaryEntryGroupEl(
-                tab,
-                'links',
-                entryKey,
-                [entry],
-                entry.targetTitle
-            ));
-        });
-        if (!body.firstChild) {
-            renderCommentaryEmptyState(body, 'links', 'אין קישורים לטקסט הנראה במסך');
+        const selected = effectiveCommentaryLinkFilters(tab, allEntries);
+        const typeFiltered = selected.size === 0
+            ? allEntries
+            : allEntries.filter(entry => linkFilterKeysForEntry(tab, entry).some(key => selected.has(key)));
+        if (typeFiltered.length === 0) {
+            renderCommentaryEmptyState(body, 'links', 'לא נמצאו קישורים מהסוגים שנבחרו');
+            return;
         }
+        const query = normalizedCommentarySearchText(tab.linksSearchQuery);
+        const visibleEntries = query
+            ? typeFiltered.filter(entry => {
+                const titleAndRef = normalizedCommentarySearchText((entry.targetTitle || '') + ' ' + (entry.targetHeRef || ''));
+                if (titleAndRef.includes(query)) return true;
+                return Boolean(tab.linksSearchInContent) &&
+                    normalizedCommentarySearchText(commentaryEntryPlainText(entry.content)).includes(query);
+            })
+            : typeFiltered;
+        if (visibleEntries.length === 0) {
+            renderCommentaryEmptyState(body, 'links', 'לא נמצאו קישורים התואמים לחיפוש');
+            return;
+        }
+        body.innerHTML = '';
+        sortCommentaryLinkEntries(tab, visibleEntries).forEach(entry => {
+            const entryKey = getLinkEntryKey(entry);
+            body.appendChild(buildCommentaryEntryGroupEl(tab, 'links', entryKey, [entry], entry.targetTitle));
+        });
     }
 
     // לשונית "הערות" - תצוגה בלבד. אוצריא כן חושפת API לקריאת הערות אישיות (notes.list), אבל אין
@@ -934,11 +1208,15 @@
         tab.linksContentLoading = true;
         renderCommentaryBody(tab);
 
-        loadNonCommentaryLinksForRange(tab, range.start, range.end).then(entries => {
+        loadNonCommentaryLinksForRange(tab, range.start, range.end).then(async entries => {
+            await ensureLinkTargetEras(tab, entries);
             if (tab.linksReqToken !== myToken) return;
-            tab.linksEntries = entries;
+            tab.linksEntries = sortCommentaryLinkEntries(tab, dedupeCommentaryLinkEntries(entries));
             tab.linksContentLoading = false;
-            if (getActiveCommentaryTab() === tab && tab.commentaryPanelOpen && tab.commentaryActiveSubTab === 'links') renderCommentaryBody(tab);
+            if (getActiveCommentaryTab() === tab && tab.commentaryPanelOpen && tab.commentaryActiveSubTab === 'links') {
+                renderCommentaryLinksFilters(tab);
+                renderCommentaryBody(tab);
+            }
         }).catch(() => {
             if (tab.linksReqToken !== myToken) return;
             tab.linksEntries = [];
@@ -990,6 +1268,11 @@
                 sourceLine: l.sourceLine,
                 targetTitle: l.targetTitle,
                 targetHeRef: l.targetHeRef,
+                targetLine: l.targetLine,
+                targetLineEnd: l.targetLineEnd,
+                targetIsUserBook: l.targetIsUserBook,
+                targetCategoryId: l.targetCategoryId,
+                connectionType: l.connectionType,
                 content: item.content
             });
         });

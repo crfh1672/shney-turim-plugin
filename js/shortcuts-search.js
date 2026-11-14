@@ -284,6 +284,11 @@ let searchDebounceTimer = null;
             const topBarBackground = surfaces.topBar || cs.surfaceContainerHigh || cs.surface;
             root.style.setProperty('--color-top-bar-background', topBarBackground);
             root.style.setProperty('--color-panel-background', surfaces.panel || cs.surface);
+            root.style.setProperty(
+                '--commentary-panel-bg-color',
+                currentSettings.commentaryBgColor || surfaces.panel || cs.surface
+            );
+            root.style.setProperty('--color-shadow', cs.shadow || cs.onSurface);
             root.style.setProperty('--color-card-background', surfaces.card || cs.surface);
             root.style.setProperty('--color-nav-panel-background', topBarBackground);
             root.style.setProperty('--app-radius', `${theme.radius || 8}px`);
@@ -324,9 +329,12 @@ let searchDebounceTimer = null;
                     const commentatorsFontFamily = t.commentatorsFontFamily ? `'${t.commentatorsFontFamily}'` : "'Segoe UI'";
                     root.style.setProperty('--font-commentators', `${commentatorsFontFamily}, 'Segoe UI', Arial, sans-serif`);
                 }
+                if (!currentSettings.commentaryFontSize && t.commentatorsFontSize != null && Number.isFinite(Number(t.commentatorsFontSize))) {
+                    root.style.setProperty('--font-size-commentators', `${Number(t.commentatorsFontSize)}px`);
+                }
 
-                // גודל הגופן ומרווח השורות מוחרגים בכוונה: לא נמשכים מהתוכנה בכלל, נשארים תלויים
-                // אך ורק בהגדרות התוסף עצמו (אותה סיבה בדיוק שבגללה הוחרג גודל הגופן קודם).
+                // גובה השורות נשאר בהגדרה העצמאית של התוסף; גודל גופן המפרשים עוקב אחרי
+                // commentatorsFontSize שמגיע מה-Theme של אוצריא, אלא אם הוגדר גודל מותאם בתוסף.
             }
         }
 
