@@ -441,7 +441,9 @@
             display: flex;
             align-items: center;
             gap: 4px;
-            padding: 8px 4px 4px 14px;
+            padding-block: 8px 4px;
+            padding-inline-start: 14px;
+            padding-inline-end: 4px;
             flex-shrink: 0;
         }
         .commentary-search-field {
@@ -488,9 +490,9 @@
         .commentary-search-field-icon .ui-icon { width: 20px; height: 20px; font-size: 20px; }
         body.app-compact-density .commentary-search-field-icon { width: 36px; }
         body.app-compact-density .commentary-search-field-icon .ui-icon {
-            width: 18px;
-            height: 18px;
-            font-size: 18px;
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
         }
         .commentary-links-search-row {
             position: relative;
@@ -539,9 +541,9 @@
         }
         body.app-compact-density .commentary-links-search-icon { width: 36px; }
         body.app-compact-density .commentary-links-search-icon .ui-icon {
-            width: 18px;
-            height: 18px;
-            font-size: 18px;
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
         }
         .commentary-search-row .icon-btn {
             flex: 0 0 32px;
@@ -1011,9 +1013,9 @@
         .commentary-picker-search-icon .ui-icon { width: 20px; height: 20px; font-size: 20px; }
         body.app-compact-density .commentary-picker-search-icon { width: 36px; }
         body.app-compact-density .commentary-picker-search-icon .ui-icon {
-            width: 18px;
-            height: 18px;
-            font-size: 18px;
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
         }
         .commentary-picker-search-close,
         .commentary-picker-search-toggle {
@@ -1123,7 +1125,7 @@
             width: 18px;
             height: 18px;
             box-sizing: border-box;
-            border: 2px solid var(--color-outline);
+            border: 1.5px solid var(--color-outline);
             border-radius: 2px;
             background: transparent;
             color: #fff;
