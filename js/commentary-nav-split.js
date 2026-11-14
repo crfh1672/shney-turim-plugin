@@ -354,189 +354,265 @@
         refreshCommentaryPanel(false);
     }
 
-    // בונה תיבת סימון מעוצבת (☑) עבור לשונית "בחירת מפרשים" - שלושה מצבים: ריקה, מסומנת
-    // (checked, כשכל הפריטים הרלוונטיים נבחרו), וחלקית (indeterminate, כשרק חלק נבחרו - למשל
-    // שורת "הצג את כל X" כשרק חלק מהמפרשים בקטגוריה פעילים).
-    function buildCommentaryCheckboxEl(checked, indeterminate) {
+    // תיבת סימון קומפקטית בסגנון Material של עץ הניווט באוצריא.
+    function buildCommentaryCheckboxEl(checked) {
         const box = document.createElement('span');
-        box.className = 'commentary-picker-checkbox' + (checked ? ' checked' : '') + (indeterminate ? ' indeterminate' : '');
+        box.className = 'commentary-picker-checkbox' + (checked ? ' checked' : '');
         box.innerHTML = fluentIconHTML('checkmark');
         return box;
     }
 
-    // בונה את כל "מסך" לשונית בחירת המפרשים (שורת חזרה+כותרת, תיבת סינון, שבבי קטגוריות לקפיצה
-    // מהירה, ואת הרשימה עצמה) - בדיוק כמו התמונה שהועלתה. נקראת פעם אחת בכל כניסה ללשונית הזו
-    // (openCommentaryPickerScreen/renderCommentaryBody); הרשימה עצמה מתעדכנת בנפרד בלי לבנות
-    // מחדש את כל המסך (ראו renderCommentaryPickerListOnly) כדי לא לאבד את הפוקוס/הסמן בתיבת
-    // הסינון בכל הקלדה, ולא לאבד את מיקום הגלילה בכל סימון/ביטול סימון של מפרש בודד.
+    // מסך הסינון מחקה את המבנה של CommentatorsFilterScreen:
+    // כותרת חזרה, צ'יפי דורות, חיפוש מתקפל, וכרטיסי עץ ניווט.
     function renderCommentaryPickerScreen(tab, body) {
         body.innerHTML = '';
         const screen = document.createElement('div');
         screen.className = 'commentary-picker-screen';
 
-        const backRow = document.createElement('div');
-        backRow.className = 'commentary-picker-back-row';
-        const backBtn = document.createElement('button');
-        backBtn.type = 'button';
-        backBtn.className = 'commentary-picker-back-btn';
-        backBtn.setAttribute('data-tooltip', 'חזרה למפרשים');
-        backBtn.innerHTML = fluentIconHTML('chevron_down', 'rotate-270');
-        backBtn.addEventListener('click', closeCommentaryPickerScreen);
-        const titleEl = document.createElement('span');
-        titleEl.className = 'commentary-picker-title';
-        titleEl.textContent = 'בחירת מפרשים';
-        backRow.appendChild(backBtn);
-        backRow.appendChild(titleEl);
-        screen.appendChild(backRow);
+        const header = document.createElement('div');
+        header.className = 'commentary-picker-screen-header';
+        const backButton = document.createElement('button');
+        backButton.type = 'button';
+        backButton.className = 'commentary-picker-back-btn';
+        backButton.setAttribute('aria-label', 'חזרה למפרשים');
+        backButton.setAttribute('data-tooltip', 'חזרה למפרשים');
+        backButton.innerHTML = fluentIconHTML('arrow_previous');
+        backButton.addEventListener('click', closeCommentaryPickerScreen);
+
+        const title = document.createElement('span');
+        title.className = 'commentary-picker-screen-title';
+        title.textContent = 'בחירת מפרשים';
+        header.append(backButton, title);
+        screen.appendChild(header);
+
+        const chips = document.createElement('div');
+        chips.className = 'commentary-picker-era-chips';
+        chips.id = 'commentary-picker-era-chips';
+        screen.appendChild(chips);
 
         const searchRow = document.createElement('div');
         searchRow.className = 'commentary-picker-search-row';
+        searchRow.id = 'commentary-picker-search-row';
+        searchRow.hidden = !(tab.commentaryPickerSearchOpen || tab.commentaryPickerSearchTerm);
+
+        const searchField = document.createElement('div');
+        searchField.className = 'commentary-picker-search-field';
+        const searchIcon = document.createElement('span');
+        searchIcon.className = 'commentary-picker-search-icon';
+        searchIcon.innerHTML = otzariaIconHTML('search');
         const searchInput = document.createElement('input');
-        searchInput.type = 'text';
+        searchInput.type = 'search';
         searchInput.id = 'commentary-picker-search-input';
         searchInput.placeholder = 'סינון מפרשים...';
+        searchInput.setAttribute('aria-label', 'סינון מפרשים');
         searchInput.value = tab.commentaryPickerSearchTerm || '';
         searchInput.addEventListener('input', () => {
             tab.commentaryPickerSearchTerm = searchInput.value;
             renderCommentaryPickerListOnly(tab);
         });
-        searchRow.appendChild(searchInput);
+
+        const closeSearch = document.createElement('button');
+        closeSearch.type = 'button';
+        closeSearch.className = 'commentary-picker-search-close';
+        closeSearch.setAttribute('aria-label', 'סגור חיפוש');
+        closeSearch.setAttribute('data-tooltip', 'סגור חיפוש');
+        closeSearch.innerHTML = fluentIconHTML('dismiss');
+        closeSearch.addEventListener('click', () => {
+            tab.commentaryPickerSearchOpen = false;
+            tab.commentaryPickerSearchTerm = '';
+            searchInput.value = '';
+            searchRow.hidden = true;
+            renderCommentaryPickerListOnly(tab);
+        });
+        searchField.append(searchIcon, searchInput);
+        searchRow.append(searchField, closeSearch);
         screen.appendChild(searchRow);
 
-        const pillsRow = document.createElement('div');
-        pillsRow.className = 'commentary-picker-pills-row';
-        pillsRow.id = 'commentary-picker-pills-row';
-        screen.appendChild(pillsRow);
-
-        const listEl = document.createElement('div');
-        listEl.className = 'commentary-picker-list';
-        listEl.id = 'commentary-picker-list';
-        screen.appendChild(listEl);
+        const list = document.createElement('div');
+        list.className = 'commentary-picker-list';
+        list.id = 'commentary-picker-list';
+        screen.appendChild(list);
 
         body.appendChild(screen);
         renderCommentaryPickerListOnly(tab);
+        if (!searchRow.hidden) searchInput.focus();
     }
 
-    // מרנדרת רק את שבבי הקטגוריות + הרשימה עצמה (בלי לגעת בשורת החזרה/תיבת הסינון) - לפי
-    // tab.commentaryPickerSearchTerm הנוכחי. שבבי הקטגוריות אינם מסננים כלום - הם רק קופצים
-    // (גלילה חלקה) אל הקטגוריה המתאימה ברשימה, בדיוק כמו עוגני ניווט.
     function renderCommentaryPickerListOnly(tab) {
-        const listEl = document.getElementById('commentary-picker-list');
-        const pillsRow = document.getElementById('commentary-picker-pills-row');
-        if (!listEl) return;
-        listEl.innerHTML = '';
-        if (pillsRow) pillsRow.innerHTML = '';
+        const list = document.getElementById('commentary-picker-list');
+        const chips = document.getElementById('commentary-picker-era-chips');
+        if (!list || !chips) return;
+        list.replaceChildren();
+        chips.replaceChildren();
 
         if (tab.commentaryLoadError) {
-            listEl.innerHTML = '<div class="commentary-picker-empty">שגיאה בטעינת רשימת המפרשים</div>';
+            const error = document.createElement('div');
+            error.className = 'commentary-picker-empty';
+            error.textContent = 'שגיאה בטעינת רשימת המפרשים';
+            list.appendChild(error);
             return;
         }
-        const groups = (tab.commentaryGroups || []).filter(g => g.commentators && g.commentators.length);
+
+        const groups = (tab.commentaryGroups || []).filter(group =>
+            Array.isArray(group.commentators) && group.commentators.length > 0
+        );
         if (groups.length === 0) {
-            listEl.innerHTML = '<div class="commentary-picker-empty">לא נמצאו מפרשים לספר זה</div>';
+            const empty = document.createElement('div');
+            empty.className = 'commentary-picker-empty';
+            empty.textContent = 'לא נמצאו מפרשים לספר זה';
+            list.appendChild(empty);
             return;
         }
 
-        const term = (tab.commentaryPickerSearchTerm || '').trim();
+        const selectedGroups = new Set(tab.commentaryPickerSelectedGroups || []);
+        const term = normalizedCommentarySearchText(tab.commentaryPickerSearchTerm || '');
+        const visibleGroups = groups.filter(group =>
+            selectedGroups.size === 0 || selectedGroups.has(group.title || '')
+        );
+        const visibleEntries = visibleGroups.map(group => ({
+            group,
+            names: (group.commentators || []).filter(name =>
+                !term || normalizedCommentarySearchText(name).includes(term)
+            )
+        })).filter(entry => entry.names.length > 0);
 
-        if (pillsRow) {
-            groups.forEach((group, gi) => {
-                const pill = document.createElement('button');
-                pill.type = 'button';
-                pill.className = 'commentary-picker-pill';
-                pill.textContent = group.title || '';
-                pill.addEventListener('click', () => {
-                    const target = document.getElementById('commentary-picker-cat-' + gi);
-                    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                });
-                pillsRow.appendChild(pill);
+        // הצ'יפים מסננים את רשימת המפרשים; הם אינם קישורי גלילה.
+        groups.forEach(group => {
+            const label = group.title || 'שאר מפרשים';
+            const chip = document.createElement('button');
+            const isSelected = selectedGroups.has(label);
+            chip.type = 'button';
+            chip.className = 'commentary-picker-era-chip' + (isSelected ? ' selected' : '');
+            chip.textContent = label;
+            chip.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+            chip.addEventListener('click', () => {
+                const next = new Set(tab.commentaryPickerSelectedGroups || []);
+                if (next.has(label)) next.delete(label);
+                else next.add(label);
+                tab.commentaryPickerSelectedGroups = Array.from(next);
+                renderCommentaryPickerListOnly(tab);
             });
+            chips.appendChild(chip);
+        });
+
+        const listTitle = document.createElement('div');
+        listTitle.className = 'commentary-picker-tree-header';
+        const heading = document.createElement('span');
+        heading.textContent = 'מפרשים על ' + (tab.title || 'הספר');
+        const searchToggle = document.createElement('button');
+        searchToggle.type = 'button';
+        searchToggle.className = 'commentary-picker-search-toggle';
+        searchToggle.setAttribute('aria-label', 'סינון מפרשים');
+        searchToggle.setAttribute('data-tooltip', 'סינון מפרשים');
+        searchToggle.innerHTML = fluentIconHTML('search');
+        searchToggle.addEventListener('click', () => {
+            const row = document.getElementById('commentary-picker-search-row');
+            const input = document.getElementById('commentary-picker-search-input');
+            if (!row || !input) return;
+            const opening = row.hidden;
+            tab.commentaryPickerSearchOpen = opening;
+            if (!opening) {
+                tab.commentaryPickerSearchTerm = '';
+                input.value = '';
+            }
+            row.hidden = !opening;
+            if (opening) input.focus();
+            renderCommentaryPickerListOnly(tab);
+        });
+        listTitle.append(heading, searchToggle);
+        list.appendChild(listTitle);
+
+        const allVisibleNames = visibleEntries.flatMap(entry => entry.names);
+        const uniqueVisibleNames = Array.from(new Set(allVisibleNames));
+        if (uniqueVisibleNames.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'commentary-picker-empty';
+            empty.textContent = term ? 'לא נמצאו מפרשים תואמים לסינון' : 'אין מפרשים בקבוצות שנבחרו';
+            list.appendChild(empty);
+            return;
         }
 
-        const allNames = [];
-        groups.forEach(g => g.commentators.forEach(n => { if (!allNames.includes(n)) allNames.push(n); }));
-
-        const masterRow = document.createElement('div');
-        masterRow.className = 'commentary-picker-master-row';
-        const allChecked = allNames.length > 0 && allNames.every(n => tab.activeCommentators.includes(n));
-        const someChecked = allNames.some(n => tab.activeCommentators.includes(n));
-        masterRow.appendChild(buildCommentaryCheckboxEl(allChecked, someChecked && !allChecked));
-        const masterLabel = document.createElement('span');
-        masterLabel.className = 'commentary-picker-master-label';
-        masterLabel.textContent = 'הצג את כל המפרשים';
-        masterRow.appendChild(masterLabel);
-        masterRow.addEventListener('click', () => {
-            tab.activeCommentators = allChecked ? [] : allNames.slice();
+        const selected = new Set(tab.activeCommentators || []);
+        const makeTreeRow = ({label, kind, checked, onClick, selectedRow = false}) => {
+            const row = document.createElement('button');
+            row.type = 'button';
+            row.className = 'commentary-picker-tree-row ' + kind + (selectedRow ? ' selected' : '');
+            row.setAttribute('aria-pressed', checked ? 'true' : 'false');
+            const iconBox = document.createElement('span');
+            iconBox.className = 'commentary-picker-icon-box';
+            iconBox.innerHTML = kind === 'book'
+                ? otzariaIconHTML('book')
+                : fluentIconHTML('folder');
+            const labelEl = document.createElement('span');
+            labelEl.className = 'commentary-picker-row-label';
+            labelEl.textContent = label;
+            row.append(iconBox, labelEl, buildCommentaryCheckboxEl(checked));
+            row.addEventListener('click', onClick);
+            return row;
+        };
+        const makeCard = () => {
+            const card = document.createElement('div');
+            card.className = 'commentary-picker-tree-card';
+            return card;
+        };
+        const toggleVisibleNames = names => {
+            const allSelected = names.length > 0 && names.every(name => selected.has(name));
+            const next = new Set(tab.activeCommentators || []);
+            names.forEach(name => {
+                if (allSelected) next.delete(name);
+                else next.add(name);
+            });
+            tab.activeCommentators = Array.from(next);
             saveActiveCommentatorsForBook(tab);
             refreshCommentaryPanel(true);
             renderCommentaryPickerListOnly(tab);
-        });
-        listEl.appendChild(masterRow);
+        };
 
-        let anyVisible = false;
-        groups.forEach((group, gi) => {
-            const names = group.commentators;
-            const visibleNames = term ? names.filter(n => n.includes(term)) : names;
-            if (term && visibleNames.length === 0) return;
-            anyVisible = true;
+        const masterCard = makeCard();
+        const masterSelected = uniqueVisibleNames.every(name => selected.has(name));
+        masterCard.appendChild(makeTreeRow({
+            label: 'הצג את כל המפרשים',
+            kind: 'category',
+            checked: masterSelected,
+            onClick: () => toggleVisibleNames(uniqueVisibleNames)
+        }));
+        list.appendChild(masterCard);
 
-            const catWrap = document.createElement('div');
-            catWrap.className = 'commentary-picker-category';
-            catWrap.id = 'commentary-picker-cat-' + gi;
+        visibleEntries.forEach(({group, names}) => {
+            const groupTitle = document.createElement('div');
+            groupTitle.className = 'commentary-picker-era-heading';
+            groupTitle.textContent = group.title || 'שאר מפרשים';
+            list.appendChild(groupTitle);
 
-            const catRow = document.createElement('div');
-            catRow.className = 'commentary-picker-category-row';
-            const folderIcon = document.createElement('span');
-            folderIcon.className = 'commentary-picker-folder-icon';
-            folderIcon.innerHTML = fluentIconHTML('folder');
-            catRow.appendChild(folderIcon);
-            const catChecked = names.length > 0 && names.every(n => tab.activeCommentators.includes(n));
-            const catSome = names.some(n => tab.activeCommentators.includes(n));
-            catRow.appendChild(buildCommentaryCheckboxEl(catChecked, catSome && !catChecked));
-            const catLabel = document.createElement('span');
-            catLabel.className = 'commentary-picker-category-label';
-            catLabel.textContent = 'הצג את כל ' + (group.title || '');
-            catRow.appendChild(catLabel);
-            catRow.addEventListener('click', () => {
-                if (catChecked) {
-                    tab.activeCommentators = tab.activeCommentators.filter(n => !names.includes(n));
-                } else {
-                    names.forEach(n => { if (!tab.activeCommentators.includes(n)) tab.activeCommentators.push(n); });
-                }
-                saveActiveCommentatorsForBook(tab);
-                refreshCommentaryPanel(true);
-                renderCommentaryPickerListOnly(tab);
-            });
-            catWrap.appendChild(catRow);
+            const card = makeCard();
+            const groupSelected = names.every(name => selected.has(name));
+            card.appendChild(makeTreeRow({
+                label: 'הצג את כל ' + (group.title || 'המפרשים'),
+                kind: 'category',
+                checked: groupSelected,
+                onClick: () => toggleVisibleNames(names)
+            }));
 
-            visibleNames.forEach(name => {
-                const itemRow = document.createElement('div');
-                itemRow.className = 'commentary-picker-item-row';
-                const checked = tab.activeCommentators.includes(name);
-                itemRow.appendChild(buildCommentaryCheckboxEl(checked, false));
-                const itemLabel = document.createElement('span');
-                itemLabel.className = 'commentary-picker-item-label';
-                itemLabel.textContent = name;
-                itemRow.appendChild(itemLabel);
-                itemRow.addEventListener('click', () => {
-                    if (tab.activeCommentators.includes(name)) {
-                        tab.activeCommentators = tab.activeCommentators.filter(n => n !== name);
-                    } else {
-                        tab.activeCommentators.push(name);
+            names.forEach(name => {
+                const isSelected = selected.has(name);
+                card.appendChild(makeTreeRow({
+                    label: name,
+                    kind: 'book',
+                    checked: isSelected,
+                    selectedRow: isSelected,
+                    onClick: () => {
+                        const next = new Set(tab.activeCommentators || []);
+                        if (next.has(name)) next.delete(name);
+                        else next.add(name);
+                        tab.activeCommentators = Array.from(next);
+                        saveActiveCommentatorsForBook(tab);
+                        refreshCommentaryPanel(true);
+                        renderCommentaryPickerListOnly(tab);
                     }
-                    saveActiveCommentatorsForBook(tab);
-                    refreshCommentaryPanel(true);
-                    renderCommentaryPickerListOnly(tab);
-                });
-                catWrap.appendChild(itemRow);
+                }));
             });
-
-            listEl.appendChild(catWrap);
+            list.appendChild(card);
         });
-
-        if (!anyVisible) {
-            listEl.innerHTML = '<div class="commentary-picker-empty">לא נמצאו מפרשים תואמים לסינון</div>';
-        }
     }
 
     // --- רינדור גוף החלונית (מפנה ללשונית הפעילה) ---

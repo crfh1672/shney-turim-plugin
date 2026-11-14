@@ -955,7 +955,7 @@
             <div class="commentary-toolbar-row" id="commentary-toolbar-row">
                 <div class="popover-anchor" id="commentary-picker-anchor" style="position:relative;">
                     <button class="icon-btn" id="btn-commentary-picker" onclick="openCommentaryPickerScreen()" data-tooltip="בחירת מפרשים" aria-label="בחירת מפרשים">
-                        <i class="ui-icon" data-fluent-icon="text_bullet_list" aria-hidden="true"></i>
+                        <i class="ui-icon otzaria-icon" data-otzaria-icon="apps_list" aria-hidden="true"></i>
                     </button>
                 </div>
                 <button class="icon-btn" id="btn-commentary-expand-all" onclick="toggleCommentaryGroupsExpandAll()" data-tooltip="הרחב את כל המפרשים" aria-label="הרחב את כל המפרשים">
@@ -966,14 +966,14 @@
                 </button>
             </div>
             <div class="commentary-search-row" id="commentary-search-row" hidden>
-                <input id="commentary-search-input" type="search" placeholder="חפש במפרשים המוצגים..." oninput="updateCommentarySearch(this.value)" aria-label="חיפוש במפרשים">
+                <div class="commentary-search-field"><span class="commentary-search-field-icon" aria-hidden="true"><i class="ui-icon otzaria-icon" data-otzaria-icon="search"></i></span><input id="commentary-search-input" type="search" placeholder="חפש במפרשים המוצגים..." oninput="updateCommentarySearch(this.value)" aria-label="חיפוש במפרשים"></div>
                 <button class="icon-btn" type="button" onclick="closeCommentarySearch()" data-tooltip="סגור חיפוש" aria-label="סגור חיפוש">
                     <i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i>
                 </button>
             </div>
             <div class="commentary-links-tools" id="commentary-links-tools" hidden>
                 <div class="commentary-links-search-row">
-                    <span class="commentary-links-search-icon" aria-hidden="true"><i class="ui-icon" data-fluent-icon="search"></i></span>
+                    <span class="commentary-links-search-icon" aria-hidden="true"><i class="ui-icon otzaria-icon" data-otzaria-icon="search_in_titles"></i></span>
                     <input id="commentary-links-search-input" type="search" placeholder="חפש בתוך הקישורים המוצגים..." oninput="updateCommentaryLinkSearch(this.value)" aria-label="חיפוש בקישורים">
                 </div>
                 <label class="commentary-links-search-content" id="commentary-links-search-content-row" hidden>

@@ -52,6 +52,8 @@
 
         // Otzaria Icons 0.7.0 glyphs; license and attribution are in fonts/OtzariaIcons-NOTICE.txt.
         const OTZARIA_ICON_GLYPHS = Object.freeze({
+            apps_list: [0xE032, 0xE031],
+            search_in_titles: [0xE081, 0xE081],
             book: [0xE001, 0xE001],
             book_open_medium_lines: [0xE011, 0xE011],
             document_column: [0xE024, 0xE024],
