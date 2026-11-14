@@ -55,6 +55,7 @@
         const OTZARIA_ICON_GLYPHS = Object.freeze({
             apps_list: [0xE032, 0xE031],
             search_in_titles: [0xE081, 0xE081],
+            search_in_library: [0xE02E, 0xE02E],
             book: [0xE001, 0xE001],
             book_open_medium_lines: [0xE011, 0xE011],
             document_column: [0xE024, 0xE024],

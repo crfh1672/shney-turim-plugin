@@ -48,30 +48,35 @@
         tab.commentaryLoading = true;
         renderCommentaryBody(tab);
         try {
-            const { data } = await Otzaria.call('library.getCommentators', {
-                bookId: tab.id,
-                grouped: true
-            });
-            tab.commentaryGroups = (data && data.groups) || [];
+            const [groupedResponse, detailedResponse] = await Promise.all([
+                Otzaria.call('library.getCommentators', {
+                    bookId: tab.id,
+                    grouped: true
+                }),
+                // grouped=true אינו מחזיר isRare; הקריאה השנייה מספקת את סימון הנדירות.
+                Otzaria.call('library.getCommentators', { bookId: tab.id }).catch(() => null)
+            ]);
+            tab.commentaryGroups = (groupedResponse.data && groupedResponse.data.groups) || [];
             const flat = [];
             tab.commentaryGroups.forEach(g => (g.commentators || []).forEach(name => {
                 if (!flat.includes(name)) flat.push(name);
             }));
             tab.commentaryAvailable = flat;
+            tab.commentaryRare = new Set(
+                (((detailedResponse && detailedResponse.data && detailedResponse.data.commentators) || []))
+                    .filter(item => item && item.isRare)
+                    .map(item => item.title)
+            );
             tab.commentaryLoadError = false;
         } catch (e) {
             tab.commentaryGroups = [];
             tab.commentaryAvailable = [];
+            tab.commentaryRare = new Set();
             tab.commentaryLoadError = true;
         }
 
         // ברירת מחדל לבחירת המפרשים הפעילים: קודם כל בודקים אם יש בחירה שמורה מפעם קודמת
-        // לספר הזה בדיוק (ראו תיקון #11/loadActiveCommentatorsForBook) - אם כן, זו הבחירה
-        // שנטענת (מסוננת לרשימת המפרשים הזמינה בפועל לספר, למקרה שהזמינות השתנתה מאז).
-        // רק אם אין שום בחירה שמורה, נופלים לברירת המחדל הישנה: מה שפעיל כרגע בטאב הקריאה
-        // הפתוח באוצריא, מסונן לרשימת המפרשים שקיימת בפועל לספר הזה (כדי לא "לאמץ" בחירה
-        // לא-רלוונטית אם באותו רגע הטאב הפעיל באוצריא הוא בכלל ספר אחר) - אם אין חפיפה, הבחירה
-        // מתחילה ריקה והמשתמש בוחר ידנית.
+        // לספר הזה בדיוק. אם אין, נופלים לבחירה הפעילה כרגע בטאב הקריאה, תוך סינון למפרשי הספר.
         if (!Array.isArray(tab.activeCommentators)) {
             let defaults = null;
             try {
@@ -87,11 +92,13 @@
                     if (data && Array.isArray(data.active)) {
                         defaults = data.active.filter(name => tab.commentaryAvailable.includes(name));
                     }
-                } catch (e) { /* אין ברירת מחדל זמינה - נשאר ריק, המשתמש יבחר ידנית */ }
+                } catch (e) { /* אין ברירת מחדל זמינה - נשאר ריק */ }
             }
             tab.activeCommentators = defaults;
         }
 
+        if (!Array.isArray(tab.commentaryPickerSelectedGroups)) tab.commentaryPickerSelectedGroups = [];
+        if (!Array.isArray(tab.commentaryPickerSelectedTypes)) tab.commentaryPickerSelectedTypes = [];
         tab.commentaryLoading = false;
         tab.commentaryDataLoaded = true;
     }
@@ -304,7 +311,19 @@
         const tab = getActiveCommentaryTab();
         if (!tab) return;
         tab.commentarySearchQuery = value || '';
+        const row = document.getElementById('commentary-search-row');
+        const clearButton = document.getElementById('commentary-search-clear');
+        if (row) row.classList.toggle('has-query', Boolean(tab.commentarySearchQuery));
+        if (clearButton) clearButton.hidden = !tab.commentarySearchQuery;
         renderCommentaryBody(tab);
+    }
+
+    function clearCommentarySearchInput() {
+        const input = document.getElementById('commentary-search-input');
+        if (!input) return;
+        input.value = '';
+        updateCommentarySearch('');
+        input.focus();
     }
 
     function closeCommentarySearch() {
@@ -314,6 +333,9 @@
         tab.commentarySearchQuery = '';
         const input = document.getElementById('commentary-search-input');
         if (input) input.value = '';
+        const clearButton = document.getElementById('commentary-search-clear');
+        if (clearButton) clearButton.hidden = true;
+        document.getElementById('commentary-search-row')?.classList.remove('has-query');
         syncCommentarySubTabButtonsUI(tab);
         renderCommentaryBody(tab);
     }
@@ -334,6 +356,79 @@
     // נכנסים אליה רק דרך לחיצה על כפתור בחירת המפרשים (היא אינה אחת מלשוניות הכותרת הרגילות),
     // ויוצאים ממנה רק דרך חץ החזרה שבראשה - שמחזיר בדיוק ללשונית שממנה נכנסו (בפועל תמיד
     // "מפרשים", כי כפתור בחירת המפרשים מוצג רק שם).
+    function loadCommentaryPickerContext(tab, force = false) {
+        const range = getVisibleLineRange();
+        const rangeKey = range ? `${range.start}-${range.end}` : 'empty';
+        const cacheKey = `${tab.id}::${rangeKey}`;
+        if (!force && tab.commentaryPickerContextKey === cacheKey) {
+            if (tab.commentaryPickerContextLoaded) return Promise.resolve();
+            if (tab.commentaryPickerContextPromise) return tab.commentaryPickerContextPromise;
+        }
+
+        tab.commentaryPickerContextKey = cacheKey;
+        tab.commentaryPickerContextLoaded = false;
+        tab.commentaryPickerContextPromise = null;
+        tab.commentaryPickerContextError = false;
+        if (!range) {
+            tab.commentaryPickerContextToken = (tab.commentaryPickerContextToken || 0) + 1;
+            tab.commentaryPickerLineRelevant = new Set();
+            tab.commentaryPickerCommentatorsByType = {};
+            tab.commentaryPickerContextLoaded = true;
+            if (tab.commentaryActiveSubTab === 'picker') renderCommentaryPickerListOnly(tab);
+            return Promise.resolve();
+        }
+
+        const requestToken = (tab.commentaryPickerContextToken = (tab.commentaryPickerContextToken || 0) + 1);
+        const endLine = Math.min(range.end, range.start + 199);
+        const dependentTypes = [
+            'COMMENTARY', 'SUPER_COMMENTARY', 'TARGUM', 'MIDRASH',
+            'PARSHANUT', 'DIBUR_HAMATCHIL', 'ELUCIDATION', 'EXPLICATION', 'FOOTNOTES'
+        ];
+
+        const contextPromise = Otzaria.call('library.getLinks', {
+            bookId: tab.id,
+            startLine: range.start,
+            endLine,
+            connectionTypes: dependentTypes
+        }).then(({ data }) => {
+            if (tab.commentaryPickerContextToken !== requestToken) return;
+            const links = ((data && data.links) || []).filter(link => link.isCommentary === true);
+            const lineRelevant = new Set();
+            const byType = {};
+            const filterTypeOrder = ['TARGUM', 'MIDRASH', 'PARSHANUT', 'DIBUR_HAMATCHIL', 'ELUCIDATION'];
+
+            links.forEach(link => {
+                if (link.targetTitle) lineRelevant.add(link.targetTitle);
+                const type = normalizeLinkType(link.connectionType);
+                if (!filterTypeOrder.includes(type) || !link.targetTitle) return;
+                if (!byType[type]) byType[type] = new Set();
+                byType[type].add(link.targetTitle);
+            });
+
+            tab.commentaryPickerLinks = links;
+            // בתשובה שנחתכה לא ניתן להסיק שמפרש נדיר אינו רלוונטי, וגם מפת סוגים אינה מלאה.
+            tab.commentaryPickerLineRelevant = data && data.truncated ? null : lineRelevant;
+            tab.commentaryPickerCommentatorsByType = data && data.truncated ? {} : byType;
+            tab.commentaryPickerContextTruncated = Boolean(data && data.truncated);
+            tab.commentaryPickerContextLoaded = true;
+            if (getActiveCommentaryTab() === tab && tab.commentaryPanelOpen && tab.commentaryActiveSubTab === 'picker') {
+                renderCommentaryPickerListOnly(tab);
+            }
+        }).catch(() => {
+            if (tab.commentaryPickerContextToken !== requestToken) return;
+            // בכשל טעינה לא מסתירים מפרשים נדירים על סמך מידע חלקי.
+            tab.commentaryPickerLineRelevant = null;
+            tab.commentaryPickerCommentatorsByType = {};
+            tab.commentaryPickerContextError = true;
+            tab.commentaryPickerContextLoaded = true;
+            if (getActiveCommentaryTab() === tab && tab.commentaryPanelOpen && tab.commentaryActiveSubTab === 'picker') {
+                renderCommentaryPickerListOnly(tab);
+            }
+        });
+        tab.commentaryPickerContextPromise = contextPromise;
+        return contextPromise;
+    }
+
     function openCommentaryPickerScreen() {
         const tab = getActiveCommentaryTab();
         if (!tab) return;
@@ -343,6 +438,7 @@
         tab.commentaryActiveSubTab = 'picker';
         syncCommentarySubTabButtonsUI(tab);
         renderCommentaryBody(tab);
+        loadCommentaryPickerContext(tab, Boolean(tab.commentaryPickerContextError));
     }
 
     function closeCommentaryPickerScreen() {
@@ -354,7 +450,6 @@
         refreshCommentaryPanel(false);
     }
 
-    // תיבת סימון קומפקטית בסגנון Material של עץ הניווט באוצריא.
     function buildCommentaryCheckboxEl(checked) {
         const box = document.createElement('span');
         box.className = 'commentary-picker-checkbox' + (checked ? ' checked' : '');
@@ -362,8 +457,25 @@
         return box;
     }
 
-    // מסך הסינון מחקה את המבנה של CommentatorsFilterScreen:
-    // כותרת חזרה, צ'יפי דורות, חיפוש מתקפל, וכרטיסי עץ ניווט.
+    function commentaryPickerTopicKey(value) {
+        return String(value || '').toLowerCase()
+            .replace(/["״׳'’]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function orderCommentarySelection(tab, names) {
+        const remaining = new Set(names);
+        const ordered = [];
+        (tab.commentaryGroups || []).forEach(group => {
+            (group.commentators || []).forEach(name => {
+                if (remaining.delete(name)) ordered.push(name);
+            });
+        });
+        remaining.forEach(name => ordered.push(name));
+        return ordered;
+    }
+
     function renderCommentaryPickerScreen(tab, body) {
         body.innerHTML = '';
         const screen = document.createElement('div');
@@ -399,7 +511,7 @@
         searchField.className = 'commentary-picker-search-field';
         const searchIcon = document.createElement('span');
         searchIcon.className = 'commentary-picker-search-icon';
-        searchIcon.innerHTML = otzariaIconHTML('search');
+        searchIcon.innerHTML = otzariaIconHTML('search_in_library');
         const searchInput = document.createElement('input');
         searchInput.type = 'search';
         searchInput.id = 'commentary-picker-search-input';
@@ -408,7 +520,23 @@
         searchInput.value = tab.commentaryPickerSearchTerm || '';
         searchInput.addEventListener('input', () => {
             tab.commentaryPickerSearchTerm = searchInput.value;
+            clearSearchButton.hidden = !searchInput.value;
             renderCommentaryPickerListOnly(tab);
+        });
+
+        const clearSearchButton = document.createElement('button');
+        clearSearchButton.type = 'button';
+        clearSearchButton.className = 'commentary-picker-search-clear';
+        clearSearchButton.hidden = !searchInput.value;
+        clearSearchButton.setAttribute('aria-label', 'נקה חיפוש');
+        clearSearchButton.setAttribute('data-tooltip', 'נקה חיפוש');
+        clearSearchButton.innerHTML = fluentIconHTML('dismiss');
+        clearSearchButton.addEventListener('click', () => {
+            tab.commentaryPickerSearchTerm = '';
+            searchInput.value = '';
+            clearSearchButton.hidden = true;
+            renderCommentaryPickerListOnly(tab);
+            searchInput.focus();
         });
 
         const closeSearch = document.createElement('button');
@@ -421,21 +549,60 @@
             tab.commentaryPickerSearchOpen = false;
             tab.commentaryPickerSearchTerm = '';
             searchInput.value = '';
+            clearSearchButton.hidden = true;
             searchRow.hidden = true;
+            screen.classList.remove('search-open');
             renderCommentaryPickerListOnly(tab);
+            syncCommentaryPickerFloatingSearch();
         });
-        searchField.append(searchIcon, searchInput);
+        searchField.append(searchIcon, searchInput, clearSearchButton);
         searchRow.append(searchField, closeSearch);
         screen.appendChild(searchRow);
 
         const list = document.createElement('div');
         list.className = 'commentary-picker-list';
         list.id = 'commentary-picker-list';
-        screen.appendChild(list);
+
+        const floatingSearchToggle = document.createElement('button');
+        floatingSearchToggle.type = 'button';
+        floatingSearchToggle.className = 'commentary-picker-search-toggle-floating';
+        floatingSearchToggle.hidden = true;
+        floatingSearchToggle.setAttribute('aria-label', 'סינון מפרשים');
+        floatingSearchToggle.setAttribute('data-tooltip', 'סינון מפרשים');
+        floatingSearchToggle.innerHTML = fluentIconHTML('search');
+        floatingSearchToggle.addEventListener('click', () => {
+            const inlineToggle = list.querySelector('.commentary-picker-search-toggle');
+            if (inlineToggle) inlineToggle.click();
+        });
+
+        screen.append(list, floatingSearchToggle);
+        list.addEventListener('scroll', syncCommentaryPickerFloatingSearch, { passive: true });
 
         body.appendChild(screen);
         renderCommentaryPickerListOnly(tab);
+        syncCommentaryPickerFloatingSearch();
         if (!searchRow.hidden) searchInput.focus();
+    }
+
+    function syncCommentaryPickerFloatingSearch() {
+        const screen = document.querySelector('.commentary-picker-screen');
+        if (!screen) return;
+        const list = screen.querySelector('.commentary-picker-list');
+        const floating = screen.querySelector('.commentary-picker-search-toggle-floating');
+        const searchRow = screen.querySelector('.commentary-picker-search-row');
+        const header = list && list.querySelector('.commentary-picker-tree-header');
+        if (!list || !floating || !searchRow || !header) {
+            if (floating) floating.hidden = true;
+            return;
+        }
+        const listRect = list.getBoundingClientRect();
+        const headerRect = header.getBoundingClientRect();
+        const headerVisible = headerRect.bottom > listRect.top && headerRect.top < listRect.bottom;
+        floating.hidden = !searchRow.hidden || headerVisible;
+        if (!floating.hidden) {
+            const screenRect = screen.getBoundingClientRect();
+            floating.style.top = `${Math.round(listRect.top - screenRect.top + 10)}px`;
+        }
     }
 
     function renderCommentaryPickerListOnly(tab) {
@@ -450,50 +617,130 @@
             error.className = 'commentary-picker-empty';
             error.textContent = 'שגיאה בטעינת רשימת המפרשים';
             list.appendChild(error);
+            syncCommentaryPickerFloatingSearch();
             return;
         }
 
+        const groupOrder = ['תורה שבכתב', 'חז״ל', 'ראשונים', 'אחרונים', 'מחברי זמננו', 'שאר מפרשים'];
         const groups = (tab.commentaryGroups || []).filter(group =>
             Array.isArray(group.commentators) && group.commentators.length > 0
-        );
+        ).slice().sort((a, b) => {
+            const aKey = commentaryPickerTopicKey(a.title || '');
+            const bKey = commentaryPickerTopicKey(b.title || '');
+            const aIndex = groupOrder.findIndex(title => commentaryPickerTopicKey(title) === aKey);
+            const bIndex = groupOrder.findIndex(title => commentaryPickerTopicKey(title) === bKey);
+            return (aIndex < 0 ? groupOrder.length : aIndex) - (bIndex < 0 ? groupOrder.length : bIndex);
+        });
         if (groups.length === 0) {
             const empty = document.createElement('div');
             empty.className = 'commentary-picker-empty';
-            empty.textContent = 'לא נמצאו מפרשים לספר זה';
+            empty.innerHTML = otzariaIconHTML('links', 'commentary-picker-empty-icon');
+            const label = document.createElement('div');
+            label.textContent = 'אין מפרשים';
+            empty.appendChild(label);
             list.appendChild(empty);
+            syncCommentaryPickerFloatingSearch();
             return;
         }
 
-        const selectedGroups = new Set(tab.commentaryPickerSelectedGroups || []);
-        const term = normalizedCommentarySearchText(tab.commentaryPickerSearchTerm || '');
-        const visibleGroups = groups.filter(group =>
-            selectedGroups.size === 0 || selectedGroups.has(group.title || '')
-        );
-        const visibleEntries = visibleGroups.map(group => ({
-            group,
-            names: (group.commentators || []).filter(name =>
-                !term || normalizedCommentarySearchText(name).includes(term)
-            )
-        })).filter(entry => entry.names.length > 0);
+        const selected = new Set(tab.activeCommentators || []);
+        const selectedTopics = new Set(tab.commentaryPickerSelectedGroups || []);
+        const searchTerm = normalizedCommentarySearchText(tab.commentaryPickerSearchTerm || '');
+        const bookTopic = 'על ' + (tab.title || '');
+        const rare = tab.commentaryRare instanceof Set ? tab.commentaryRare : new Set(tab.commentaryRare || []);
+        const lineRelevant = tab.commentaryPickerLineRelevant instanceof Set
+            ? tab.commentaryPickerLineRelevant
+            : null;
+        const byType = tab.commentaryPickerCommentatorsByType || {};
+        const typeOrder = ['TARGUM', 'MIDRASH', 'PARSHANUT', 'DIBUR_HAMATCHIL', 'ELUCIDATION'];
+        const availableTypeKeys = typeOrder.filter(type => {
+            const names = byType[type];
+            return names && Array.from(names).some(name => selected.has(name));
+        });
+        const storedTypes = new Set(tab.commentaryPickerSelectedTypes || []);
+        const effectiveTypes = new Set(availableTypeKeys.filter(type => storedTypes.has(type)));
+        const visibleTypeKeys = (availableTypeKeys.length > 1 || effectiveTypes.size > 0)
+            ? availableTypeKeys
+            : [];
 
-        // הצ'יפים מסננים את רשימת המפרשים; הם אינם קישורי גלילה.
-        groups.forEach(group => {
-            const label = group.title || 'שאר מפרשים';
+        const allowedByType = new Set();
+        effectiveTypes.forEach(type => {
+            (byType[type] || []).forEach(name => allowedByType.add(name));
+        });
+
+        const eraChipItems = groups.map(group => group.title || 'שאר מפרשים');
+        eraChipItems.push(bookTopic);
+
+        const axes = document.createElement('div');
+        axes.className = 'commentary-picker-chip-axes';
+        const eraAxis = document.createElement('div');
+        eraAxis.className = 'commentary-picker-chip-axis commentary-picker-era-axis' + (visibleTypeKeys.length ? '' : ' full-width');
+        const makeChip = (label, selectedValue, onClick, kind) => {
             const chip = document.createElement('button');
-            const isSelected = selectedGroups.has(label);
             chip.type = 'button';
-            chip.className = 'commentary-picker-era-chip' + (isSelected ? ' selected' : '');
+            chip.className = `commentary-picker-chip ${kind}${selectedValue ? ' selected' : ''}`;
             chip.textContent = label;
-            chip.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
-            chip.addEventListener('click', () => {
+            chip.setAttribute('aria-pressed', selectedValue ? 'true' : 'false');
+            chip.addEventListener('click', onClick);
+            return chip;
+        };
+
+        eraChipItems.forEach(label => {
+            const isSelected = selectedTopics.has(label);
+            eraAxis.appendChild(makeChip(label, isSelected, () => {
                 const next = new Set(tab.commentaryPickerSelectedGroups || []);
                 if (next.has(label)) next.delete(label);
                 else next.add(label);
                 tab.commentaryPickerSelectedGroups = Array.from(next);
                 renderCommentaryPickerListOnly(tab);
-            });
-            chips.appendChild(chip);
+            }, 'era-chip'));
         });
+        axes.appendChild(eraAxis);
+
+        if (visibleTypeKeys.length) {
+            const divider = document.createElement('div');
+            divider.className = 'commentary-picker-chip-divider';
+            divider.setAttribute('aria-hidden', 'true');
+            axes.appendChild(divider);
+
+            const typeAxis = document.createElement('div');
+            typeAxis.className = 'commentary-picker-chip-axis commentary-picker-type-axis';
+            visibleTypeKeys.forEach(type => {
+                const isSelected = effectiveTypes.has(type);
+                typeAxis.appendChild(makeChip(COMMENTARY_LINK_TYPE_LABELS[type] || type, isSelected, () => {
+                    const next = new Set(tab.commentaryPickerSelectedTypes || []);
+                    if (next.has(type)) next.delete(type);
+                    else next.add(type);
+                    tab.commentaryPickerSelectedTypes = Array.from(next);
+                    renderCommentaryPickerListOnly(tab);
+                }, 'type-chip'));
+            });
+            axes.appendChild(typeAxis);
+        }
+        chips.appendChild(axes);
+
+        const term = searchTerm;
+        const visibleEntries = groups.map(group => {
+            const label = group.title || 'שאר מפרשים';
+            const names = (group.commentators || []).filter(name => {
+                if (rare.has(name) && lineRelevant && !lineRelevant.has(name)) return false;
+                if (effectiveTypes.size && !allowedByType.has(name)) return false;
+                if (term && !normalizedCommentarySearchText(name).includes(term)) return false;
+                if (selectedTopics.size) {
+                    const groupTopic = commentaryPickerTopicKey(label);
+                    const onBookTopic = commentaryPickerTopicKey(bookTopic);
+                    const matchesTopic = Array.from(selectedTopics).some(topic => {
+                        const normalized = commentaryPickerTopicKey(topic);
+                        if (normalized === groupTopic) return true;
+                        if (normalized === onBookTopic) return String(name).includes(bookTopic);
+                        return false;
+                    });
+                    if (!matchesTopic) return false;
+                }
+                return true;
+            });
+            return { group, names };
+        }).filter(entry => entry.names.length > 0);
 
         const listTitle = document.createElement('div');
         listTitle.className = 'commentary-picker-tree-header';
@@ -516,8 +763,11 @@
                 input.value = '';
             }
             row.hidden = !opening;
+            const pickerScreen = list.closest('.commentary-picker-screen');
+            if (pickerScreen) pickerScreen.classList.toggle('search-open', opening);
             if (opening) input.focus();
             renderCommentaryPickerListOnly(tab);
+            syncCommentaryPickerFloatingSearch();
         });
         listTitle.append(heading, searchToggle);
         list.appendChild(listTitle);
@@ -527,13 +777,20 @@
         if (uniqueVisibleNames.length === 0) {
             const empty = document.createElement('div');
             empty.className = 'commentary-picker-empty';
-            empty.textContent = term ? 'לא נמצאו מפרשים תואמים לסינון' : 'אין מפרשים בקבוצות שנבחרו';
+            const icon = document.createElement('i');
+            icon.className = 'ui-icon otzaria-icon commentary-picker-empty-icon';
+            icon.textContent = String.fromCodePoint(otzariaIconCodePoint('search_in_library'));
+            icon.setAttribute('aria-hidden', 'true');
+            empty.appendChild(icon);
+            const label = document.createElement('div');
+            label.textContent = term ? 'לא נמצאו מפרשים תואמים' : 'אין מפרשים בקבוצות שנבחרו';
+            empty.appendChild(label);
             list.appendChild(empty);
+            syncCommentaryPickerFloatingSearch();
             return;
         }
 
-        const selected = new Set(tab.activeCommentators || []);
-        const makeTreeRow = ({label, kind, checked, onClick, selectedRow = false}) => {
+        const makeTreeRow = ({ label, kind, checked, onClick, selectedRow = false }) => {
             const row = document.createElement('button');
             row.type = 'button';
             row.className = 'commentary-picker-tree-row ' + kind + (selectedRow ? ' selected' : '');
@@ -555,14 +812,14 @@
             card.className = 'commentary-picker-tree-card';
             return card;
         };
-        const toggleVisibleNames = names => {
+        const updateSelection = names => {
             const allSelected = names.length > 0 && names.every(name => selected.has(name));
             const next = new Set(tab.activeCommentators || []);
             names.forEach(name => {
                 if (allSelected) next.delete(name);
                 else next.add(name);
             });
-            tab.activeCommentators = Array.from(next);
+            tab.activeCommentators = orderCommentarySelection(tab, Array.from(next));
             saveActiveCommentatorsForBook(tab);
             refreshCommentaryPanel(true);
             renderCommentaryPickerListOnly(tab);
@@ -575,11 +832,11 @@
             kind: 'category',
             checked: masterSelected,
             selectedRow: masterSelected,
-            onClick: () => toggleVisibleNames(uniqueVisibleNames)
+            onClick: () => updateSelection(uniqueVisibleNames)
         }));
         list.appendChild(masterCard);
 
-        visibleEntries.forEach(({group, names}) => {
+        visibleEntries.forEach(({ group, names }) => {
             const groupTitle = document.createElement('div');
             groupTitle.className = 'commentary-picker-era-heading';
             groupTitle.textContent = group.title || 'שאר מפרשים';
@@ -592,7 +849,7 @@
                 kind: 'category',
                 checked: groupSelected,
                 selectedRow: groupSelected,
-                onClick: () => toggleVisibleNames(names)
+                onClick: () => updateSelection(names)
             }));
 
             names.forEach(name => {
@@ -606,7 +863,7 @@
                         const next = new Set(tab.activeCommentators || []);
                         if (next.has(name)) next.delete(name);
                         else next.add(name);
-                        tab.activeCommentators = Array.from(next);
+                        tab.activeCommentators = orderCommentarySelection(tab, Array.from(next));
                         saveActiveCommentatorsForBook(tab);
                         refreshCommentaryPanel(true);
                         renderCommentaryPickerListOnly(tab);
@@ -615,6 +872,7 @@
             });
             list.appendChild(card);
         });
+        syncCommentaryPickerFloatingSearch();
     }
 
     // --- רינדור גוף החלונית (מפנה ללשונית הפעילה) ---
@@ -624,6 +882,31 @@
         if (!body) return;
         const subTab = tab.commentaryActiveSubTab || 'commentary';
         body.dataset.subtab = subTab;
+
+        // שדות החיפוש הם חלק קבוע מהחלונית; מסנכרנים אותם ממצב הטאב הפעיל,
+        // כולל פעולת הניקוי שמופיעה רק כשיש טקסט, כמו OtzariaSearchField.
+        const commentarySearchInput = document.getElementById('commentary-search-input');
+        const commentarySearchRow = document.getElementById('commentary-search-row');
+        const commentarySearchClear = document.getElementById('commentary-search-clear');
+        if (commentarySearchInput && document.activeElement !== commentarySearchInput) {
+            commentarySearchInput.value = tab.commentarySearchQuery || '';
+        }
+        if (commentarySearchRow) commentarySearchRow.classList.toggle('has-query', Boolean(tab.commentarySearchQuery));
+        if (commentarySearchClear) commentarySearchClear.hidden = !tab.commentarySearchQuery;
+
+        const linksSearchInput = document.getElementById('commentary-links-search-input');
+        const linksSearchRow = document.querySelector('.commentary-links-search-row');
+        const linksSearchClear = document.getElementById('commentary-links-search-clear');
+        const linksContentRow = document.getElementById('commentary-links-search-content-row');
+        const linksContentCheckbox = document.getElementById('commentary-links-search-in-content');
+        if (linksSearchInput && document.activeElement !== linksSearchInput) {
+            linksSearchInput.value = tab.linksSearchQuery || '';
+        }
+        if (linksSearchRow) linksSearchRow.classList.toggle('has-query', Boolean(tab.linksSearchQuery));
+        if (linksSearchClear) linksSearchClear.hidden = !tab.linksSearchQuery;
+        if (linksContentRow) linksContentRow.hidden = !tab.linksSearchQuery;
+        if (linksContentCheckbox) linksContentCheckbox.checked = Boolean(tab.linksSearchInContent);
+
         if (subTab === 'links') renderCommentaryLinksBody(tab, body);
         else if (subTab === 'notes') renderCommentaryNotesBody(tab, body);
         else if (subTab === 'picker') renderCommentaryPickerScreen(tab, body);
@@ -883,8 +1166,20 @@
         const tab = getActiveCommentaryTab();
         if (!tab) return;
         tab.linksSearchQuery = value || '';
+        const row = document.querySelector('.commentary-links-search-row');
+        const clearButton = document.getElementById('commentary-links-search-clear');
+        if (row) row.classList.toggle('has-query', Boolean(tab.linksSearchQuery));
+        if (clearButton) clearButton.hidden = !tab.linksSearchQuery;
         renderCommentaryLinksFilters(tab);
         renderCommentaryBody(tab);
+    }
+
+    function clearCommentaryLinksSearch() {
+        const input = document.getElementById('commentary-links-search-input');
+        if (!input) return;
+        input.value = '';
+        updateCommentaryLinkSearch('');
+        input.focus();
     }
 
     function updateCommentaryLinkContentSearch(checked) {
@@ -1206,13 +1501,8 @@
             const message = getVisibleLineRange()
                 ? 'אין הערות לטקסט הנראה במסך'
                 : 'אין עדיין הערות על ספר זה';
-            renderCommentaryEmptyState(
-                body,
-                'note',
-                message,
-                'ליצירה או לעריכת הערות, יש להשתמש במסך העיון הרגיל של אוצריא.',
-                'fluent'
-            );
+            // OtzariaEmptyState מציג במצב קומפקטי סמל וכותרת בלבד.
+            renderCommentaryEmptyState(body, 'note', message, null, 'fluent');
             return;
         }
 
@@ -1280,6 +1570,7 @@
         const subTab = tab.commentaryActiveSubTab || 'commentary';
         if (subTab === 'links') refreshCommentaryLinksSubTab(tab, force);
         else if (subTab === 'notes') refreshCommentaryNotesSubTab(tab, force);
+        else if (subTab === 'picker') loadCommentaryPickerContext(tab, false);
         else refreshCommentaryMefarshimSubTab(tab, force);
     }
 
@@ -1335,18 +1626,18 @@
     // מבצעת בפועל את שתי הקריאות (getLinks + getLinkContent ב"אצוות" של עד 25) ומחזירה מערך
     // שטוח של {sourceLine, targetTitle, targetHeRef, content} - מסונן למפרשים הפעילים בלבד.
     async function loadCommentaryEntriesForRange(tab, startLine, endLine) {
-        // חלון ה-API מוגבל ל-200 שורות - שני עמודים אמורים תמיד להיכנס בנוחות, אך גוזרים
-        // בזהירות ליתר ביטחון בספר עם עמודים חריגים בגודלם.
         const clampedEnd = Math.min(endLine, startLine + 199);
-
         const { data } = await Otzaria.call('library.getLinks', {
             bookId: tab.id,
             startLine,
             endLine: clampedEnd,
-            connectionTypes: ['COMMENTARY'],
+            connectionTypes: [
+                'COMMENTARY', 'SUPER_COMMENTARY', 'TARGUM', 'MIDRASH',
+                'PARSHANUT', 'DIBUR_HAMATCHIL', 'ELUCIDATION', 'EXPLICATION', 'FOOTNOTES'
+            ],
             targetTitles: tab.activeCommentators
         });
-        const links = (data && data.links) || [];
+        const links = ((data && data.links) || []).filter(link => link.isCommentary === true);
         if (links.length === 0) return [];
         return fetchLinkContents(links);
     }

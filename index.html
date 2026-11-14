@@ -966,7 +966,7 @@
                 </button>
             </div>
             <div class="commentary-search-row" id="commentary-search-row" hidden>
-                <div class="commentary-search-field"><span class="commentary-search-field-icon" aria-hidden="true"><i class="ui-icon otzaria-icon" data-otzaria-icon="search"></i></span><input id="commentary-search-input" type="search" placeholder="חפש במפרשים המוצגים..." oninput="updateCommentarySearch(this.value)" aria-label="חיפוש במפרשים"></div>
+                <div class="commentary-search-field"><span class="commentary-search-field-icon" aria-hidden="true"><i class="ui-icon otzaria-icon" data-otzaria-icon="search_in_library"></i></span><input id="commentary-search-input" type="search" placeholder="חפש במפרשים המוצגים..." oninput="updateCommentarySearch(this.value)" aria-label="חיפוש במפרשים"><button type="button" id="commentary-search-clear" class="commentary-search-clear" hidden onclick="clearCommentarySearchInput()" aria-label="נקה חיפוש" data-tooltip="נקה חיפוש"><i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i></button></div>
                 <button class="icon-btn" type="button" onclick="closeCommentarySearch()" data-tooltip="סגור חיפוש" aria-label="סגור חיפוש">
                     <i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i>
                 </button>
@@ -974,7 +974,7 @@
             <div class="commentary-links-tools" id="commentary-links-tools" hidden>
                 <div class="commentary-links-search-row">
                     <span class="commentary-links-search-icon" aria-hidden="true"><i class="ui-icon otzaria-icon" data-otzaria-icon="search_in_titles"></i></span>
-                    <input id="commentary-links-search-input" type="search" placeholder="חפש בתוך הקישורים המוצגים..." oninput="updateCommentaryLinkSearch(this.value)" aria-label="חיפוש בקישורים">
+                    <input id="commentary-links-search-input" type="search" placeholder="חפש בתוך הקישורים המוצגים..." oninput="updateCommentaryLinkSearch(this.value)" aria-label="חיפוש בקישורים"><button type="button" id="commentary-links-search-clear" class="commentary-links-search-clear" hidden onclick="clearCommentaryLinksSearch()" aria-label="נקה חיפוש" data-tooltip="נקה חיפוש"><i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i></button>
                 </div>
                 <label class="commentary-links-search-content" id="commentary-links-search-content-row" hidden>
                     <input id="commentary-links-search-in-content" type="checkbox" onchange="updateCommentaryLinkContentSearch(this.checked)">

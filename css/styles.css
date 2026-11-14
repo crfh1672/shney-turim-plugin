@@ -458,7 +458,7 @@
             width: 100%;
             min-width: 0;
             height: 48px;
-            padding: 0 44px 0 4px;
+            padding: 0 44px 0 40px;
             border: 0;
             border-radius: var(--app-radius, 8px);
             background: color-mix(in srgb, var(--color-on-surface) 7%, transparent);
@@ -470,6 +470,7 @@
         }
         body.app-compact-density .commentary-search-field input {
             height: 36px;
+            padding-left: 32px;
             font-size: 13px;
         }
         .commentary-search-field input:focus {
@@ -505,7 +506,7 @@
             width: 100%;
             min-width: 0;
             height: 48px;
-            padding-inline: 44px 4px;
+            padding-inline: 44px 40px;
             border: 0;
             border-radius: var(--app-radius, 8px);
             background: color-mix(in srgb, var(--color-on-surface) 7%, transparent);
@@ -517,6 +518,7 @@
         }
         body.app-compact-density .commentary-links-search-row input {
             height: 36px;
+            padding-inline: 36px 32px;
             font-size: 13px;
         }
         .commentary-links-search-row input:focus {
@@ -539,6 +541,38 @@
             height: 20px;
             font-size: 20px;
         }
+        .commentary-search-clear,
+        .commentary-links-search-clear {
+            position: absolute;
+            z-index: 2;
+            inset-inline-end: 0;
+            top: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 100%;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            color: var(--color-on-surface-variant);
+            transform: translateY(-50%);
+            cursor: pointer;
+        }
+        .commentary-search-row.has-query .commentary-search-clear,
+        .commentary-links-search-row.has-query .commentary-links-search-clear {
+            display: inline-flex;
+        }
+        .commentary-search-clear .ui-icon,
+        .commentary-links-search-clear .ui-icon {
+            width: 16px;
+            height: 16px;
+            font-size: 16px;
+        }
+        body.app-compact-density .commentary-search-clear,
+        body.app-compact-density .commentary-links-search-clear { width: 32px; }
+
         body.app-compact-density .commentary-links-search-icon { width: 36px; }
         body.app-compact-density .commentary-links-search-icon .ui-icon {
             width: 20px;
@@ -609,24 +643,25 @@
         .commentary-links-chip-row[hidden] { display: none !important; }
         .commentary-filter-chip {
             box-sizing: border-box;
-            min-height: 30px;
+            min-height: 28px;
             padding: 2px 6px;
-            border: 1px solid var(--color-outline-variant, var(--color-outline));
-            border-radius: var(--app-radius, 8px);
-            background: var(--color-surface);
+            border: 0;
+            border-radius: 8px;
+            background: var(--color-surface-container-low, var(--color-surface));
             color: var(--color-on-surface-variant);
             font-family: var(--font-ui);
             font-size: 12px;
-            font-weight: 500;
+            font-weight: 400;
             line-height: 16px;
             cursor: pointer;
             white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
         }
         .commentary-filter-chip:hover {
-            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-surface));
+            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-surface-container-low, var(--color-surface)));
         }
         .commentary-filter-chip:active {
-            background: color-mix(in srgb, var(--color-on-surface) 12%, var(--color-surface));
+            background: color-mix(in srgb, var(--color-on-surface) 12%, var(--color-surface-container-low, var(--color-surface)));
         }
         .commentary-filter-chip.selected {
             background: var(--color-secondary-container);
@@ -671,11 +706,17 @@
            of sizing itself from its own text and leaving a short strip behind. */
         .commentary-panel-body[data-subtab="notes"] {
             display: flex;
+            flex: 1 1 0;
             flex-direction: column;
+            align-items: stretch;
             min-height: 0;
+            height: 100%;
         }
         .commentary-panel-body[data-subtab="notes"] > .commentary-panel-empty {
-            flex: 1 1 auto;
+            box-sizing: border-box;
+            flex: 1 1 0;
+            align-self: stretch;
+            width: 100%;
             min-height: 0;
             height: auto;
         }
@@ -904,6 +945,7 @@
         /* === לשונית בחירת המפרשים === */
         /* בורר המפרשים — מקביל ל-CommentatorsFilterScreen ולעץ NavTree באוצריא. */
         .commentary-picker-screen {
+            position: relative;
             display: flex;
             flex-direction: column;
             height: 100%;
@@ -954,36 +996,71 @@
         }
         .commentary-picker-back-btn .ui-icon { width: 24px; height: 24px; font-size: 24px; }
         .commentary-picker-era-chips {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 8px;
             flex-shrink: 0;
+            padding: 4px 8px;
         }
-        .commentary-picker-era-chip {
+        .commentary-picker-chip-axes {
+            display: flex;
+            align-items: stretch;
+            direction: rtl;
+            width: 100%;
+        }
+        .commentary-picker-chip-axis {
+            display: flex;
+            flex: 1 1 0;
+            flex-wrap: wrap;
+            align-content: center;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+            gap: 4px;
+            padding: 4px 0;
+        }
+        .commentary-picker-chip-axis.full-width {
+            flex-basis: 100%;
+        }
+        .commentary-picker-chip-divider {
+            flex: 0 0 17px;
+            width: 17px;
+            align-self: stretch;
+            position: relative;
+        }
+        .commentary-picker-chip-divider::after {
+            content: "";
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            left: 8px;
+            width: 1px;
+            background: var(--color-outline-variant, var(--color-border-subtle));
+        }
+        .commentary-picker-chip {
             box-sizing: border-box;
-            min-height: 30px;
+            min-height: 28px;
             padding: 2px 6px;
-            border: 1px solid var(--color-outline-variant, var(--color-outline));
-            border-radius: var(--app-radius, 8px);
-            background: var(--color-surface);
+            border: 0;
+            border-radius: 8px;
+            background: var(--color-surface-container-low, var(--color-surface));
             color: var(--color-on-surface-variant);
             font-family: var(--font-ui);
             font-size: 12px;
-            font-weight: 500;
+            font-weight: 400;
             line-height: 16px;
             cursor: pointer;
             white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
         }
-        .commentary-picker-era-chip.selected {
+        .commentary-picker-chip:hover {
+            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-surface-container-low, var(--color-surface)));
+        }
+        .commentary-picker-chip.selected {
             background: var(--color-secondary-container);
             color: var(--color-on-secondary-container);
             font-weight: 600;
         }
-        .commentary-picker-era-chip:hover {
-            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-surface));
+        .commentary-picker-era-chip,
+        .commentary-picker-type-chip {
+            min-width: 0;
         }
         .commentary-picker-search-row {
             display: flex;
@@ -1007,7 +1084,7 @@
             width: 100%;
             min-width: 0;
             height: 48px;
-            padding: 0 44px 0 4px;
+            padding: 0 44px 0 40px;
             border: 0;
             border-radius: var(--app-radius, 8px);
             background: color-mix(in srgb, var(--color-on-surface) 7%, transparent);
@@ -1019,6 +1096,8 @@
         }
         body.app-compact-density .commentary-picker-search-field input {
             height: 36px;
+            padding-right: 36px;
+            padding-left: 32px;
             font-size: 13px;
         }
         .commentary-picker-search-field input:focus {
@@ -1042,6 +1121,26 @@
             height: 20px;
             font-size: 20px;
         }
+        .commentary-picker-search-clear {
+            position: absolute;
+            inset-inline-end: 0;
+            top: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 100%;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: var(--color-on-surface-variant);
+            transform: translateY(-50%);
+            cursor: pointer;
+        }
+        .commentary-picker-search-clear[hidden] { display: none !important; }
+        body.app-compact-density .commentary-picker-search-clear { width: 32px; }
+        .commentary-picker-search-clear .ui-icon { width: 16px; height: 16px; font-size: 16px; }
+
         .commentary-picker-search-close,
         .commentary-picker-search-toggle {
             display: inline-flex;
@@ -1059,6 +1158,26 @@
         }
         .commentary-picker-search-close .ui-icon,
         .commentary-picker-search-toggle .ui-icon { width: 16px; height: 16px; font-size: 16px; }
+        .commentary-picker-search-toggle-floating {
+            position: absolute;
+            z-index: 5;
+            inset-inline-end: 26px;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            border-radius: 8px;
+            background: var(--color-nav-panel-background);
+            color: var(--color-on-surface-variant);
+            box-shadow: 0 1px 4px color-mix(in srgb, var(--color-shadow, #000) 24%, transparent);
+            cursor: pointer;
+        }
+        .commentary-picker-search-toggle-floating[hidden] { display: none !important; }
+        .commentary-picker-search-toggle-floating .ui-icon { width: 16px; height: 16px; font-size: 16px; }
+        .commentary-picker-screen.search-open .commentary-picker-search-toggle-floating { display: none; }
         .commentary-picker-list {
             flex: 1 1 auto;
             min-height: 0;
@@ -1120,6 +1239,7 @@
         }
         .commentary-picker-tree-row.category { font-weight: 700; }
         .commentary-picker-tree-row.book { font-weight: 500; }
+        .commentary-picker-tree-row.book { padding-inline-start: 24px; }
         .commentary-picker-icon-box {
             display: inline-flex;
             align-items: center;
@@ -1174,10 +1294,22 @@
             font-weight: 700;
         }
         .commentary-picker-empty {
-            padding: 24px 14px;
-            color: var(--color-on-surface-variant);
-            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 24px 16px;
+            color: var(--color-on-surface);
+            font-size: 14px;
+            font-weight: 600;
             text-align: center;
+        }
+        .commentary-picker-empty-icon {
+            width: 36px;
+            height: 36px;
+            color: var(--color-on-surface-variant);
+            font-size: 36px;
         }
 
         .font-size-buttons {
