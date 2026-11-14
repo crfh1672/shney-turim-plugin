@@ -603,23 +603,25 @@
         }
         .commentary-links-chip-row[hidden] { display: none !important; }
         .commentary-filter-chip {
-            min-height: 28px;
+            box-sizing: border-box;
+            min-height: 30px;
             padding: 2px 6px;
-            border: 0;
+            border: 1px solid var(--color-outline-variant, var(--color-outline));
             border-radius: var(--app-radius, 8px);
-            background: var(--color-surface-container-low);
+            background: var(--color-surface);
             color: var(--color-on-surface-variant);
             font-family: var(--font-ui);
             font-size: 12px;
-            font-weight: 400;
-            line-height: 1.25;
+            font-weight: 500;
+            line-height: 16px;
             cursor: pointer;
+            white-space: nowrap;
         }
         .commentary-filter-chip:hover {
-            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-surface-container-low));
+            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-surface));
         }
         .commentary-filter-chip:active {
-            background: color-mix(in srgb, var(--color-on-surface) 12%, var(--color-surface-container-low));
+            background: color-mix(in srgb, var(--color-on-surface) 12%, var(--color-surface));
         }
         .commentary-filter-chip.selected {
             background: var(--color-secondary-container);
@@ -942,15 +944,17 @@
             flex-shrink: 0;
         }
         .commentary-picker-era-chip {
-            min-height: 28px;
+            box-sizing: border-box;
+            min-height: 30px;
             padding: 2px 6px;
-            border: 0;
+            border: 1px solid var(--color-outline-variant, var(--color-outline));
             border-radius: var(--app-radius, 8px);
-            background: var(--color-surface-container-low);
+            background: var(--color-surface);
             color: var(--color-on-surface-variant);
             font-family: var(--font-ui);
             font-size: 12px;
-            line-height: 1.25;
+            font-weight: 500;
+            line-height: 16px;
             cursor: pointer;
             white-space: nowrap;
         }
@@ -960,7 +964,7 @@
             font-weight: 600;
         }
         .commentary-picker-era-chip:hover {
-            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-surface-container-low));
+            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-surface));
         }
         .commentary-picker-search-row {
             display: flex;
