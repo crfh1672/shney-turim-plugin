@@ -269,8 +269,8 @@
 
     function normalizedCommentarySearchText(value) {
         return String(value || '').toLowerCase()
-            .replace(/[\\u0591-\\u05C7]/g, '')
-            .replace(/\\s+/g, ' ')
+            .replace(/[\u0591-\u05C7]/g, '')
+            .replace(/\s+/g, ' ')
             .trim();
     }
 
@@ -567,7 +567,7 @@
     }
 
     function normalizeLinkType(value) {
-        const type = String(value || 'OTHER').trim().toUpperCase().replace(/[\\s-]+/g, '_');
+        const type = String(value || 'OTHER').trim().toUpperCase().replace(/[\s-]+/g, '_');
         const aliases = {
             NONE: 'OTHER',
             ESSAY: 'OTHER',

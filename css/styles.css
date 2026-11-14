@@ -92,7 +92,7 @@
             --font-size-commentators: 22px;
             --font-size-commentary-panel: var(--font-size-commentators);
             --line-height-commentary-panel: var(--line-height-book);
-            --commentary-panel-bg-color: var(--color-panel-background);
+            --commentary-panel-bg-color: #F6EDE5;
             --line-height-book: 1.5;
             --paragraph-spacing: 0.3em;
             --radius-sm: var(--app-radius, 8px);
@@ -295,7 +295,6 @@
             border: 1px solid var(--color-outline-variant);
             border-radius: var(--app-radius, 8px);
             background: var(--commentary-panel-bg-color);
-            box-shadow: 0 2px 6px color-mix(in srgb, var(--color-shadow, #000000) 24%, transparent);
             overflow: hidden;
         }
         #commentary-panel.open { display: flex; }
@@ -349,12 +348,6 @@
             height: 32px;
             padding: 0;
         }
-        body.app-compact-density .commentary-panel-header .icon-btn {
-            flex-basis: 28px;
-            width: 28px;
-            min-width: 28px;
-            height: 28px;
-        }
         .commentary-panel-header .icon-btn .ui-icon { width: 16px; font-size: 16px; height: 16px; }
 
         /* תואם ל-TabBar של אוצריא: טאבים שווי-רוחב ומצב בחירה secondaryContainer. */
@@ -405,129 +398,20 @@
         .commentary-toolbar-row {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 16px;
-            min-height: 48px;
-            padding: 0;
-            border: 0;
+            gap: 4px;
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--color-border-subtle);
             flex-shrink: 0;
         }
-        .commentary-toolbar-row .icon-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 48px;
-            min-width: 48px;
-            height: 48px;
-            padding: 8px;
-            border-radius: 50%;
-        }
-        .commentary-toolbar-row .icon-btn .ui-icon { width: 24px; font-size: 24px; height: 24px; }
-        body.app-compact-density .commentary-toolbar-row,
-        body.app-compact-density .commentary-toolbar-row .icon-btn { min-height: 40px; height: 40px; }
+        .commentary-toolbar-row .icon-btn { width: 40px; height: 40px; padding: 8px; }
+        .commentary-toolbar-row .icon-btn .ui-icon { width: 20px; font-size: 20px; height: 20px; }
         .commentary-toolbar-row .icon-btn:hover:not(:disabled) {
             background: color-mix(in srgb, var(--color-primary) 8%, transparent);
         }
         .commentary-toolbar-row .icon-btn:active:not(:disabled) {
             background: color-mix(in srgb, var(--color-primary) 12%, transparent);
         }
-
-        .commentary-search-row {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 8px 8px;
-            flex-shrink: 0;
-        }
-        .commentary-search-row[hidden],
-        .commentary-links-tools[hidden] { display: none !important; }
-        .commentary-search-row input,
-        .commentary-links-search-row input {
-            box-sizing: border-box;
-            width: 100%;
-            min-width: 0;
-            height: 40px;
-            padding: 0 12px;
-            border: 1px solid var(--color-outline);
-            border-radius: var(--app-radius, 8px);
-            background: var(--color-surface);
-            color: var(--color-on-surface);
-            font: inherit;
-            outline: none;
-        }
-        .commentary-search-row input:focus,
-        .commentary-links-search-row input:focus {
-            border-color: var(--color-primary);
-            box-shadow: inset 0 0 0 1px var(--color-primary);
-        }
-        .commentary-search-row .icon-btn {
-            flex: 0 0 32px;
-            width: 32px;
-            min-width: 32px;
-            height: 32px;
-            padding: 0;
-            border-radius: 50%;
-            color: var(--color-on-surface-variant);
-        }
-        .commentary-search-row .icon-btn .ui-icon { width: 16px; height: 16px; font-size: 16px; }
-
-        .commentary-links-tools {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 8px;
-            flex-shrink: 0;
-        }
-        .commentary-links-search-content {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            min-height: 32px;
-            padding-inline: 4px;
-            color: var(--color-on-surface);
-            font-size: 13px;
-            cursor: pointer;
-        }
-        .commentary-links-search-content[hidden] { display: none !important; }
-        .commentary-links-search-content input {
-            width: 18px;
-            height: 18px;
-            margin: 0;
-            accent-color: var(--color-primary);
-        }
-        .commentary-links-chip-groups {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-        .commentary-links-chip-row {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .commentary-links-chip-row[hidden] { display: none !important; }
-        .commentary-filter-chip {
-            min-height: 32px;
-            padding: 4px 12px;
-            border: 1px solid var(--color-outline);
-            border-radius: var(--app-radius, 8px);
-            background: transparent;
-            color: var(--color-on-surface-variant);
-            font-family: var(--font-ui);
-            font-size: 12px;
-            line-height: 1.2;
-            cursor: pointer;
-        }
-        .commentary-filter-chip:hover { background: color-mix(in srgb, var(--color-primary) 8%, transparent); }
-        .commentary-filter-chip:active { background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
-        .commentary-filter-chip.selected {
-            border-color: transparent;
-            background: var(--color-secondary-container);
-            color: var(--color-on-secondary-container);
-        }
+        .commentary-toolbar-spacer { flex: 1; }
 
         .commentary-panel-body {
             flex: 1;
@@ -538,6 +422,9 @@
                direction remain unchanged. */
             direction: ltr;
             padding: 0 14px;
+            /* Keep the scrollbar at the physical right edge like Otzaria's
+               ScrollablePositionedListScrollbar, while preserving RTL content below. */
+            direction: ltr;
             /* WebKit uses the custom thumb rules below. The reader color is set
                only in the non-WebKit fallback, where scrollbar-color is supported. */
             scrollbar-color: auto;
@@ -747,16 +634,6 @@
         .commentary-entry-group[data-subtab="links"] .commentary-entry-group-title { font-size: calc(var(--font-size-commentators) - 2px); }
         .commentary-entry-group[data-subtab="commentary"] .commentary-entry-group-content { margin-inline: -14px; }
         .commentary-entry-group[data-subtab="links"] .commentary-entry-group-content { padding: 20px 14px; }
-        .commentary-entry-group-content {
-            display: grid;
-            grid-template-rows: 1fr;
-            transition: grid-template-rows 200ms ease, padding-block 200ms ease;
-        }
-        .commentary-entry-group-content.collapsed {
-            grid-template-rows: 0fr;
-            padding-block: 0 !important;
-        }
-        .commentary-entry-group-inner { min-height: 0; overflow: hidden; }
         .commentary-entry { margin: 0; }
         .commentary-entry-group[data-subtab="commentary"] .commentary-entry { padding: 8px 32px 8px 16px; }
         .commentary-entry-ref {

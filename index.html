@@ -953,35 +953,14 @@
                 </button>
             </div>
             <div class="commentary-toolbar-row" id="commentary-toolbar-row">
-                <div class="popover-anchor" id="commentary-picker-anchor" style="position:relative;">
-                    <button class="icon-btn" id="btn-commentary-picker" onclick="openCommentaryPickerScreen()" data-tooltip="בחירת מפרשים" aria-label="בחירת מפרשים">
-                        <i class="ui-icon" data-fluent-icon="text_bullet_list" aria-hidden="true"></i>
-                    </button>
-                </div>
                 <button class="icon-btn" id="btn-commentary-expand-all" onclick="toggleCommentaryGroupsExpandAll()" data-tooltip="הרחב את כל המפרשים" aria-label="הרחב את כל המפרשים">
                     <i class="ui-icon" data-fluent-icon="arrow_expand_all" id="commentary-expand-all-icon" aria-hidden="true"></i>
                 </button>
-                <button class="icon-btn" id="btn-commentary-search" onclick="toggleCommentarySearch()" data-tooltip="חיפוש במפרשים" aria-label="חיפוש במפרשים">
-                    <i class="ui-icon" data-fluent-icon="search" aria-hidden="true"></i>
-                </button>
-            </div>
-            <div class="commentary-search-row" id="commentary-search-row" hidden>
-                <input id="commentary-search-input" type="search" placeholder="חפש במפרשים המוצגים..." oninput="updateCommentarySearch(this.value)" aria-label="חיפוש במפרשים">
-                <button class="icon-btn" type="button" onclick="closeCommentarySearch()" data-tooltip="סגור חיפוש" aria-label="סגור חיפוש">
-                    <i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i>
-                </button>
-            </div>
-            <div class="commentary-links-tools" id="commentary-links-tools" hidden>
-                <div class="commentary-links-search-row">
-                    <input id="commentary-links-search-input" type="search" placeholder="חפש בתוך הקישורים המוצגים..." oninput="updateCommentaryLinkSearch(this.value)" aria-label="חיפוש בקישורים">
-                </div>
-                <label class="commentary-links-search-content" id="commentary-links-search-content-row" hidden>
-                    <input id="commentary-links-search-in-content" type="checkbox" onchange="updateCommentaryLinkContentSearch(this.checked)">
-                    <span>חפש גם בתוכן הקישורים</span>
-                </label>
-                <div class="commentary-links-chip-groups" id="commentary-links-chip-groups">
-                    <div class="commentary-links-chip-row" id="commentary-links-type-chips"></div>
-                    <div class="commentary-links-chip-row" id="commentary-links-era-chips"></div>
+                <div class="commentary-toolbar-spacer"></div>
+                <div class="popover-anchor" id="commentary-picker-anchor" style="position:relative;">
+                    <button class="icon-btn" id="btn-commentary-picker" onclick="openCommentaryPickerScreen()" data-tooltip="בחר אילו מפרשים יוצגו">
+                        <i class="ui-icon" data-fluent-icon="text_bullet_list" aria-hidden="true"></i>
+                    </button>
                 </div>
             </div>
             <div class="commentary-panel-body" id="commentary-panel-body">
