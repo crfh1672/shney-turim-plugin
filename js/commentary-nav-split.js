@@ -828,10 +828,38 @@
         return activeNames.filter(name => entries.some(e => e.targetTitle === name));
     }
 
+    function syncCommentaryGroupExpansionElement(groupEl, expanded) {
+        const headerEl = groupEl.querySelector('.commentary-entry-group-header');
+        const contentEl = groupEl.querySelector('.commentary-entry-group-content');
+        if (!headerEl || !contentEl) return;
+        headerEl.classList.toggle('expanded', expanded);
+        headerEl.setAttribute('aria-expanded', String(expanded));
+        contentEl.classList.toggle('collapsed', !expanded);
+    }
+
+    function syncCommentaryGroupExpansionUI(tab, subTabKey, names) {
+        const body = document.getElementById('commentary-panel-body');
+        if (!body || body.dataset.subtab !== subTabKey) return false;
+        const nameSet = new Set(names);
+        const groups = body.querySelectorAll('.commentary-entry-group[data-subtab]');
+        let changed = false;
+        groups.forEach(groupEl => {
+            if (groupEl.dataset.subtab !== subTabKey || !nameSet.has(groupEl.dataset.groupKey || '')) return;
+            const key = groupEl.dataset.groupKey;
+            syncCommentaryGroupExpansionElement(groupEl, isCommentaryGroupExpanded(tab, subTabKey, key));
+            changed = true;
+        });
+        return changed;
+    }
+
     function toggleCommentaryGroupExpand(tab, subTabKey, name) {
         const stateMap = getCommentaryExpandState(tab, subTabKey);
         stateMap[name] = !isCommentaryGroupExpanded(tab, subTabKey, name);
-        renderCommentaryBody(tab);
+        if (!syncCommentaryGroupExpansionUI(tab, subTabKey, [name])) {
+            renderCommentaryBody(tab);
+        } else {
+            updateCommentaryExpandAllButtonUI(tab);
+        }
     }
 
     // כפתור "הרחב/כווץ הכל" (ליד כפתור בחירת המפרשים) - פועל על הלשונית הפעילה כרגע בלבד
@@ -848,7 +876,11 @@
         const allExpanded = names.every(n => isCommentaryGroupExpanded(tab, subTabKey, n));
         const newVal = !allExpanded;
         names.forEach(n => { stateMap[n] = newVal; });
-        renderCommentaryBody(tab);
+        if (!syncCommentaryGroupExpansionUI(tab, subTabKey, names)) {
+            renderCommentaryBody(tab);
+        } else {
+            updateCommentaryExpandAllButtonUI(tab);
+        }
     }
 
     function updateCommentaryExpandAllButtonUI(tab) {
@@ -882,6 +914,7 @@
         const groupEl = document.createElement('div');
         groupEl.className = 'commentary-entry-group';
         groupEl.dataset.subtab = subTabKey;
+        groupEl.dataset.groupKey = name;
 
         const headerEl = document.createElement('div');
         headerEl.className = 'commentary-entry-group-header' + (isExpanded ? ' expanded' : '');

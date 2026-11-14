@@ -444,8 +444,7 @@
             padding: 4px 8px 8px;
             flex-shrink: 0;
         }
-        .commentary-search-row input,
-        .commentary-links-search-row input {
+        .commentary-search-row input {
             box-sizing: border-box;
             width: 100%;
             min-width: 0;
@@ -458,10 +457,59 @@
             font: inherit;
             outline: none;
         }
-        .commentary-search-row input:focus,
-        .commentary-links-search-row input:focus {
+        .commentary-search-row input:focus {
             border-color: var(--color-primary);
             box-shadow: inset 0 0 0 1px var(--color-primary);
+        }
+        .commentary-links-search-row {
+            position: relative;
+            display: flex;
+            align-items: center;
+            min-width: 0;
+        }
+        .commentary-links-search-row input {
+            box-sizing: border-box;
+            width: 100%;
+            min-width: 0;
+            height: 48px;
+            padding: 0 44px 0 12px;
+            border: 0;
+            border-radius: var(--app-radius, 8px);
+            background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
+            color: var(--color-on-surface);
+            font-family: var(--font-ui);
+            font-size: 16px;
+            outline: none;
+            appearance: none;
+        }
+        body.app-compact-density .commentary-links-search-row input {
+            height: 36px;
+            font-size: 13px;
+        }
+        .commentary-links-search-row input:focus {
+            background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+        }
+        .commentary-links-search-icon {
+            position: absolute;
+            z-index: 1;
+            inset-inline-start: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            color: var(--color-on-surface-variant);
+            pointer-events: none;
+        }
+        .commentary-links-search-icon .ui-icon {
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
+        }
+        body.app-compact-density .commentary-links-search-icon .ui-icon {
+            width: 18px;
+            height: 18px;
+            font-size: 18px;
         }
         .commentary-search-row .icon-btn {
             flex: 0 0 32px;
@@ -502,8 +550,12 @@
         }
         .commentary-links-chip-groups {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
+            flex-wrap: wrap;
             align-items: center;
+            justify-content: center;
+            column-gap: 16px;
+            row-gap: 0;
         }
         .commentary-links-chip-row {
             display: flex;
@@ -555,10 +607,6 @@
                only in the non-WebKit fallback, where scrollbar-color is supported. */
             scrollbar-color: auto;
         }
-        .commentary-panel-body > * {
-            direction: rtl;
-        }
-
         .commentary-panel-body > * {
             direction: rtl;
         }
