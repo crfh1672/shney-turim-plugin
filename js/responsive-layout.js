@@ -141,7 +141,10 @@
         const inner = toolbar.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
         // כמו AppTopBar האדפטיבי: הצד ההתחלתי נמדד קודם, והכותרת שומרת לפחות 80 פיקסלים;
         // פעולות הסרגל מקבלות את השאר
-        const budget = inner - startSide.getBoundingClientRect().width - OTZ.navMinTitle - OTZ.barSpacingReserve;
+        const splitHidden = document.body.classList.contains('split-pane-b') ||
+            Boolean(document.querySelector('#split-view-wrapper.split-active'));
+        const navReserve = splitHidden ? 0 : OTZ.navMinTitle + OTZ.barSpacingReserve;
+        const budget = Math.max(0, inner - startSide.getBoundingClientRect().width - navReserve);
 
         const hiddenIdx = partitionActions(measured, budget, overflowButtonWidth);
         hiddenActionIds = new Set();
@@ -378,11 +381,11 @@
     }
 
     wrapGlobal('zoomIn', (orig) => function () {
-        userZoomed = true; fitFollow = null; autoFitActive = false;
+        userZoomed = true; fitFollow = null; autoFitActive = false; scaleBeforeAutoFit = null;
         return orig.apply(this, arguments);
     });
     wrapGlobal('zoomOut', (orig) => function () {
-        userZoomed = true; fitFollow = null; autoFitActive = false;
+        userZoomed = true; fitFollow = null; autoFitActive = false; scaleBeforeAutoFit = null;
         return orig.apply(this, arguments);
     });
 
@@ -392,6 +395,7 @@
             // קריאה יזומה של המשתמש (כפתור ההתאמה): המצב נשמר ומתעדכן בשינוי גודל
             userZoomed = false;
             autoFitActive = false;
+            scaleBeforeAutoFit = null;
             fitFollow = (mode === 'width' || mode === 'page' || mode === 'height') ? mode : null;
             return origFitToScreen.apply(this, arguments);
         };
@@ -423,13 +427,18 @@
 
     function pageNaturalWidthPx() {
         const mm = (typeof currentSettings !== 'undefined' && currentSettings.pageWidthMm) || 210;
-        return mm * PX_PER_MM;
+        const pageWidth = mm * PX_PER_MM;
+        if (typeof currentSettings !== 'undefined' &&
+            currentSettings.twoColumnScroll && !currentSettings.isBookView) {
+            return pageWidth * 2 + 8; // שני עמודים בשורה + המרווח ביניהם
+        }
+        return pageWidth;
     }
 
     function evaluatePageFit() {
         if (typeof origFitToScreen !== 'function') return;
         const pa = $('preview-area');
-        if (!pa || pa.clientWidth === 0 || document.body.classList.contains('split-pane-b')) return;
+        if (!pa || pa.clientWidth === 0) return;
         const inBookView = typeof currentSettings !== 'undefined' && currentSettings.isBookView;
         if (inBookView || userZoomed) return;
 
@@ -446,8 +455,8 @@
             return;
         }
 
-        const scrollbarW = Math.max(0, pa.offsetWidth - pa.clientWidth);
-        const available = pa.clientWidth - scrollbarW;
+        // clientWidth כבר אינו כולל את פס הגלילה האנכי; אין להפחית אותו פעם נוספת.
+        const available = pa.clientWidth;
         const base = autoFitActive && scaleBeforeAutoFit ? scaleBeforeAutoFit : pageScale;
         const needsFit = pageNaturalWidthPx() * base > available + 1;
 
@@ -501,9 +510,35 @@
             if (start) ro.observe(start);
         }
         const mc = document.querySelector('.main-content');
-        if (mc) new ResizeObserver(() => { updateCommentaryLayout(); }).observe(mc);
+        if (mc) new ResizeObserver(() => {
+            updateCommentaryLayout();
+            scheduleResponsiveLayout();
+            scheduleFitEvaluation();
+        }).observe(mc);
+        const endSide = getEndSide();
+        if (endSide) new ResizeObserver(scheduleResponsiveLayout).observe(endSide);
         const pa = $('preview-area');
+        const paWrapper = $('preview-area-wrapper');
         if (pa) new ResizeObserver(scheduleFitEvaluation).observe(pa);
+        if (paWrapper) new ResizeObserver(scheduleFitEvaluation).observe(paWrapper);
+        if (document.documentElement) {
+            const rootObserver = new ResizeObserver(() => {
+                scheduleResponsiveLayout();
+                scheduleFitEvaluation();
+            });
+            rootObserver.observe(document.documentElement);
+        }
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                scheduleResponsiveLayout();
+                scheduleFitEvaluation();
+            });
+        }
+        const bodyClassObserver = new MutationObserver(() => {
+            scheduleResponsiveLayout();
+            scheduleFitEvaluation();
+        });
+        bodyClassObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     }
 
     // הפעלה ראשונית: אחרי שהסרגל, האייקונים והעמודים קיימים

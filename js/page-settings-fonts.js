@@ -671,7 +671,8 @@
             // הימני (שאין בו פס גלילה) משאירים בדיוק אותו רוחב רווח ריק, לסימטריה - ראו את הגדרת
             // ה-padding בתחתית הפונקציה, אחרי applyPageScale().
             const scrollbarWidth = Math.max(0, previewArea.offsetWidth - previewArea.clientWidth);
-            const fullAvailWidth = previewArea.clientWidth - scrollbarWidth;
+            // clientWidth כבר אינו כולל את פס הגלילה; משתמשים בו ישירות לרוחב הזמין.
+            const fullAvailWidth = previewArea.clientWidth;
             const widthBasedScaleEdgeToEdge = isTwoColumnScroll
                 ? (fullAvailWidth - TWO_COLUMN_SCROLL_GAP_PX) / (pageWidthPx * 2)
                 : fullAvailWidth / pageWidthPx;
