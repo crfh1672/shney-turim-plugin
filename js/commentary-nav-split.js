@@ -1043,7 +1043,8 @@
        ========================================================================================== */
     // רוחב המרכז כולל עכשיו ארבעה חיצים (תחילה/כותרת קודמת/כותרת הבאה/סוף) במקום שניים
     const NAV_CENTER_MAX_WIDTH = 528;
-    const NAV_CENTER_MIN_WIDTH = 238;
+    // רוחב כותרת מזערי (ReaderNavCenter.minTitleWidth באוצריא); החיצים לא נספרים כאן - ראו layoutNavCenter
+    const NAV_CENTER_MIN_WIDTH = 80;
 
     let navBarUpdateQueued = false;
     let navHeadingCache = null;   // { tab, key, items }
@@ -1428,6 +1429,9 @@
             toolbar.style.removeProperty('--nav-start-max');
             return;
         }
+        // קודם מחליטים אילו כפתורים נשארים בסרגל ואילו עוברים לתפריט "עוד" (responsive-layout.js),
+        // ורק אז מחלקים את המקום שנשאר בין הכותרת לחיצי הניווט
+        if (typeof window.layoutToolbarActions === 'function') window.layoutToolbarActions();
         const startSide = toolbar.querySelector('.toolbar-side-start');
         const sides = toolbar.querySelectorAll(':scope > .toolbar-side');
         const endSide = sides[sides.length - 1];
@@ -1446,12 +1450,24 @@
         const gapR = toolbar.clientWidth - padding - startFixed - gapMargin;
         const gapW = gapR - gapL;
         const width = Math.min(NAV_CENTER_MAX_WIDTH, gapW);
+        // כמו ReaderNavCenter באוצריא: ארבעת החיצים קודמים לכותרת - כל עוד הם נכנסים הם בסרגל והכותרת
+        // מקבלת את מה שנשאר; כשאין מקום לארבעתם הם עוברים לשורת האייקונים שבראש התפריט "עוד", והכותרת
+        // מקבלת את כל המרכז. מתחת לרוחב מזערי של כותרת (80) המרכז כולו מוסתר.
+        const navBtn = (document.body.classList.contains('compact-toolbar') ||
+            document.body.classList.contains('app-compact-density') || width < 240) ? 36 : 40;
+        const arrowsWidth = 4 * navBtn + 2 * 4;
+        const arrowsFit = width >= arrowsWidth;
+        window.__navArrowsInBar = arrowsFit;
         if (width < NAV_CENTER_MIN_WIDTH) {
             center.classList.add('nav-center-hidden');
             toolbar.style.removeProperty('--nav-start-max');
+            window.__navArrowsInBar = false;
+            if (typeof window.renderToolbarOverflowMenu === 'function') window.renderToolbarOverflowMenu();
             return;
         }
         center.classList.remove('nav-center-hidden');
+        center.classList.toggle('nav-center-no-arrows', !arrowsFit);
+        if (typeof window.renderToolbarOverflowMenu === 'function') window.renderToolbarOverflowMenu();
         // ממורכזת בסרגל כשיש מקום; אם לא - זזה בדיוק כמה שצריך כדי לא לכסות אף לחצן
         const idealLeft = toolbar.clientWidth / 2 - width / 2;
         const left = Math.max(gapL, Math.min(idealLeft, gapR - width));

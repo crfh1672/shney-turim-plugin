@@ -1066,7 +1066,7 @@ const previewArea = document.getElementById('preview-area');
             const actualPanelWidth = Math.min(navPanelWidth, Math.max(0, availableWidth - 20));
             const pushLayout = navPanelResizeActive
                 ? mainContent.classList.contains('nav-push-mode')
-                : isOpen && isPinned && availableWidth >= actualPanelWidth + 200;
+                : isOpen && isPinned && availableWidth >= actualPanelWidth + 520; // minMainContentWidth של חלונית הניווט באוצריא
 
             panel.style.setProperty('--nav-panel-width', `${navPanelWidth}px`);
             mainContent.classList.toggle('nav-push-mode', pushLayout);
@@ -1076,7 +1076,7 @@ const previewArea = document.getElementById('preview-area');
             toggle.classList.toggle('active', isOpen);
             toggle.setAttribute('aria-expanded', String(isOpen));
             toggle.dataset.tooltip = isOpen ? 'הסתר ניווט' : 'הצג ניווט';
-            pinButton.classList.toggle('visible', isOpen && availableWidth >= 500);
+            pinButton.classList.toggle('visible', isOpen && availableWidth >= 600); // NavPanelSearch.isWide / LayoutBreakpoints.compact באוצריא
             pinButton.classList.toggle('pinned', isPinned);
             pinButton.setAttribute('aria-pressed', String(isPinned));
             pinButton.setAttribute('aria-label', isPinned ? 'בטל נעיצה' : 'נעץ את החלונית');

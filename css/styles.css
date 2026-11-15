@@ -4323,3 +4323,83 @@ body.app-compact-density .toolbar-main .nav-heading-btn .ui-icon {
 /* בזמן חיפוש מוצגת שורת התוצאות עם "מחפש..." וכפתור עצירה בתחילת הכפתורים */
 #drawer-pane-search.is-searching .search-results-panel { display: flex; }
 #stop-search .ui-icon { width: 18px; height: 18px; font-size: 18px; }
+
+/* ==========================================================================================
+   התנהגות רספונסיבית כמו באוצריא (חצי מסך / מסכים קטנים) - ראו js/responsive-layout.js
+   ========================================================================================== */
+
+/* כפתור שעבר לתפריט "עוד" (ResponsiveActionBar): מוסתר מהסרגל */
+.tb-overflowed { display: none !important; }
+
+/* אין מקום לארבעת החיצים: הם עוברים לתפריט, והכותרת מקבלת את כל המרכז (ReaderNavCenter) */
+.toolbar-nav-center.nav-center-no-arrows .nav-heading-btn { display: none; }
+
+/* שורת אייקוני הניווט בראש התפריט "עוד" - לחיצה עליהם לא סוגרת את התפריט */
+.more-menu-nav-row {
+    display: flex;
+    justify-content: space-evenly;
+    padding: 0 4px;
+    min-height: 56px;
+    align-items: center;
+}
+.more-menu-nav-btn {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: var(--color-on-surface);
+    cursor: pointer;
+}
+.more-menu-nav-btn .ui-icon { width: 20px; height: 20px; font-size: 20px; }
+html[dir="rtl"] .more-menu-nav-btn .ui-icon { transform: scaleX(-1); }
+.more-menu-nav-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
+.more-menu-nav-btn:disabled { opacity: 0.38; cursor: default; }
+.more-menu-divider {
+    height: 1px;
+    margin: 4px 0;
+    background: var(--color-outline-variant);
+    opacity: 0.6;
+}
+.more-menu-item[role="menuitemradio"] .view-mode-check { opacity: 0; }
+.more-menu-item[role="menuitemradio"][aria-checked="true"] .view-mode-check { opacity: 1; }
+
+/* חלונית המפרשים: רוחב מזערי כמו באוצריא (280), בלי תקרה של 45vw - הרוחב נקבע ב-JS */
+#commentary-panel { min-width: 280px; max-width: none; }
+
+/* הצללה מאחורי חלונית מפרשים מרחפת */
+.commentary-scrim {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 150;
+    background: color-mix(in srgb, var(--color-on-surface) 14%, transparent);
+}
+.commentary-scrim.visible { display: block; }
+
+/* אין מקום לדחוף את הטקסט (פחות מ-רוחב החלונית + 22 + 200): החלונית מרחפת מעליו, כמו AdaptiveSidePane
+   במסך צר - מרווחים 14/10/10 ורוחב מרבי של האזור פחות 20 */
+body.commentary-overlay #commentary-panel {
+    position: absolute;
+    top: 14px;
+    bottom: 10px;
+    left: 10px;
+    margin: 0;
+    z-index: 160;
+    max-width: calc(100% - 20px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+}
+body.commentary-overlay #commentary-panel.open {
+    animation: commentary-overlay-in 0.18s ease-out;
+}
+@keyframes commentary-overlay-in {
+    from { opacity: 0; transform: translateX(-24px); }
+    to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    body.commentary-overlay #commentary-panel.open { animation: none; }
+}

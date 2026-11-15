@@ -214,6 +214,20 @@
             return wrapped.join("");
         }
 
+        // הפסקה קצרה לדפדפן (כדי שהממשק יישאר רספונסיבי בזמן עימוד) בלי להמתין לפריים הבא.
+        // requestAnimationFrame מחכה עד ~16ms בכל הפסקה (ובטאב מוסתר כלל לא מופעל), בעוד שכאן
+        // ההפסקה היא משימה (macrotask) מיידית - הדפדפן עדיין מקבל הזדמנות לצייר ולטפל באירועים.
+        // אין לכך שום השפעה על תוצאת העימוד עצמו, רק על הזמן שבין מנות העבודה.
+        const _yieldChannel = (typeof MessageChannel === 'function') ? new MessageChannel() : null;
+        const _yieldResolvers = [];
+        if (_yieldChannel) {
+            _yieldChannel.port1.onmessage = () => { const r = _yieldResolvers.shift(); if (r) r(); };
+        }
+        function yieldToBrowser() {
+            if (!_yieldChannel) return new Promise(resolve => setTimeout(resolve, 0));
+            return new Promise(resolve => { _yieldResolvers.push(resolve); _yieldChannel.port2.postMessage(0); });
+        }
+
         /* --- שיפור 2: דיוק סידור דפים ללא חיתוך מילים --- */
         function isOverflowing(el) {
             return el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth;
@@ -390,6 +404,63 @@
             return null; // כל ההערה נכנסה בסופו של דבר - אין המשך נדרש
         }
 
+        // מחזיר פונקציה mount(k) שמגדירה את תוכן target כשיבוטים של k הצאצאים הראשונים של source.
+        // המצב שמתקבל לאחר כל קריאה זהה לחלוטין למצב של "target.innerHTML=''; ואז שיבוט והוספה של k
+        // הצאצאים הראשונים" (מה שנעשה קודם בכל בדיקה בחיפוש הבינארי), אבל בלי לשבט ולבנות מחדש את
+        // כל הפסקה בכל בדיקה: משבטים כל צאצא פעם אחת, ובין בדיקות רק מוסיפים/מסירים מילים בסוף.
+        // כך הדפדפן לא צריך לעצב מחדש (shaping) את כל הטקסט בכל בדיקה. תוצאת העימוד לא משתנה.
+        function makeChildMounter(target, source) {
+            const clones = [];
+            let mounted = 0;
+            target.innerHTML = '';
+            const mount = function (k) {
+                while (mounted > k) { target.removeChild(target.lastChild); mounted--; }
+                while (mounted < k) {
+                    target.appendChild(clones[mounted] || (clones[mounted] = source[mounted].cloneNode(true)));
+                    mounted++;
+                }
+            };
+            mount.clones = clones;
+            return mount;
+        }
+
+        // ניחוש (בלבד!) של מספר הצאצאים הראשונים שנכנסים לעמוד, מתוך פריסה אחת של כל הצאצאים יחד:
+        // בעמוד עם טורים וגובה קבוע התוכן הגולש נופל מחוץ לתיבת התוכן של העמוד (בטור נוסף בצד, או
+        // מתחת לגובה), ולכן אפשר למצוא בחיפוש בינארי על מיקומים (בלי עוד פריסות) את הצאצא הראשון
+        // שחורג. הניחוש לעולם לא קובע את התוצאה: הקורא מאמת אותו תמיד בשתי בדיקות גלישה אמיתיות
+        // (נכנס ב-g ולא נכנס ב-g+1) ורק אז מקבל אותו - אחרת ממשיך בחיפוש הבינארי הרגיל על הטווח שנותר.
+        // משמש להפחתת מספר בדיקות הגלישה (שכל אחת מהן היא פריסה מלאה) מ~9 ל~3 בפסקה ארוכה.
+        function predictFitPrefix(container, clones) {
+            const n = clones.length;
+            if (n === 0) return 0;
+            const cr = container.getBoundingClientRect();
+            const cs = getComputedStyle(container);
+            const left = cr.left + (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.paddingLeft) || 0) - 1;
+            const right = cr.right - (parseFloat(cs.borderRightWidth) || 0) - (parseFloat(cs.paddingRight) || 0) + 1;
+            const bottom = cr.bottom - (parseFloat(cs.borderBottomWidth) || 0) - (parseFloat(cs.paddingBottom) || 0) + 1;
+            const range = document.createRange();
+            const inside = (i) => {
+                const c = clones[i];
+                let rects;
+                if (c.nodeType === 3) { range.selectNodeContents(c); rects = range.getClientRects(); }
+                else rects = c.getClientRects();
+                if (!rects || rects.length === 0) return true; // ללא תיבה (למשל רווח שקוע) - לא קובע
+                for (let r = 0; r < rects.length; r++) {
+                    const rc = rects[r];
+                    if (rc.width === 0 && rc.height === 0) continue;
+                    if (rc.left < left || rc.right > right || rc.bottom > bottom) return false;
+                }
+                return true;
+            };
+            // מיקומי הצאצאים עולים בסדר הקריאה, ולכן "בתוך העמוד" הוא תכונה מונוטונית - חיפוש בינארי
+            let lo = 0, hi = n; // lo = מספר הצאצאים שבוודאי בפנים
+            while (lo < hi) {
+                const mid = (lo + hi + 1) >> 1;
+                if (inside(mid - 1)) lo = mid; else hi = mid - 1;
+            }
+            return lo;
+        }
+
 // פונקציית עזר המפרקת את צמתי הטקסט בתוך פסקה למילים בודדות כדי לאפשר עימוד ברמת המילה
         function splitTextNodesIntoWords(element) {
             const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
@@ -511,6 +582,15 @@ async function paginateContentImpl(htmlContent, targetTabIndex) {
             // "זנב" של הערת שוליים ארוכה שלא נכנסה במלואה בעמוד שבו הופיעה ההפניה אליה - ראו
             // syncPageFootnotes/trimFootnotesToFitPage. מתעדכן בכל פעם שעמוד מסתיים.
             let footnoteCarry = null;
+            // מצב "האם כדאי להשתמש בניחוש": בספרים עם הרבה הערות שוליים הניחוש מחמיץ לעיתים קרובות
+            // (בלוק ההערות תופס מקום אחרי הטקסט) ואז הוא רק מוסיף בדיקות. אחרי כמה החמצות רצופות
+            // מדלגים על הניחוש לכמה פעמים ואז מנסים שוב. משפיע על מהירות בלבד, לעולם לא על התוצאה.
+            const predState = { fails: 0, skip: 0 };
+            const predAllowed = () => { if (predState.skip > 0) { predState.skip--; return false; } return true; };
+            const predReport = (hit) => {
+                if (hit) { predState.fails = 0; }
+                else if (++predState.fails >= 4) { predState.fails = 0; predState.skip = 12; }
+            };
             preparePageWithHeader(measureContainer, pageCount, bookTitle, runningHeading);
             const BATCH_SIZE = 70;
 
@@ -538,7 +618,7 @@ async function paginateContentImpl(htmlContent, targetTabIndex) {
 
                 while (nodesQueue.length > 0 && nodesProcessedInBatch < BATCH_SIZE) {
                     if (performance.now() - startTime > 30) {
-                        await new Promise(resolve => requestAnimationFrame(resolve));
+                        await yieldToBrowser();
                         startTime = performance.now();
                     }
 
@@ -647,14 +727,43 @@ async function paginateContentImpl(htmlContent, targetTabIndex) {
                             let low = 0;
                             let high = children.length;
                             let splitIdx = 0;
+                            const mountMain = makeChildMounter(fitClone, children);
+
+                            // האצה: ניחוש נקודת החיתוך מפריסה אחת ואימות בשתי בדיקות (ראו predictFitPrefix).
+                            // רק כשהפסקה ארוכה מספיק כדי שהחיסכון משתלם; תמיד נופלים בחזרה לחיפוש הבינארי.
+                            if (children.length >= 24 && predAllowed()) {
+                                mountMain(children.length);
+                                syncPageFootnotes(measureContainer, targetTab.footnotes, footnoteCarry);
+                                const g = predictFitPrefix(measureContainer, mountMain.clones);
+                                mountMain(g);
+                                syncPageFootnotes(measureContainer, targetTab.footnotes, footnoteCarry);
+                                if (isOverflowing(measureContainer)) {
+                                    predReport(false);
+                                    high = g - 1; // g לא נכנס - המקסימום קטן ממנו
+                                } else {
+                                    splitIdx = g;
+                                    low = g + 1;
+                                    if (g >= children.length) predReport(true);
+                                    if (g < children.length) {
+                                        mountMain(g + 1);
+                                        syncPageFootnotes(measureContainer, targetTab.footnotes, footnoteCarry);
+                                        if (isOverflowing(measureContainer)) {
+                                            predReport(true);
+                                            high = g; // g נכנס ו-g+1 לא - g הוא המקסימום
+                                            low = g + 1; // low > high: מדלגים על הלולאה הבינארית
+                                        } else {
+                                            predReport(false);
+                                            splitIdx = g + 1;
+                                            low = g + 2;
+                                        }
+                                    }
+                                }
+                            }
 
                             while (low <= high) {
                                 let mid = Math.floor((low + high) / 2);
                                 
-                                fitClone.innerHTML = '';
-                                for (let i = 0; i < mid; i++) {
-                                    fitClone.appendChild(children[i].cloneNode(true));
-                                }
+                                mountMain(mid);
                                 // סנכרון בלוק ההערות לפי הניסיון הנוכחי בדיוק (mid) - לא לפי הפסקה
                                 // המלאה שנבדקה פסימית בתחילת הטיפול. בלי זה, הפניה להערה שנמצאת
                                 // בהמשך הפסקה (אחרי mid, ולכן עדיין לא כלולה בניסיון) הייתה "שומרת
@@ -679,10 +788,7 @@ async function paginateContentImpl(htmlContent, targetTabIndex) {
                             // כאילו כבר טופלה (כי היא עדיין שם פיזית, כשריד), והקוד מדלג עליה ותופס
                             // בטעות את ההפניה הבאה אחריה במקומה. לכן מאפסים כאן במפורש את fitClone
                             // ואת בלוק ההערות כך שישקפו בדיוק את splitIdx, לפני כל המשך טיפול.
-                            fitClone.innerHTML = '';
-                            for (let i = 0; i < splitIdx; i++) {
-                                fitClone.appendChild(children[i].cloneNode(true));
-                            }
+                            mountMain(splitIdx);
                             syncPageFootnotes(measureContainer, targetTab.footnotes, footnoteCarry);
 
                             // תיקון ממוקד: אם הילד שבו הבינארי הראשי עצר (הראשון שלא נכנס בשלמותו)
@@ -701,12 +807,10 @@ async function paginateContentImpl(htmlContent, targetTabIndex) {
                                         fitClone.appendChild(subFitClone);
 
                                         let subLow = 0, subHigh = subChildren.length, subSplitIdx = 0;
+                                        const mountSub = makeChildMounter(subFitClone, subChildren);
                                         while (subLow <= subHigh) {
                                             const subMid = Math.floor((subLow + subHigh) / 2);
-                                            subFitClone.innerHTML = '';
-                                            for (let i = 0; i < subMid; i++) {
-                                                subFitClone.appendChild(subChildren[i].cloneNode(true));
-                                            }
+                                            mountSub(subMid);
                                             syncPageFootnotes(measureContainer, targetTab.footnotes, footnoteCarry);
                                             if (!isOverflowing(measureContainer)) {
                                                 subSplitIdx = subMid;
@@ -794,10 +898,10 @@ async function paginateContentImpl(htmlContent, targetTabIndex) {
                                     targetTab.footnotes[newRefId] = previewWords;
 
                                     let extLow = splitIdx, extHigh = children.length, extSplit = splitIdx;
+                                    const mountExt = makeChildMounter(fitClone, children);
                                     while (extLow <= extHigh) {
                                         const emid = Math.floor((extLow + extHigh) / 2);
-                                        fitClone.innerHTML = '';
-                                        for (let i = 0; i < emid; i++) fitClone.appendChild(children[i].cloneNode(true));
+                                        mountExt(emid);
                                         syncPageFootnotes(measureContainer, targetTab.footnotes, footnoteCarry);
                                         if (!isOverflowing(measureContainer)) {
                                             extSplit = emid;
@@ -810,8 +914,7 @@ async function paginateContentImpl(htmlContent, targetTabIndex) {
                                     targetTab.footnotes[newRefId] = fullFootnoteText; // משחזרים את הטקסט המלא - trimFootnotesToFitPage בהמשך יחתוך אותו למידה המדויקת שבאמת נכנסת
                                     // איפוס זהה לזה שבוצע אחרי החיפוש הבינארי הראשי - fitClone עדיין
                                     // משקף את הניסיון (emid) האחרון שנבדק ולא בהכרח את extSplit עצמו.
-                                    fitClone.innerHTML = '';
-                                    for (let i = 0; i < extSplit; i++) fitClone.appendChild(children[i].cloneNode(true));
+                                    mountExt(extSplit);
                                     syncPageFootnotes(measureContainer, targetTab.footnotes, footnoteCarry);
                                     if (extSplit > splitIdx) {
                                         splitIdx = extSplit;

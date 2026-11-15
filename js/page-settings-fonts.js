@@ -335,11 +335,13 @@
         // ומוחל בכל טעינת הגדרות (applyCommentaryPanelWidth, נקראת מתוך applySettingsToCSS).
         // ============================================================================
 
-        const COMMENTARY_PANEL_MIN_WIDTH = 220; // תואם ל-min-width שב-CSS על #commentary-panel
+        const COMMENTARY_PANEL_MIN_WIDTH = 280; // minPaneWidth באוצריא (SplitedViewScreen._calculatePaneWidths)
 
         function getCommentaryPanelMaxWidth() {
-            // תואם ל-max-width: 45vw שב-CSS על #commentary-panel
-            return Math.round(window.innerWidth * 0.45);
+            // כמו באוצריא: עד 75% מרוחב האזור (ולא פחות מהמינימום); ראו responsive-layout.js
+            const mc = document.querySelector('.main-content');
+            const available = mc ? mc.clientWidth : window.innerWidth;
+            return Math.round(Math.max(COMMENTARY_PANEL_MIN_WIDTH, available * 0.75));
         }
 
         // מחיל על #commentary-panel את הרוחב השמור (אם יש), או חוזר לרוחב הקבוע שב-CSS אם אין
@@ -347,6 +349,12 @@
         function applyCommentaryPanelWidth() {
             const panel = document.getElementById('commentary-panel');
             if (!panel) return;
+            // הרוחב בפועל נקבע ב-updateCommentaryLayout (responsive-layout.js) - כולל הקטנה כשאין
+            // מקום לטקסט, והחלטה אם החלונית דוחקת את הטקסט או מרחפת מעליו
+            if (typeof updateCommentaryLayout === 'function') {
+                updateCommentaryLayout();
+                return;
+            }
             const w = currentSettings.commentaryPanelWidth;
             if (w) {
                 const clamped = Math.max(COMMENTARY_PANEL_MIN_WIDTH, Math.min(getCommentaryPanelMaxWidth(), w));
@@ -384,6 +392,7 @@
             function onPointerDown(e) {
                 dragging = true;
                 handle.classList.add('dragging');
+                panel.classList.add('resizing');
                 startX = getClientX(e);
                 startWidth = panel.getBoundingClientRect().width;
                 document.body.style.userSelect = 'none';
@@ -409,10 +418,12 @@
                 if (!dragging) return;
                 dragging = false;
                 handle.classList.remove('dragging');
+                panel.classList.remove('resizing');
                 document.body.style.userSelect = '';
                 const width = Math.round(panel.getBoundingClientRect().width);
                 currentSettings.commentaryPanelWidth = width;
                 saveSettings();
+                if (typeof updateCommentaryLayout === 'function') updateCommentaryLayout();
                 // אין צורך בסידור מחדש של הספר - רוחב העמוד קבוע (mm) ואינו תלוי ברוחב חלונית
                 // המפרשים כלל, ראו .print-page.
             }
