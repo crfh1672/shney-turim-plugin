@@ -129,6 +129,9 @@ function switchTab(index) {
             
             clearTimeout(fontSizeChangeTimer);
             
+            // כל מעבר טאב מבטל חיפוש רץ ומאפס את השאילתה האחרונה (התוכן מתחלף, אז אותה שאילתה חייבת להיבדק מחדש)
+            cancelBookSearchRun();
+            lastSearchedQuery = null;
             if (activeTabIndex !== -1) {
                 const prevTab = tabs[activeTabIndex];
                 const previewAreaForReset = document.getElementById('preview-area');
@@ -378,6 +381,7 @@ const previewArea = document.getElementById('preview-area');
             // כאן במפורש, אך ורק אם הטאב שנסגר היה הטאב הפעיל (כי רק תוכן של הטאב הפעיל יכול היה
             // להיות מוצג/מסומן בחיפוש) - כדי לא לפגוע בתוצאות חיפוש שכן שייכות לטאב אחר שנשאר פעיל.
             if (wasActive) {
+                cancelBookSearchRun();
                 clearSearchHighlights();
                 currentSearchResults = [];
                 currentSearchResultIndex = -1;
@@ -1143,6 +1147,8 @@ const previewArea = document.getElementById('preview-area');
             if (tab === 'nav' && navSubTab === 'pages') tab = 'pages';
             currentRailTab = tab;
             document.querySelectorAll('.drawer-icon-btn[id^="rail-"]').forEach(btn => btn.classList.remove('active'));
+            // יציאה מלשונית החיפוש באמצע חיפוש עוצרת אותו (אחרת הוא ממשיך לסרוק ולשנות את התצוגה מאחורי הקלעים)
+            if (tab !== 'search') stopBookSearch();
             document.getElementById('rail-' + tab).classList.add('active');
             document.getElementById('drawer-pane-nav').classList.toggle('active', tab === 'nav');
             document.getElementById('drawer-pane-search').classList.toggle('active', tab === 'search');

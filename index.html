@@ -859,6 +859,11 @@
                 </div>
 
                 <div class="drawer-pane" id="drawer-pane-search">
+                    <!-- פס התקדמות לא-מוגדר בזמן חיפוש (LinearProgressIndicator minHeight 4 באוצריא) -->
+                    <div class="search-progress" id="search-progress" role="progressbar" aria-label="מחפש בספר" hidden>
+                        <div class="search-progress-bar"></div>
+                        <div class="search-progress-bar search-progress-bar-secondary"></div>
+                    </div>
                     <div class="drawer-search active" id="drawer-search-book">
                         <div class="drawer-search-field">
                             <input type="text" id="book-search" placeholder="חפש כאן..." oninput="handleDrawerSearch()" onkeydown="handleBookSearchKeydown(event)" data-tooltip="חיפוש בתוכן הספר. Enter לתוצאה הבאה, Shift+Enter לקודמת">
@@ -871,6 +876,9 @@
                     <div class="search-results-panel">
                         <div class="search-results-title">תוצאות חיפוש בספר</div>
                         <div class="search-results-nav">
+                            <button type="button" id="stop-search" onclick="stopBookSearch()" hidden data-tooltip="עצור את החיפוש" aria-label="עצור את החיפוש">
+                                <i class="ui-icon" data-fluent-icon="stop" aria-hidden="true"></i>
+                            </button>
                             <button type="button" id="prev-search-result" onclick="prevSearchResult()" data-tooltip="תוצאה קודמת (Shift+Enter)">
                                 <i class="ui-icon" data-fluent-icon="chevron_up" aria-hidden="true"></i>
                             </button>
