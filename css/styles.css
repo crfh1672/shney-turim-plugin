@@ -3862,7 +3862,8 @@
            when the scrollable content actually overflows. */
         #toc-scroll-area.drawer-content,
         #search-results-list.drawer-content,
-        #page-nav-list.drawer-content {
+        #page-nav-list.drawer-content,
+        #commentary-picker-list {
             box-sizing: border-box;
             padding-right: 0;
             scrollbar-width: none;
@@ -3871,13 +3872,15 @@
 
         #toc-scroll-area.drawer-content.has-scrollbar-gutter,
         #search-results-list.drawer-content.has-scrollbar-gutter,
-        #page-nav-list.drawer-content.has-scrollbar-gutter {
+        #page-nav-list.drawer-content.has-scrollbar-gutter,
+        #commentary-picker-list.has-scrollbar-gutter {
             padding-right: 12px;
         }
 
         #toc-scroll-area.drawer-content::-webkit-scrollbar,
         #search-results-list.drawer-content::-webkit-scrollbar,
-        #page-nav-list.drawer-content::-webkit-scrollbar {
+        #page-nav-list.drawer-content::-webkit-scrollbar,
+        #commentary-picker-list::-webkit-scrollbar {
             display: none !important;
             width: 0 !important;
             height: 0 !important;

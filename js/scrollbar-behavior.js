@@ -11,7 +11,7 @@
 (function () {
     'use strict';
 
-    const SELECTOR = '#toc-scroll-area, #search-results-list, #page-nav-list';
+    const SELECTOR = '#toc-scroll-area, #search-results-list, #page-nav-list, #commentary-picker-list';
     const GUTTER_WIDTH = 12;
     const THUMB_WIDTH = 8;
     const THUMB_MARGIN = 2;
@@ -526,6 +526,7 @@
     }
 
     function createScrollbar(element) {
+        if (states.has(element)) return;
         const parent = element.parentElement;
         if (!parent) return;
 
@@ -566,7 +567,8 @@
             dragOffsetY: 0,
             panStartY: 0,
             panStartScrollTop: 0,
-            tapAnimationFrame: null
+            tapAnimationFrame: null,
+            observedChildren: new Set()
         };
         states.set(element, state);
 
@@ -597,7 +599,6 @@
 
     function init() {
         document.querySelectorAll(SELECTOR).forEach(createScrollbar);
-        if (states.size === 0) return;
 
         document.addEventListener('scroll', onScroll, true);
         document.addEventListener('pointermove', onPointerMove, true);
@@ -621,11 +622,18 @@
         });
 
         function observeContentChildren(state) {
-            // ScrollHeight can change when list items or their direct content
-            // resize (for example after a thumbnail/font finishes loading),
-            // even while the scroll viewport itself keeps the same height.
-            for (const child of state.element.children) {
+            // Keep only the current children observed; picker rows are rebuilt
+            // after each selection and must not leave detached nodes observed.
+            const currentChildren = new Set(state.element.children);
+            for (const child of state.observedChildren) {
+                if (currentChildren.has(child)) continue;
+                resizeObserver.unobserve(child);
+                state.observedChildren.delete(child);
+            }
+            for (const child of currentChildren) {
+                if (state.observedChildren.has(child)) continue;
                 resizeObserver.observe(child);
+                state.observedChildren.add(child);
             }
         }
 
@@ -637,7 +645,7 @@
             refreshHover(lastPointer);
         });
 
-        for (const state of states.values()) {
+        function observeState(state) {
             resizeObserver.observe(state.element);
             resizeObserver.observe(state.parent);
             observeContentChildren(state);
@@ -646,6 +654,61 @@
                 subtree: true,
                 characterData: true
             });
+        }
+
+        for (const state of states.values()) observeState(state);
+
+        // The picker screen is rendered dynamically inside commentary-panel-body.
+        // Attach the same scrollbar when its list is inserted, then release it
+        // when the picker screen is closed/replaced.
+        const pickerHost = document.getElementById('commentary-panel-body');
+        if (pickerHost) {
+            const pickerObserver = new MutationObserver(records => {
+                for (const record of records) {
+                    for (const node of record.addedNodes) {
+                        if (!(node instanceof Element)) continue;
+                        const candidates = [];
+                        if (node.matches(SELECTOR)) candidates.push(node);
+                        node.querySelectorAll(SELECTOR).forEach(el => candidates.push(el));
+                        for (const element of candidates) {
+                            if (states.has(element)) continue;
+                            createScrollbar(element);
+                            const state = states.get(element);
+                            if (state) observeState(state);
+                        }
+                    }
+                }
+
+                let removedState = false;
+                for (const [element, state] of states) {
+                    if (element.isConnected) continue;
+                    clearHideTimer(state);
+                    cancelTapAnimation(state);
+                    resizeObserver.unobserve(element);
+                    for (const child of state.observedChildren) resizeObserver.unobserve(child);
+                    state.observedChildren.clear();
+                    state.track.remove();
+                    states.delete(element);
+                    if (![...states.values()].some(other => other.parent === state.parent)) {
+                        resizeObserver.unobserve(state.parent);
+                    }
+                    removedState = true;
+                }
+                if (removedState) {
+                    // MutationObserver cannot unobserve a single target.
+                    mutationObserver.disconnect();
+                    for (const state of states.values()) {
+                        mutationObserver.observe(state.element, {
+                            childList: true,
+                            subtree: true,
+                            characterData: true
+                        });
+                    }
+                }
+                for (const state of states.values()) updateTrackPosition(state);
+                refreshHover(lastPointer);
+            });
+            pickerObserver.observe(pickerHost, { childList: true, subtree: true });
         }
 
         window.addEventListener('resize', () => {
