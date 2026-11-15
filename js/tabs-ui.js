@@ -979,6 +979,76 @@ const previewArea = document.getElementById('preview-area');
             }
         }
 
+        // === שינוי רוחב חלונית ההגדרות ע"י גרירה (#settings-panel-resize-handle) ===
+        // החלונית יושבת בצד שמאל; הידית על הקצה הימני שלה. הרוחב נשמר ב-localStorage (כמו רוחב חלונית
+        // הניווט) ומוחל דרך --settings-panel-width. לחיצה כפולה על הידית מאפסת לברירת המחדל.
+        (function initSettingsPanelResize() {
+            const SETTINGS_PANEL_MIN_WIDTH = 280;
+            const SETTINGS_PANEL_STORAGE_KEY = 'advanced_print_settings_panel_width';
+            const panel = document.querySelector('.settings-panel');
+            const handle = document.getElementById('settings-panel-resize-handle');
+            if (!panel || !handle) return;
+
+            const maxWidth = () => Math.max(SETTINGS_PANEL_MIN_WIDTH, Math.min(600, window.innerWidth - 40));
+            const clampWidth = (w) => Math.round(Math.max(SETTINGS_PANEL_MIN_WIDTH, Math.min(maxWidth(), w)));
+            const applyWidth = (w) => {
+                if (w) panel.style.setProperty('--settings-panel-width', clampWidth(w) + 'px');
+                else panel.style.removeProperty('--settings-panel-width');
+            };
+            const saveWidth = (w) => {
+                try {
+                    if (w) localStorage.setItem(SETTINGS_PANEL_STORAGE_KEY, String(w));
+                    else localStorage.removeItem(SETTINGS_PANEL_STORAGE_KEY);
+                } catch (e) { /* האחסון לא זמין - הרוחב נשאר לשיחה הנוכחית בלבד */ }
+            };
+            try {
+                const saved = parseInt(localStorage.getItem(SETTINGS_PANEL_STORAGE_KEY), 10);
+                if (saved > 0) applyWidth(saved);
+            } catch (e) { /* ignore */ }
+
+            let dragging = false;
+            let startX = 0;
+            let startWidth = 0;
+            const getClientX = (e) => (e.touches && e.touches.length ? e.touches[0].clientX
+                : (e.changedTouches && e.changedTouches.length ? e.changedTouches[0].clientX : e.clientX));
+
+            function onDown(e) {
+                dragging = true;
+                handle.classList.add('dragging');
+                panel.style.transition = 'none';
+                startX = getClientX(e);
+                startWidth = panel.getBoundingClientRect().width;
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+            }
+            function onMove(e) {
+                if (!dragging) return;
+                // החלונית צמודה לשמאל המסך: גרירה ימינה מרחיבה, שמאלה מצמצמת
+                applyWidth(startWidth + (getClientX(e) - startX));
+                e.preventDefault();
+            }
+            function onUp() {
+                if (!dragging) return;
+                dragging = false;
+                handle.classList.remove('dragging');
+                panel.style.transition = '';
+                document.body.style.userSelect = '';
+                saveWidth(Math.round(panel.getBoundingClientRect().width));
+            }
+            handle.addEventListener('mousedown', onDown);
+            handle.addEventListener('touchstart', onDown, { passive: false });
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('mouseup', onUp);
+            document.addEventListener('touchend', onUp);
+            document.addEventListener('touchcancel', onUp);
+            handle.addEventListener('dblclick', () => { applyWidth(null); saveWidth(null); });
+            window.addEventListener('resize', () => {
+                const cur = panel.style.getPropertyValue('--settings-panel-width');
+                if (cur) applyWidth(parseInt(cur, 10));
+            });
+        })();
+
         const previewArea = document.getElementById('preview-area');
         let isScrollingFromTOC = false;
         let pageNavScrollUpdateTimer = null;
