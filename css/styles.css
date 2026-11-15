@@ -299,7 +299,7 @@
             border-radius: var(--app-radius, 8px);
             background: var(--commentary-panel-bg-color);
             box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000000) 22%, transparent);
-            overflow: hidden;
+            overflow: visible; /* ידית הגרירה חורגת החוצה; חיתוך הפינות נעשה ב-.pane-clip */
             opacity: 0;
             transform: translateX(-8px);
             visibility: hidden;
@@ -336,37 +336,6 @@
         }
         #commentary-panel[hidden] {
             display: none !important;
-        }
-
-        /* ידית גרירה במראה של ידית חלונית הניווט, בצד הפונה לתוכן הראשי. */
-        #commentary-panel-resize-handle {
-            position: absolute;
-            z-index: 20;
-            top: 0;
-            bottom: 0;
-            inset-inline-start: 0;
-            width: 12px;
-            cursor: ew-resize;
-            touch-action: none;
-        }
-
-        #commentary-panel-resize-handle::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            right: 4px;
-            width: 3px;
-            height: 42px;
-            border-radius: var(--radius-pill);
-            background: var(--color-outline);
-            opacity: 0;
-            transform: translateY(-50%);
-            transition: opacity 0.15s;
-        }
-
-        #commentary-panel-resize-handle:hover::after,
-        #commentary-panel-resize-handle.dragging::after {
-            opacity: 0.55;
         }
 
         /* שורה עליונה של החלונית - לשוניות (הערות/קישורים/מפרשים, בדיוק כמו בתמונות) יחד עם
@@ -1529,9 +1498,6 @@
         @media (max-width: 700px) {
             #btn-hand-mode { display: none; }
         }
-        @media (min-width: 701px) {
-            #btn-toolbar-fullscreen { display: none; }
-        }
 
         select.compact-select {
             padding: 6px 12px;
@@ -1820,12 +1786,6 @@
             overflow: hidden;
         }
 
-        /* מצב מסך מלא: לא משנה את המיקום/גודל (זה תפקידו של ה-Fullscreen API/F11 האמיתי) -
-           רק מסתיר את שורת הטאבים כדי לפנות מעט מקום נוסף לתוכן */
-        body.fullscreen-mode .tab-bar-outer {
-            display: none;
-        }
-
         /* --- סרגל כלים מצומצם (אופציונלי, דרך ההגדרות) - מקטין מעט את עובי הסרגל העליון --- */
         body.compact-toolbar .toolbar {
             height: 44px;
@@ -2070,7 +2030,7 @@
             background: var(--color-nav-panel-background);
             border-inline-start: 1px solid var(--color-border-subtle);
             border-radius: 0;
-            overflow: hidden;
+            overflow: visible; /* ידית הגרירה חורגת 20px מחוץ לקצה הפנימי */
             background-clip: padding-box;
             box-shadow: -2px 0 10px rgba(0, 0, 0, 0.12);
             display: flex;
@@ -2111,10 +2071,12 @@
         .settings-panel {
             position: absolute;
             top: 10px; bottom: 10px; left: 10px;
-            width: 320px;
+            box-sizing: border-box;
+            width: var(--settings-panel-width, 320px);
+            max-width: calc(100vw - 20px);
             background: var(--color-surface-container);
             border-radius: var(--radius-lg);
-            overflow: hidden;
+            overflow: visible; /* ידית הגרירה חורגת החוצה */
             background-clip: padding-box;
             box-shadow: 4px 0 32px rgba(0, 0, 0, 0.22);
             display: flex;
@@ -2836,34 +2798,94 @@
             display: flex;
         }
 
-        .nav-panel-resize-handle {
+        /* ידית שינוי הרוחב - כמו ResizableDragHandle באוצריא: שטח לחיצה של 24px (קומפקטי 18px) שרק
+           4px ממנו בתוך החלונית והשאר חורג החוצה, וה"אחיזה" (גלולה) יושבת בדיוק על הקצה הפנימי של
+           החלונית. במצב מנוחה אין קו (showDivider=false); בריחוף האחיזה מתעבה ונצבעת חצי-חצי
+           בצבע הראשי, ובגרירה מתעבה עוד ומקבלת הילה. כל המעברים 150ms easeOut, ובלי מעבר בגרירה. */
+        .pane-resize-handle {
+            --handle-hit: 24px;
+            --handle-inner: 4px;
+            --grip-x: calc(var(--handle-hit) - var(--handle-inner));
             position: absolute;
             z-index: 2;
             top: 0;
             bottom: 0;
-            left: 0;
-            width: 12px;
-            cursor: ew-resize;
+            left: calc(var(--handle-inner) - var(--handle-hit));
+            width: var(--handle-hit);
+            cursor: col-resize;
             touch-action: none;
         }
 
-        .nav-panel-resize-handle::after {
+        body.app-compact-density .pane-resize-handle {
+            --handle-hit: 18px;
+        }
+
+        .pane-resize-handle::before,
+        .pane-resize-handle::after {
             content: "";
             position: absolute;
             top: 50%;
-            left: 4px;
-            width: 3px;
-            height: 42px;
-            border-radius: var(--radius-pill);
-            background: var(--color-outline);
-            opacity: 0;
-            transform: translateY(-50%);
-            transition: opacity 0.15s;
+            left: var(--grip-x);
+            transform: translate(-50%, -50%);
+            border-radius: 8px;
+            pointer-events: none;
+            transition: width 0.15s ease-out, height 0.15s ease-out, background-color 0.15s ease-out, opacity 0.15s ease-out;
         }
 
-        .nav-panel-resize-handle:hover::after,
-        .nav-panel-resize-handle.dragging::after {
-            opacity: 0.55;
+        /* האחיזה (הגלולה) */
+        .pane-resize-handle::after {
+            width: 3px;
+            height: 24px;
+            opacity: 0;
+            background: color-mix(in srgb, var(--color-outline) 55%, transparent);
+        }
+
+        /* ההילה שמאחורי האחיזה */
+        .pane-resize-handle::before {
+            width: 13px;
+            height: 24px;
+            background: transparent;
+        }
+
+        .pane-resize-handle:hover::after {
+            width: 4px;
+            height: 28px;
+            opacity: 1;
+            background: color-mix(in srgb, var(--color-primary) 50%, color-mix(in srgb, var(--color-outline) 55%, transparent));
+        }
+
+        .pane-resize-handle:hover::before {
+            width: 14px;
+            height: 28px;
+            background: color-mix(in srgb, var(--color-primary) 11%, transparent);
+        }
+
+        .pane-resize-handle.dragging::after {
+            width: 5px;
+            height: 32px;
+            opacity: 1;
+            background: color-mix(in srgb, var(--color-primary) 95%, transparent);
+            transition: none;
+        }
+
+        .pane-resize-handle.dragging::before {
+            width: 15px;
+            height: 32px;
+            background: color-mix(in srgb, var(--color-primary) 22%, transparent);
+            transition: none;
+        }
+
+        /* חלונית שיושבת בצד שמאל של המסך (מפרשים, הגדרות): הידית על הקצה הימני שלה, פונה לתוכן */
+        .pane-resize-handle[data-side="left"] {
+            left: auto;
+            right: calc(var(--handle-inner) - var(--handle-hit));
+        }
+
+        .pane-resize-handle[data-side="left"]::before,
+        .pane-resize-handle[data-side="left"]::after {
+            left: auto;
+            right: var(--grip-x);
+            transform: translate(50%, -50%);
         }
 
         .search-results-panel {
@@ -4925,3 +4947,188 @@ body.app-compact-density .toolbar-main .nav-heading-btn .ui-icon {
     height: 18px;
     font-size: 18px;
 }
+
+
+/* ==========================================================================================
+   התאמת מגירת הניווט (כותרות / חיפוש / דפים) לחלונית הניווט של אוצריא
+   ========================================================================================== */
+
+/* שורת כותרת בתוכן העניינים = NavTreeTile.heading: 14px, משקל לפי רמה (700/600/500), ריפוד
+   8px לגובה ו-12px לצדדים + 12px להזחה לכל רמה, גובה מינימלי 42px, ושורה נבחרת ברקע secondaryContainer */
+#toc-list .toc-item {
+    box-sizing: border-box;
+    min-height: 42px;
+    padding-block: 8px;
+    padding-inline-end: 12px;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+}
+#toc-list .toc-item[data-level="1"] { font-weight: 700; }
+#toc-list .toc-item[data-level="2"] { font-weight: 600; }
+#toc-list .toc-item:hover { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
+/* הכותרת הנוכחית: רקע מודגש ומשקל 700 (כמו שורה נבחרת ב-NavTreeTile). כשהיא בתוך ענף מכווץ -
+   ההורה הגלוי מקבל הדגשה עדינה יותר */
+#toc-list .toc-item.active-item {
+    background: var(--color-secondary-container);
+    color: var(--color-on-secondary-container);
+    font-weight: 700;
+}
+#toc-list .toc-item.active-parent {
+    background: color-mix(in srgb, var(--color-secondary-container) 50%, transparent);
+}
+#toc-list .toc-item.active-item:hover,
+#toc-list .toc-item.active-parent:hover {
+    background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-secondary-container));
+}
+
+/* כפתור ההרחבה בסוף השורה (IconButton קומפקטי 32px, אייקון 16px). פתוח = חץ למטה, סגור = חץ שפונה
+   לכיוון הקריאה (שמאלה ב-RTL); הסיבוב 250ms easeInOut */
+#toc-list .toc-toggle {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    margin: 0;
+    margin-inline-start: -4px;
+    border-radius: var(--radius-pill);
+    color: var(--color-on-surface-variant);
+    transform: rotate(90deg);
+    transition: transform 0.25s ease-in-out, background-color 0.15s;
+}
+#toc-list .toc-item-wrapper.expanded > .toc-item .toc-toggle { transform: none; }
+#toc-list .toc-toggle:hover {
+    background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
+    color: var(--color-on-surface-variant);
+}
+@media (prefers-reduced-motion: reduce) {
+    #toc-list .toc-toggle { transition: none; }
+}
+
+/* פס התקדמות בזמן חיפוש: LinearProgressIndicator ללא ערך (minHeight 4), בראש לשונית החיפוש */
+.search-progress[hidden], .search-results-nav button[hidden] { display: none; }
+.search-progress {
+    position: relative;
+    flex: 0 0 4px;
+    height: 4px;
+    overflow: hidden;
+    background: var(--color-secondary-container);
+}
+.search-progress-bar {
+    position: absolute;
+    inset-block: 0;
+    width: 100%;
+    background: var(--color-primary);
+    transform-origin: 0 50%;
+    animation: search-progress-primary 2s infinite linear;
+}
+.search-progress-bar-secondary { animation-name: search-progress-secondary; }
+@keyframes search-progress-primary {
+    0%   { left: -35%; width: 35%; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+    60%  { left: 100%; width: 100%; }
+    100% { left: 100%; width: 100%; }
+}
+@keyframes search-progress-secondary {
+    0%   { left: -200%; width: 100%; }
+    60%  { left: -200%; width: 100%; animation-timing-function: cubic-bezier(0.1, 0.8, 0.3, 1); }
+    100% { left: 107%; width: 8%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .search-progress-bar { animation-duration: 6s; }
+}
+
+/* בזמן חיפוש מוצגת שורת התוצאות עם "מחפש..." וכפתור עצירה בתחילת הכפתורים */
+#drawer-pane-search.is-searching .search-results-panel { display: flex; }
+#stop-search .ui-icon { width: 18px; height: 18px; font-size: 18px; }
+
+/* ==========================================================================================
+   התנהגות רספונסיבית כמו באוצריא (חצי מסך / מסכים קטנים) - ראו js/responsive-layout.js
+   ========================================================================================== */
+
+/* כפתור שעבר לתפריט "עוד" (ResponsiveActionBar): מוסתר מהסרגל */
+.tb-overflowed { display: none !important; }
+
+/* אין מקום לארבעת החיצים: הם עוברים לתפריט, והכותרת מקבלת את כל המרכז (ReaderNavCenter) */
+.toolbar-nav-center.nav-center-no-arrows .nav-heading-btn { display: none; }
+
+/* שורת אייקוני הניווט בראש התפריט "עוד" - לחיצה עליהם לא סוגרת את התפריט */
+.more-menu-nav-row {
+    display: flex;
+    justify-content: space-evenly;
+    padding: 0 4px;
+    min-height: 56px;
+    align-items: center;
+}
+.more-menu-nav-btn {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: var(--color-on-surface);
+    cursor: pointer;
+}
+.more-menu-nav-btn .ui-icon { width: 20px; height: 20px; font-size: 20px; }
+html[dir="rtl"] .more-menu-nav-btn .ui-icon { transform: scaleX(-1); }
+.more-menu-nav-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
+.more-menu-nav-btn:disabled { opacity: 0.38; cursor: default; }
+.more-menu-divider {
+    height: 1px;
+    margin: 4px 0;
+    background: var(--color-outline-variant);
+    opacity: 0.6;
+}
+.more-menu-item[role="menuitemradio"] .view-mode-check { opacity: 0; }
+.more-menu-item[role="menuitemradio"][aria-checked="true"] .view-mode-check { opacity: 1; }
+
+/* חלונית המפרשים: רוחב מזערי כמו באוצריא (280), בלי תקרה של 45vw - הרוחב נקבע ב-JS */
+#commentary-panel { min-width: 280px; max-width: none; }
+
+/* הצללה מאחורי חלונית מפרשים מרחפת */
+.commentary-scrim {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 150;
+    background: color-mix(in srgb, var(--color-on-surface) 14%, transparent);
+}
+.commentary-scrim.visible { display: block; }
+
+/* אין מקום לדחוף את הטקסט (פחות מ-רוחב החלונית + 22 + 200): החלונית מרחפת מעליו, כמו AdaptiveSidePane
+   במסך צר - מרווחים 14/10/10 ורוחב מרבי של האזור פחות 20 */
+body.commentary-overlay #commentary-panel {
+    position: absolute;
+    top: 14px;
+    bottom: 10px;
+    left: 10px;
+    margin: 0;
+    z-index: 160;
+    max-width: calc(100% - 20px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+}
+body.commentary-overlay #commentary-panel.open {
+    animation: commentary-overlay-in 0.18s ease-out;
+}
+@keyframes commentary-overlay-in {
+    from { opacity: 0; transform: translateX(-24px); }
+    to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    body.commentary-overlay #commentary-panel.open { animation: none; }
+}
+
+/* מעטפת חיתוך לתוכן חלונית שהשורש שלה overflow:visible (כדי שידית הגרירה תחרוג החוצה): התוכן נחתך
+   בפינות המעוגלות, והידית נשארת מחוץ לחיתוך */
+.pane-clip {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    border-radius: inherit;
+    overflow: hidden;
+}
+.pane-resize-handle:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }

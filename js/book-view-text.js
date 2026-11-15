@@ -65,6 +65,8 @@ function updateBookViewPages(skipPanReset) {
             if (activeTabIndex !== -1 && tabs[activeTabIndex] && tabs[activeTabIndex].commentaryPanelOpen) {
                 refreshCommentaryPanel();
             }
+            // הכותרת הנוכחית בתוכן העניינים עוקבת אחרי הדפדוף (כשהרשימה נעוצה וגלויה)
+            if (typeof scheduleTocCurrentUpdate === 'function') scheduleTocCurrentUpdate();
         }
 
         // בדיקה גיאומטרית: האם הספר (book-wrapper) חופף בפועל לאזור של כל אחד מחצי הניווט.

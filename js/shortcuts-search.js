@@ -346,6 +346,161 @@ let searchDebounceTimer = null;
         // level ועם index (אינדקס שורה 0-based, אותה מערכת מספור בדיוק כמו data-line-idx שהוזרק
         // ב-fetchEntireBook) - כך שניתן לקפוץ לעמוד המדויק דרך locatePageIndexForLineIndex, בלי
         // תלות בכותרות HTML שהתגלו בפועל בטקסט המעובד.
+        // כפתור הרחבה/כיווץ של שורת כותרת - בסוף השורה (כמו IconButton של NavTreeTile באוצריא), עם
+        // טולטיפ לפי הפעולה ("הרחב"/"כווץ") ושברון שמסתובב לפי המצב
+        function syncTocToggle(toggleBtn) {
+            const wrapper = toggleBtn.closest('.toc-item-wrapper');
+            const expanded = Boolean(wrapper && wrapper.classList.contains('expanded'));
+            const label = expanded ? 'כווץ' : 'הרחב';
+            toggleBtn.setAttribute('data-tooltip', label);
+            toggleBtn.setAttribute('aria-label', label);
+            toggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        }
+
+        // מרענן את מצב כל הכפתורים אחרי הרחבה/כיווץ תכנותיים (שחזור מצב, סינון, ניקוי סינון)
+        function refreshTocToggleStates() {
+            document.querySelectorAll('#toc-list .toc-toggle').forEach(syncTocToggle);
+        }
+
+
+        // ===== הדגשת הכותרת הנוכחית בתוכן העניינים (כמו השורה הנבחרת ב-NavTreeTile באוצריא) =====
+        // "הכותרת הנוכחית" = הכותרת האחרונה שהתחילה עד קו הייחוס: אמצע אזור התצוגה בגלילה רגילה,
+        // ועד סוף העמוד המוצג בתצוגת ספר. כשהכותרת נמצאת בתוך ענף מכווץ, ההדגשה (העדינה) עוברת להורה
+        // המכווץ הגלוי הקרוב - כך שתמיד רואים באיזה חלק של הספר נמצאים.
+        let tocCurrentItem = null;
+        let tocCurrentRep = null;
+        let tocCurrentTimer = null;
+
+        function isNavTocVisible() {
+            const panel = document.querySelector('.overlay-panel');
+            return Boolean(panel && panel.classList.contains('open') && currentRailTab === 'nav');
+        }
+
+        function computeCurrentTocItem() {
+            const tocList = document.getElementById('toc-list');
+            const previewArea = document.getElementById('preview-area');
+            if (!tocList || !previewArea) return null;
+            const items = Array.from(tocList.querySelectorAll('.toc-item[data-line-index], .toc-item[data-heading-id]'));
+            if (items.length === 0) return null;
+            const pages = Array.from(previewArea.querySelectorAll('.print-page'));
+            if (pages.length === 0) return null;
+            const isBook = Boolean(currentSettings.isBookView);
+            const pageIdx = Math.min(Math.max(isBook ? currentLeaf * 2 : getScrollCurrentPage(), 0), pages.length - 1);
+            const refLine = previewArea.getBoundingClientRect().top + previewArea.clientHeight * 0.5;
+
+            // חיפוש בינארי על פריטים שמסודרים לפי סדר הטקסט: האחרון שמקיים את התנאי
+            const lastWhere = (pred) => {
+                let lo = 0, hi = items.length - 1, best = -1;
+                while (lo <= hi) {
+                    const mid = (lo + hi) >> 1;
+                    if (pred(items[mid])) { best = mid; lo = mid + 1; } else { hi = mid - 1; }
+                }
+                return best >= 0 ? items[best] : null;
+            };
+
+            if (items[0].dataset.lineIndex !== undefined) {
+                let lineIdx = -1;
+                if (isBook) {
+                    for (let p = pageIdx; p >= 0 && lineIdx < 0; p--) {
+                        const marked = pages[p].querySelectorAll('[data-line-idx]');
+                        if (marked.length) lineIdx = parseInt(marked[marked.length - 1].getAttribute('data-line-idx'), 10);
+                    }
+                } else {
+                    const from = Math.max(0, pageIdx - 1);
+                    for (let p = from; p <= Math.min(pages.length - 1, pageIdx + 1); p++) {
+                        pages[p].querySelectorAll('[data-line-idx]').forEach((el) => {
+                            const v = parseInt(el.getAttribute('data-line-idx'), 10);
+                            if (!isNaN(v) && el.getBoundingClientRect().top <= refLine && v > lineIdx) lineIdx = v;
+                        });
+                    }
+                    if (lineIdx < 0) {
+                        const first = pages[pageIdx].querySelector('[data-line-idx]');
+                        if (first) lineIdx = parseInt(first.getAttribute('data-line-idx'), 10);
+                    }
+                }
+                if (isNaN(lineIdx) || lineIdx < 0) return null;
+                return lastWhere((it) => Number(it.dataset.lineIndex) <= lineIdx);
+            }
+
+            const pageEl = pages[pageIdx];
+            return lastWhere((it) => {
+                const h = document.getElementById(it.dataset.headingId);
+                if (!h) return false;
+                if (isBook) {
+                    return h === pageEl || Boolean(pageEl.compareDocumentPosition(h) & (Node.DOCUMENT_POSITION_PRECEDING | Node.DOCUMENT_POSITION_CONTAINED_BY));
+                }
+                return h.getBoundingClientRect().top <= refLine;
+            });
+        }
+
+        // מסמן פריט כנוכחי (או מנקה כשאין). הפריט הגלוי המייצג = הפריט עצמו, או ההורה המכווץ הגבוה ביותר
+        function setTocCurrentItem(item, reveal) {
+            if (tocCurrentItem) { tocCurrentItem.classList.remove('active-item'); tocCurrentItem.removeAttribute('aria-current'); }
+            if (tocCurrentRep) { tocCurrentRep.classList.remove('active-parent'); tocCurrentRep.removeAttribute('aria-current'); }
+            tocCurrentItem = (item && item.isConnected) ? item : null;
+            tocCurrentRep = null;
+            if (!tocCurrentItem) return;
+            let rep = tocCurrentItem;
+            let w = tocCurrentItem.closest('.toc-item-wrapper');
+            w = w && w.parentElement ? w.parentElement.closest('.toc-item-wrapper') : null;
+            while (w) {
+                if (!w.classList.contains('expanded')) rep = w.querySelector(':scope > .toc-item') || rep;
+                w = w.parentElement ? w.parentElement.closest('.toc-item-wrapper') : null;
+            }
+            if (rep === tocCurrentItem) {
+                tocCurrentItem.classList.add('active-item');
+                tocCurrentItem.setAttribute('aria-current', 'true');
+            } else {
+                // הפריט עצמו מוסתר - סימון "נוכחי" לטכנולוגיות מסייעות עובר להורה הגלוי
+                rep.classList.add('active-parent');
+                rep.setAttribute('aria-current', 'true');
+                tocCurrentRep = rep;
+            }
+            if (!reveal || rep.offsetParent === null) return;
+            const area = document.getElementById('toc-scroll-area');
+            if (!area) return;
+            const areaRect = area.getBoundingClientRect();
+            const r = rep.getBoundingClientRect();
+            if (r.top < areaRect.top || r.bottom > areaRect.bottom) {
+                area.scrollTop += r.top - areaRect.top - (area.clientHeight - r.height) / 2;
+            }
+        }
+
+        function updateTocCurrentHeading(reveal) {
+            if (isScrollingFromTOC) return; // אחרי לחיצה על כותרת - ההדגשה כבר נקבעה
+            setTocCurrentItem(computeCurrentTocItem(), reveal);
+        }
+
+        // גרסה מושהית לקריאה מאירועי גלילה/דפדוף - פועלת רק כשרשימת הכותרות גלויה
+        function scheduleTocCurrentUpdate() {
+            clearTimeout(tocCurrentTimer);
+            tocCurrentTimer = setTimeout(() => {
+                if (isNavTocVisible()) updateTocCurrentHeading(true);
+            }, 140);
+        }
+
+        // שינוי גודל חלון משנה את קו הייחוס (אמצע אזור התצוגה) - מחשבים מחדש כשהרשימה גלויה
+        window.addEventListener('resize', scheduleTocCurrentUpdate);
+
+        function createTocToggle(wrapper) {
+            const toggleBtn = document.createElement('button');
+            toggleBtn.type = 'button';
+            toggleBtn.className = 'toc-toggle';
+            toggleBtn.innerHTML = fluentIconHTML('chevron_down');
+            toggleBtn.onclick = (e) => {
+                e.stopPropagation();
+                wrapper.classList.toggle('expanded');
+                syncTocToggle(toggleBtn);
+                setTocCurrentItem(tocCurrentItem); // ההדגשה עוברת בין השורה עצמה להורה המכווץ
+            };
+            // הכפתור עדיין לא מחובר לשורה בזמן היצירה - המצב ההתחלתי נלקח מהעטיפה ישירות
+            const expanded = wrapper.classList.contains('expanded');
+            toggleBtn.setAttribute('data-tooltip', expanded ? 'כווץ' : 'הרחב');
+            toggleBtn.setAttribute('aria-label', expanded ? 'כווץ' : 'הרחב');
+            toggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            return toggleBtn;
+        }
+
         function buildTOCFromOfficialData(items, tocList) {
             const root = { children: [], level: 0 };
             const stack = [root];
@@ -372,31 +527,17 @@ let searchDebounceTimer = null;
 
                 const el = document.createElement('div');
                 el.className = 'toc-item';
-                el.style.paddingInlineStart = ((node.level - 1) * 12 + 16) + 'px';
+                el.dataset.lineIndex = String(node.lineIndex);
+                el.dataset.level = String(Math.min(node.level, 3));
+                el.style.paddingInlineStart = (12 + (node.level - 1) * 12) + 'px';
 
                 const hasChildren = node.children.length > 0;
-                if (hasChildren) {
-                    const toggleBtn = document.createElement('button');
-                    toggleBtn.type = 'button';
-                    toggleBtn.className = 'toc-toggle';
-                    toggleBtn.setAttribute('data-tooltip', 'הצג/הסתר תתי-כותרות');
-                    toggleBtn.innerHTML = fluentIconHTML('chevron_down');
-                    toggleBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        wrapper.classList.toggle('expanded');
-                    };
-                    el.appendChild(toggleBtn);
-                } else {
-                    const spacer = document.createElement('span');
-                    spacer.className = 'toc-toggle-spacer';
-                    el.appendChild(spacer);
-                }
-
                 el.insertAdjacentHTML('beforeend', `<span class="toc-text">${node.titleText}</span>`);
+                if (hasChildren) el.appendChild(createTocToggle(wrapper));
 
                 el.onclick = () => {
                     const pageIdx = locatePageIndexForLineIndex(node.lineIndex);
-                    if (pageIdx >= 0) goToPageIndex(pageIdx);
+                    if (pageIdx >= 0) { goToPageIndex(pageIdx); setTocCurrentItem(el); }
                 };
 
                 wrapper.appendChild(el);
@@ -435,6 +576,7 @@ let searchDebounceTimer = null;
                 tocList.querySelectorAll('.toc-item-wrapper[data-toc-key]').forEach(w => {
                     if (prevState.has(w.dataset.tocKey)) w.classList.toggle('expanded', prevState.get(w.dataset.tocKey));
                 });
+                refreshTocToggleStates();
                 tocScrollArea.scrollTop = prevScroll;
                 const filterInput = document.getElementById('toc-filter');
                 if (filterInput && filterInput.value) filterTOC();
@@ -446,6 +588,8 @@ let searchDebounceTimer = null;
             }
             requestAnimationFrame(updateFloatingTocSearch);
             if (typeof scheduleNavBarUpdate === 'function') scheduleNavBarUpdate();
+            tocCurrentItem = null; tocCurrentRep = null; // האלמנטים הישנים הוחלפו
+            updateTocCurrentHeading(false);
         }
 
         // השורה (data-line-idx) הגדולה ביותר שכבר קיימת ב-DOM - העמודים נוספים לפי סדר הטקסט, ולכן זו
@@ -557,27 +701,13 @@ function buildTOCCore() {
 
                 const item = document.createElement('div');
                 item.className = 'toc-item';
-                item.style.paddingInlineStart = ((node.level - 1) * 12 + 16) + 'px';
+                item.dataset.headingId = node.heading.id;
+                item.dataset.level = String(Math.min(node.level, 3));
+                item.style.paddingInlineStart = (12 + (node.level - 1) * 12) + 'px';
 
                 const hasChildren = node.children.length > 0;
-                if (hasChildren) {
-                    const toggleBtn = document.createElement('button');
-                    toggleBtn.type = 'button';
-                    toggleBtn.className = 'toc-toggle';
-                    toggleBtn.setAttribute('data-tooltip', 'הצג/הסתר תתי-כותרות');
-                    toggleBtn.innerHTML = fluentIconHTML('chevron_down');
-                    toggleBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        wrapper.classList.toggle('expanded');
-                    };
-                    item.appendChild(toggleBtn);
-                } else {
-                    const spacer = document.createElement('span');
-                    spacer.className = 'toc-toggle-spacer';
-                    item.appendChild(spacer);
-                }
-
                 item.insertAdjacentHTML('beforeend', `<span class="toc-text">${node.titleText}</span>`);
+                if (hasChildren) item.appendChild(createTocToggle(wrapper));
 
                 item.onclick = () => {
                     const target = document.getElementById(node.heading.id);
@@ -603,6 +733,7 @@ function buildTOCCore() {
                         }
 
                         setTimeout(() => { isScrollingFromTOC = false; }, 1500);
+                        setTocCurrentItem(item);
                         if (window.innerWidth < 800) closeAllDrawers();
                     }
                 };
@@ -646,6 +777,7 @@ function buildTOCCore() {
                     w.classList.toggle('expanded', isTopLevel);
                 });
                 tocHighlightIndex = -1;
+                refreshTocToggleStates();
                 return;
             }
 
@@ -664,6 +796,7 @@ function buildTOCCore() {
                 }
             });
             tocHighlightIndex = -1;
+            refreshTocToggleStates();
         }
 
         // ניווט בחיצים משדה החיפוש/סינון של הכותרות אל תוך הרשימה עצמה - offsetParent (לא display
@@ -815,9 +948,11 @@ function buildTOCCore() {
             return `${before}<mark>${match}</mark>${after}`;
         }
 
-        function highlightSearchMatches(query) {
+        // מחזירה false אם החיפוש בוטל באמצע (shouldStop), ואז ההדגשות החלקיות מנוקות ע"י הקורא.
+        // רצה בנתחים קצרים עם החזרת שליטה ל-event loop (yieldIfNeeded) כדי שהממשק ימשיך להגיב
+        async function highlightSearchMatches(query, yieldIfNeeded) {
             const previewArea = document.getElementById('preview-area');
-            if (!previewArea || !query) return;
+            if (!previewArea || !query) return true;
 
             previewArea.dataset.searchBaseHtml = previewArea.innerHTML;
             clearSearchHighlights();
@@ -825,7 +960,7 @@ function buildTOCCore() {
             // מנקים ניקוד/טעמים מהשאילתה עצמה - כדי שהחיפוש יתעלם מהם תמיד, גם אם המשתמש הדביק
             // בטעות טקסט מנוקד לתוך תיבת החיפוש
             const normQuery = normalizeForSearch(query).text;
-            if (!normQuery) return;
+            if (!normQuery) return true;
             const normQueryLower = normQuery.toLowerCase();
 
             const textNodes = document.createTreeWalker(previewArea, NodeFilter.SHOW_TEXT, {
@@ -835,21 +970,25 @@ function buildTOCCore() {
                     if (node.parentElement && node.parentElement.closest('.page-header')) {
                         return NodeFilter.FILTER_REJECT;
                     }
-                    if (!node.textContent) return NodeFilter.FILTER_SKIP;
-                    const normalized = normalizeForSearch(node.textContent).text.toLowerCase();
-                    return normalized.includes(normQueryLower) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+                    return node.textContent ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
                 }
             });
 
             const nodes = [];
-            while (textNodes.nextNode()) nodes.push(textNodes.currentNode);
+            while (textNodes.nextNode()) {
+                const candidate = textNodes.currentNode;
+                if (normalizeForSearch(candidate.textContent).text.toLowerCase().includes(normQueryLower)) nodes.push(candidate);
+                if (await yieldIfNeeded()) return false;
+            }
 
-            nodes.forEach((node) => {
+            for (let n = 0; n < nodes.length; n++) {
+                if (await yieldIfNeeded()) return false;
+                const node = nodes[n];
                 const parent = node.parentNode;
-                if (!parent) return;
+                if (!parent) continue;
                 const text = node.textContent || '';
                 const { text: normText, map } = normalizeForSearch(text);
-                if (map.length === 0) return;
+                if (map.length === 0) continue;
 
                 const localRegex = new RegExp(escapeRegExp(normQuery), 'gi');
                 let match;
@@ -879,10 +1018,11 @@ function buildTOCCore() {
                     if (localRegex.lastIndex === normStart) localRegex.lastIndex++; // ביטחון מפני התאמה באורך 0
                 }
 
-                if (!foundAny) return;
+                if (!foundAny) continue;
                 if (lastIndex < text.length) frag.appendChild(document.createTextNode(text.slice(lastIndex)));
                 parent.replaceChild(frag, node);
-            });
+            }
+            return true;
         }
 
         function groupResultsByPath(results) {
@@ -937,7 +1077,7 @@ function buildTOCCore() {
             const nextButton = document.getElementById('next-search-result');
             const total = currentSearchResults.length;
             document.getElementById('drawer-pane-search')?.classList.toggle('has-results', total > 0);
-            if (title) title.textContent = total ? `נמצאו ${total} תוצאות` : '';
+            if (title) title.textContent = searchRunning ? 'מחפש...' : (total ? `נמצאו ${total} תוצאות` : '');
             if (previousButton) previousButton.disabled = !total || currentSearchResultIndex <= 0;
             if (nextButton) {
                 nextButton.disabled = !total || Math.max(currentSearchResultIndex, 0) >= total - 1;
@@ -987,25 +1127,67 @@ function buildTOCCore() {
             }
         }
 
-function searchInBook() {
+// --- הרצת חיפוש בנתחים: מצב "מחפש", עצירה וביטול ---
+        // החיפוש רץ בנתחים קצרים של כ-14ms עם החזרת שליטה לדפדפן בין נתח לנתח, כך שפס ההתקדמות
+        // מונפש, הממשק ממשיך להגיב, ואפשר לעצור (כפתור "עצור את החיפוש") או להחליף שאילתה באמצע.
+        let searchRunId = 0;
+        let searchRunning = false;
+        let searchRunPosState = null;
+
+        function setSearchRunning(on) {
+            searchRunning = on;
+            const pane = document.getElementById('drawer-pane-search');
+            if (pane) pane.classList.toggle('is-searching', on);
+            const progress = document.getElementById('search-progress');
+            if (progress) progress.hidden = !on;
+            const stopBtn = document.getElementById('stop-search');
+            if (stopBtn) stopBtn.hidden = !on;
+            updateSearchResultCount();
+        }
+
+        // מבטל ריצה פעילה (בלי לגעת בתצוגה) - למעבר טאב, שאילתה חדשה או ניקוי
+        function cancelBookSearchRun() {
+            searchRunId++;
+            if (searchRunning) setSearchRunning(false);
+        }
+
+        // כפתור "עצור את החיפוש": מבטל וחוזר לתצוגה נקייה בלי הדגשות
+        function stopBookSearch() {
+            if (!searchRunning) return;
+            cancelBookSearchRun();
+            clearSearchHighlights();
+            currentSearchResults = [];
+            currentSearchResultIndex = -1;
+            lastSearchedQuery = null;
+            const resultsBox = document.getElementById('search-results-list');
+            if (resultsBox) resultsBox.innerHTML = '<div class="search-empty">החיפוש נעצר.</div>';
+            updateSearchResultCount();
+            if (searchRunPosState) restorePositionState(searchRunPosState);
+            searchRunPosState = null;
+        }
+
+        const searchNextTurn = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+        async function searchInBook() {
             const query = document.getElementById('book-search').value.trim();
 
-            // אם השאילתה זהה בדיוק למה שכבר חופש בפעם הקודמת - אין שום שינוי בפועל בתוכן או
+            // אם השאילתה זהה בדיוק למה שכבר חופש בפעם הקודמת - אין שום שינוי בפועל
             // בהדגשות, ולכן אין צורך לגעת ב-DOM או במיקום הגלילה בכלל. זה קריטי בעיקר עבור קיצור
-            // המקלדת (Ctrl+Shift+F) שרק פותח/ממקד את פאנל החיפוש בלי לשנות את הטקסט - קודם לכן
+            // המקלדת (Ctrl+Shift+F) שרק פותח/ממקד את פאנל החיפוש בלי לשנות את הטקסט - קודם
             // הפעולה תמיד "קפצה" אל ראש העמוד הנוכחי גם כשלא היה שום צורך בכך.
             if (query === lastSearchedQuery) {
                 return;
             }
             lastSearchedQuery = query;
+            // כל קריאה מבטלת את הריצה הקודמת (אם עוד רצה)
+            const runId = ++searchRunId;
+            if (searchRunning) setSearchRunning(false);
 
             const resultsBox = document.getElementById('search-results-list');
             const previewArea = document.getElementById('preview-area');
 
-            // שמירה ושחזור של מיקום הגלילה נחוצים רק כאשר בפועל עומד להתבצע שינוי מבני ב-DOM:
-            // ניקוי הדגשות קודמות שכבר קיימות (searchBaseHtml) ו/או בניית הדגשות חדשות. אם אין
-            // הדגשות קודמות ואין שאילתה תקינה חדשה לחיפוש - שום דבר לא משתנה בפועל, ולכן מדלגים
-            // לגמרי על capturePositionState/restorePositionState כדי לא לסכן קפיצת גלילה מיותרת.
+            // שמירה ושחזור של מיקום הגלילה נחוצים רק כאשר בפועל עומד להתבצע שינוי: ניקוי
+            // הדגשות קודמות שכבר קיימות (searchBaseHtml) ו/או בניית הדגשות חדשות.
             const hadPreviousHighlights = Boolean(previewArea.dataset.searchBaseHtml);
             const willSearch = query.length >= 3;
             const posState = (hadPreviousHighlights || willSearch) ? capturePositionState() : null;
@@ -1029,88 +1211,112 @@ function searchInBook() {
                 return;
             }
 
-            // 2. ביצוע סימון (Highlight) ב-DOM
-            highlightSearchMatches(query);
-
-            // 3. סריקה מהירה במעבר יחיד (Single-Pass) למציאת הכותרות והתוצאות יחד
-            const walker = document.createTreeWalker(previewArea, NodeFilter.SHOW_ELEMENT);
-            const headingStack = [];
-            const results = [];
-
-            while (walker.nextNode()) {
-                const current = walker.currentNode;
-
-                // עדכון היררכיית הכותרות במידה והגענו לכותרת חדשה
-                if (/^H[1-6]$/.test(current.tagName)) {
-                    const level = parseInt(current.tagName.substring(1), 10);
-                    const text = current.textContent.trim();
-                    while (headingStack.length && headingStack[headingStack.length - 1].level >= level) {
-                        headingStack.pop();
-                    }
-                    if (text) {
-                        headingStack.push({ level, text });
-                    }
-                }
-
-                // שמירת התוצאה עם נתיב הכותרת המהיר שכבר מחושב בזיכרון ב-O(1)
-                if (current.classList.contains('search-highlight')) {
-                    // מציגים רק רמות h2..h5 בנתיב - h1 כללי מדי ו-h6 יורד לפרטי פרטים מיותרים
-                    const path = headingStack.filter(item => item.level >= 2 && item.level <= 5).map(item => item.text).join(' › ') || 'כל הספר';
-                    const snippet = createSnippetForMarkElement(current);
-                    results.push({
-                        element: current,
-                        path,
-                        snippet
-                    });
-                }
-            }
-
-            if (results.length === 0) {
-                resultsBox.innerHTML = '<div class="search-empty">לא נמצאו תוצאות לחיפוש זה בספר.</div>';
-                updateSearchResultCount();
-                restorePositionState(posState);
-                return;
-            }
-
+            searchRunPosState = posState;
             resultsBox.innerHTML = '';
+            setSearchRunning(true);
 
-            const groupedResults = groupResultsByPath(results);
-            groupedResults.forEach(([path, pathResults]) => {
-                const group = document.createElement('div');
-                group.className = 'search-result-group';
+            // ריצה "מיושנת": הוחלפה בריצה חדשה / נעצרה, או שהתוכן התחלף (lastSearchedQuery אופס)
+            const isStale = () => runId !== searchRunId || lastSearchedQuery !== query;
+            let sliceStart = performance.now();
+            // מחזירה true כשצריך לצאת. מחזירה שליטה לדפדפן רק כשהנתח הנוכחי ארך יותר מ-14ms
+            const yieldIfNeeded = async () => {
+                if (performance.now() - sliceStart > 14) {
+                    await searchNextTurn();
+                    sliceStart = performance.now();
+                }
+                return isStale();
+            };
 
-                const pathLabel = document.createElement('div');
-                pathLabel.className = 'search-result-path';
-                pathLabel.textContent = path;
-                group.appendChild(pathLabel);
+            try {
+                // 2. ביצוע סימון (Highlight) ב-DOM
+                if (!(await highlightSearchMatches(query, yieldIfNeeded))) return;
 
-                const items = document.createElement('div');
-                items.className = 'search-result-items';
-                pathResults.forEach((result) => {
-                    const item = document.createElement('button');
-                    item.type = 'button';
-                    item.className = 'search-result-item';
-                    item.innerHTML = `
+                // 3. סריקה במעבר יחיד (Single-Pass) למציאת הכותרות והתוצאות יחד
+                const walker = document.createTreeWalker(previewArea, NodeFilter.SHOW_ELEMENT);
+                const headingStack = [];
+                const results = [];
+
+                while (walker.nextNode()) {
+                    const current = walker.currentNode;
+
+                    // עדכון היררכיית הכותרות במידה והגענו לכותרת חדשה
+                    if (/^H[1-6]$/.test(current.tagName)) {
+                        const level = parseInt(current.tagName.substring(1), 10);
+                        const text = current.textContent.trim();
+                        while (headingStack.length && headingStack[headingStack.length - 1].level >= level) {
+                            headingStack.pop();
+                        }
+                        if (text) {
+                            headingStack.push({ level, text });
+                        }
+                    }
+
+                    // שמירת התוצאה עם נתיב הכותרת המהיר שכבר מחושב בזיכרון ב-O(1)
+                    if (current.classList.contains('search-highlight')) {
+                        // מציגים רק רמות h2..h5 בנתיב - h1 כללי מדי ו-h6 יורד לפרטי פרטים מיותרים
+                        const path = headingStack.filter(item => item.level >= 2 && item.level <= 5).map(item => item.text).join(' › ') || 'כל הספר';
+                        const snippet = createSnippetForMarkElement(current);
+                        results.push({
+                            element: current,
+                            path,
+                            snippet
+                        });
+                    }
+                    if (await yieldIfNeeded()) return;
+                }
+
+                if (results.length === 0) {
+                    resultsBox.innerHTML = '<div class="search-empty">לא נמצאו תוצאות לחיפוש זה בספר.</div>';
+                    restorePositionState(posState);
+                    return;
+                }
+
+                resultsBox.innerHTML = '';
+
+                const groupedResults = groupResultsByPath(results);
+                for (const [path, pathResults] of groupedResults) {
+                    const group = document.createElement('div');
+                    group.className = 'search-result-group';
+
+                    const pathLabel = document.createElement('div');
+                    pathLabel.className = 'search-result-path';
+                    pathLabel.textContent = path;
+                    group.appendChild(pathLabel);
+
+                    const items = document.createElement('div');
+                    items.className = 'search-result-items';
+                    pathResults.forEach((result) => {
+                        const item = document.createElement('button');
+                        item.type = 'button';
+                        item.className = 'search-result-item';
+                        item.innerHTML = `
                         <div class="search-result-snippet">${result.snippet}</div>
                     `;
-                    result.itemEl = item;
-                    const resultIndex = currentSearchResults.length;
-                    currentSearchResults.push(result);
-                    item.addEventListener('click', () => {
-                        setActiveSearchResult(resultIndex);
+                        result.itemEl = item;
+                        const resultIndex = currentSearchResults.length;
+                        currentSearchResults.push(result);
+                        item.addEventListener('click', () => {
+                            setActiveSearchResult(resultIndex);
+                        });
+                        items.appendChild(item);
                     });
-                    items.appendChild(item);
-                });
 
-                group.appendChild(items);
-                resultsBox.appendChild(group);
-            });
+                    group.appendChild(items);
+                    resultsBox.appendChild(group);
+                    if (await yieldIfNeeded()) return;
+                }
 
-            updateSearchResultCount();
-            // סימון ההדגשות (highlightSearchMatches) מבצע החלפת innerHTML מלאה של אזור התצוגה, מה
-            // שמאפס את מיקום הגלילה - לכן משחזרים כאן את המיקום שנשמר בתחילת הפונקציה, כדי שהקלדה
-            // או מחיקה בתיבת החיפוש לעולם לא "יזיזו" את התצוגה מהעמוד שבו המשתמש נמצא כרגע
-            restorePositionState(posState);
+                // סימון ההדגשות (highlightSearchMatches) מבצע החלפת innerHTML מלאה של אזור התצוגה, מה
+                // שמאפס את מיקום הגלילה - לכן משחזרים כאן את המיקום שנשמר בתחילת הפונקציה, כדי שהקלדה
+                // או מחיקה בתיבת החיפוש לעולם לא "יזיזו" את התצוגה מהעמוד שבו המשתמש נמצא כרגע
+                restorePositionState(posState);
+            } finally {
+                // רק הריצה הנוכחית מכבה את מצב "מחפש" (ריצה שהוחלפה/נעצרה כבר טופלה במי שהחליף אותה)
+                if (runId === searchRunId) {
+                    searchRunPosState = null;
+                    setSearchRunning(false);
+                }
+            }
         }
 
         /* --- תיקון תגיות שבורות: מזהה רק תגיות HTML תקינות ומאזן פתיחה/סגירה על פני כל תוכן הספר --- 

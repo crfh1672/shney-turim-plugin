@@ -129,6 +129,9 @@ function switchTab(index) {
             
             clearTimeout(fontSizeChangeTimer);
             
+            // כל מעבר טאב מבטל חיפוש רץ ומאפס את השאילתה האחרונה (התוכן מתחלף, אז אותה שאילתה חייבת להיבדק מחדש)
+            cancelBookSearchRun();
+            lastSearchedQuery = null;
             if (activeTabIndex !== -1) {
                 const prevTab = tabs[activeTabIndex];
                 const previewAreaForReset = document.getElementById('preview-area');
@@ -378,6 +381,7 @@ const previewArea = document.getElementById('preview-area');
             // כאן במפורש, אך ורק אם הטאב שנסגר היה הטאב הפעיל (כי רק תוכן של הטאב הפעיל יכול היה
             // להיות מוצג/מסומן בחיפוש) - כדי לא לפגוע בתוצאות חיפוש שכן שייכות לטאב אחר שנשאר פעיל.
             if (wasActive) {
+                cancelBookSearchRun();
                 clearSearchHighlights();
                 currentSearchResults = [];
                 currentSearchResultIndex = -1;
@@ -916,6 +920,7 @@ const previewArea = document.getElementById('preview-area');
             document.querySelector('.overlay-scrim').classList.remove('settings-open'); // ניווט — ללא scrim
             panel.classList.add('open');
             updateNavigationPanelLayout();
+            if (currentRailTab === 'nav') requestAnimationFrame(() => updateTocCurrentHeading(true));
             if (activeTabIndex !== -1 && tabs[activeTabIndex]) {
                 tabs[activeTabIndex].isDrawerOpen = true;
                 setTabDrawerOpen(tabs[activeTabIndex].id, true);
@@ -975,6 +980,101 @@ const previewArea = document.getElementById('preview-area');
             }
         }
 
+        // === שינוי רוחב חלונית ההגדרות ע"י גרירה (#settings-panel-resize-handle) ===
+        // החלונית יושבת בצד שמאל; הידית על הקצה הימני שלה. הרוחב נשמר ב-localStorage (כמו רוחב חלונית
+        // הניווט) ומוחל דרך --settings-panel-width. לחיצה כפולה על הידית מאפסת לברירת המחדל.
+        (function initSettingsPanelResize() {
+            const SETTINGS_PANEL_MIN_WIDTH = 280;
+            const SETTINGS_PANEL_STORAGE_KEY = 'advanced_print_settings_panel_width';
+            const panel = document.querySelector('.settings-panel');
+            const handle = document.getElementById('settings-panel-resize-handle');
+            if (!panel || !handle) return;
+
+            const maxWidth = () => Math.max(SETTINGS_PANEL_MIN_WIDTH, Math.min(600, window.innerWidth - 40));
+            const clampWidth = (w) => Math.round(Math.max(SETTINGS_PANEL_MIN_WIDTH, Math.min(maxWidth(), w)));
+            const applyWidth = (w) => {
+                if (w) panel.style.setProperty('--settings-panel-width', clampWidth(w) + 'px');
+                else panel.style.removeProperty('--settings-panel-width');
+            };
+            const saveWidth = (w) => {
+                try {
+                    if (w) localStorage.setItem(SETTINGS_PANEL_STORAGE_KEY, String(w));
+                    else localStorage.removeItem(SETTINGS_PANEL_STORAGE_KEY);
+                } catch (e) { /* האחסון לא זמין - הרוחב נשאר לשיחה הנוכחית בלבד */ }
+            };
+            try {
+                const saved = parseInt(localStorage.getItem(SETTINGS_PANEL_STORAGE_KEY), 10);
+                if (saved > 0) applyWidth(saved);
+            } catch (e) { /* ignore */ }
+
+            let dragging = false;
+            let startX = 0;
+            let startWidth = 0;
+            const getClientX = (e) => (e.touches && e.touches.length ? e.touches[0].clientX
+                : (e.changedTouches && e.changedTouches.length ? e.changedTouches[0].clientX : e.clientX));
+
+            function onDown(e) {
+                if (e.type === 'mousedown' && e.button !== 0) return; // רק הכפתור הראשי
+                dragging = true;
+                handle.classList.add('dragging');
+                panel.style.transition = 'none';
+                startX = getClientX(e);
+                startWidth = panel.getBoundingClientRect().width;
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+            }
+            function onMove(e) {
+                if (!dragging) return;
+                // החלונית צמודה לשמאל המסך: גרירה ימינה מרחיבה, שמאלה מצמצמת
+                applyWidth(startWidth + (getClientX(e) - startX));
+                e.preventDefault();
+            }
+            function onUp() {
+                if (!dragging) return;
+                dragging = false;
+                handle.classList.remove('dragging');
+                panel.style.transition = '';
+                document.body.style.userSelect = '';
+                saveWidth(Math.round(panel.getBoundingClientRect().width));
+                syncAria();
+            }
+            handle.addEventListener('mousedown', onDown);
+            handle.addEventListener('touchstart', onDown, { passive: false });
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('mouseup', onUp);
+            document.addEventListener('touchend', onUp);
+            document.addEventListener('touchcancel', onUp);
+            handle.addEventListener('dblclick', () => { applyWidth(null); saveWidth(null); syncAria(); });
+            // מקלדת (separator): חצים משנים ב-16px, עם Shift ב-48px; Home מאפס לברירת המחדל.
+            // החלונית צמודה לשמאל, לכן חץ ימינה מרחיב
+            function syncAria() {
+                const w = Math.round(panel.getBoundingClientRect().width);
+                // במסך צר הרוחב בפועל (ברירת מחדל 320) עלול לחרוג מהתחום - מוודאים שהערך נשאר בתוך הטווח
+                handle.setAttribute('aria-valuemin', String(Math.min(SETTINGS_PANEL_MIN_WIDTH, w)));
+                handle.setAttribute('aria-valuemax', String(Math.max(maxWidth(), w)));
+                handle.setAttribute('aria-valuenow', String(w));
+            }
+            handle.addEventListener('keydown', (e) => {
+                if (e.ctrlKey || e.altKey || e.metaKey) return; // קיצורי דרך עם מקשי שינוי נשארים לטיפול הגלובלי
+                if (e.key === 'Home') { applyWidth(null); saveWidth(null); syncAria(); e.preventDefault(); e.stopPropagation(); return; }
+                if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+                const step = e.shiftKey ? 48 : 16;
+                const next = Math.round(panel.getBoundingClientRect().width) + (e.key === 'ArrowRight' ? step : -step);
+                applyWidth(next);
+                saveWidth(clampWidth(next));
+                syncAria();
+                e.preventDefault();
+                e.stopPropagation();
+            });
+            handle.addEventListener('focus', syncAria);
+            window.addEventListener('resize', () => {
+                const cur = panel.style.getPropertyValue('--settings-panel-width');
+                if (cur) applyWidth(parseInt(cur, 10));
+                syncAria();
+            });
+        })();
+
         const previewArea = document.getElementById('preview-area');
         let isScrollingFromTOC = false;
         let pageNavScrollUpdateTimer = null;
@@ -989,6 +1089,7 @@ const previewArea = document.getElementById('preview-area');
             previewArea.addEventListener('scroll', () => {
                 if (isScrollingFromTOC) return;
                 if (isPinned) {
+                    if (currentRailTab === 'nav') scheduleTocCurrentUpdate();
                     if (currentRailTab === 'pages' && !currentSettings.isBookView) {
                         clearTimeout(pageNavScrollUpdateTimer);
                         pageNavScrollUpdateTimer = setTimeout(() => {
@@ -1062,7 +1163,7 @@ const previewArea = document.getElementById('preview-area');
             const actualPanelWidth = Math.min(navPanelWidth, Math.max(0, availableWidth - 20));
             const pushLayout = navPanelResizeActive
                 ? mainContent.classList.contains('nav-push-mode')
-                : isOpen && isPinned && availableWidth >= actualPanelWidth + 200;
+                : isOpen && isPinned && availableWidth >= actualPanelWidth + 520; // minMainContentWidth של חלונית הניווט באוצריא
 
             panel.style.setProperty('--nav-panel-width', `${navPanelWidth}px`);
             mainContent.classList.toggle('nav-push-mode', pushLayout);
@@ -1072,7 +1173,7 @@ const previewArea = document.getElementById('preview-area');
             toggle.classList.toggle('active', isOpen);
             toggle.setAttribute('aria-expanded', String(isOpen));
             toggle.dataset.tooltip = isOpen ? 'הסתר ניווט' : 'הצג ניווט';
-            pinButton.classList.toggle('visible', isOpen && availableWidth >= 500);
+            pinButton.classList.toggle('visible', isOpen && availableWidth >= 600); // NavPanelSearch.isWide / LayoutBreakpoints.compact באוצריא
             pinButton.classList.toggle('pinned', isPinned);
             pinButton.setAttribute('aria-pressed', String(isPinned));
             pinButton.setAttribute('aria-label', isPinned ? 'בטל נעיצה' : 'נעץ את החלונית');
@@ -1143,6 +1244,8 @@ const previewArea = document.getElementById('preview-area');
             if (tab === 'nav' && navSubTab === 'pages') tab = 'pages';
             currentRailTab = tab;
             document.querySelectorAll('.drawer-icon-btn[id^="rail-"]').forEach(btn => btn.classList.remove('active'));
+            // יציאה מלשונית החיפוש באמצע חיפוש עוצרת אותו (אחרת הוא ממשיך לסרוק ולשנות את התצוגה מאחורי הקלעים)
+            if (tab !== 'search') stopBookSearch();
             document.getElementById('rail-' + tab).classList.add('active');
             document.getElementById('drawer-pane-nav').classList.toggle('active', tab === 'nav');
             document.getElementById('drawer-pane-search').classList.toggle('active', tab === 'search');
@@ -1166,6 +1269,7 @@ const previewArea = document.getElementById('preview-area');
                     document.getElementById('toc-filter').focus();
                 }
                 if (document.getElementById('toc-filter').value) filterTOC();
+                requestAnimationFrame(() => updateTocCurrentHeading(true));
             }
             requestAnimationFrame(updateFloatingTocSearch);
         }
@@ -1601,7 +1705,6 @@ const previewArea = document.getElementById('preview-area');
            currentSettings.customShortcuts (מיפוי actionId -> קיצור). מוצג בהגדרות >
            קיצורי מקשים, ונבדק בפועל בתוך מאזין המקלדת הראשי (ראו matchesShortcutAction). */
         const SHORTCUT_DEFS = [
-            { id: 'fullscreen', label: 'מסך מלא', combo: { ctrl: true, shift: true, key: 'M' } },
             { id: 'searchPanel', label: 'פתיחת חיפוש בספר', combo: { ctrl: true, shift: true, key: 'F' } },
             { id: 'headingsPanel', label: 'פתיחת ניווט כותרות', combo: { ctrl: true, shift: true, key: 'L' } },
             { id: 'pagesPanel', label: 'פתיחת לשונית דפים', combo: { ctrl: true, shift: true, key: 'K' } },

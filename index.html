@@ -136,9 +136,6 @@
                     <i class="ui-icon" data-fluent-icon="arrow_autofit_width" aria-hidden="true"></i>
                 </button>
             </div>
-            <button class="icon-btn" id="btn-toolbar-fullscreen" onclick="toggleFullscreen()" data-tooltip="מסך מלא" aria-label="מסך מלא">
-                <i class="ui-icon" data-fluent-icon="full_screen_maximize" aria-hidden="true"></i>
-            </button>
             <div class="popover-anchor" id="more-menu-anchor">
                 <button class="icon-btn" id="btn-more" onclick="toggleMoreMenu(event)" data-tooltip="עוד פעולות"
                         aria-haspopup="menu" aria-expanded="false">
@@ -174,6 +171,8 @@
 
     <!-- פאנל הגדרות שמאלי -->
         <div class="settings-panel">
+            <div id="settings-panel-resize-handle" class="pane-resize-handle" data-side="left" role="separator" aria-orientation="vertical" aria-label="שינוי רוחב חלונית ההגדרות (חצים ימינה ושמאלה)" tabindex="0"></div>
+            <div class="pane-clip">
             <div class="settings-panel-header">
                 <p class="settings-panel-kicker">הגדרות</p>
                 <button type="button" class="settings-panel-close-btn" onclick="closeSettings()" data-tooltip="סגור הגדרות">
@@ -801,13 +800,14 @@
                 </div><!-- /settings-pane-shortcuts -->
 
             </div>
+            </div>
         </div>
 
     <div class="main-content">
         <div class="nav-panel-scrim" id="nav-panel-scrim" onclick="closeDrawer()" aria-hidden="true"></div>
         <div class="nav-panel-corner" id="nav-panel-corner" aria-hidden="true"></div>
         <div class="overlay-panel" id="nav-panel">
-            <div class="nav-panel-resize-handle" id="nav-panel-resize-handle" title="גרור כדי לשנות את רוחב חלונית הניווט"></div>
+            <div class="pane-resize-handle" id="nav-panel-resize-handle"></div>
             <div class="drawer-icon-rail">
                 <button type="button" class="drawer-icon-btn active" id="rail-nav" onclick="switchRailTab('nav')" data-tooltip="ניווט">
                     <i class="ui-icon otzaria-icon drawer-tab-icon-regular" data-otzaria-icon="list" aria-hidden="true"></i>
@@ -859,6 +859,11 @@
                 </div>
 
                 <div class="drawer-pane" id="drawer-pane-search">
+                    <!-- פס התקדמות לא-מוגדר בזמן חיפוש (LinearProgressIndicator minHeight 4 באוצריא) -->
+                    <div class="search-progress" id="search-progress" role="progressbar" aria-label="מחפש בספר" hidden>
+                        <div class="search-progress-bar"></div>
+                        <div class="search-progress-bar search-progress-bar-secondary"></div>
+                    </div>
                     <div class="drawer-search active" id="drawer-search-book">
                         <div class="drawer-search-field">
                             <input type="text" id="book-search" placeholder="חפש כאן..." oninput="handleDrawerSearch()" onkeydown="handleBookSearchKeydown(event)" data-tooltip="חיפוש בתוכן הספר. Enter לתוצאה הבאה, Shift+Enter לקודמת">
@@ -871,6 +876,9 @@
                     <div class="search-results-panel">
                         <div class="search-results-title">תוצאות חיפוש בספר</div>
                         <div class="search-results-nav">
+                            <button type="button" id="stop-search" onclick="stopBookSearch()" hidden data-tooltip="עצור את החיפוש" aria-label="עצור את החיפוש">
+                                <i class="ui-icon" data-fluent-icon="stop" aria-hidden="true"></i>
+                            </button>
                             <button type="button" id="prev-search-result" onclick="prevSearchResult()" data-tooltip="תוצאה קודמת (Shift+Enter)">
                                 <i class="ui-icon" data-fluent-icon="chevron_up" aria-hidden="true"></i>
                             </button>
@@ -931,8 +939,10 @@
              קישורים (הפניות/תרגומים - לא מפרשים), והערות אישיות. לשונית ההערות היא תצוגה-בלבד
              (ראו הערה מפורטת ב-renderCommentaryNotesBody) - אין באוצריא כרגע API לכתיבת הערות
              חדשות מתוך תוסף, ולכן לא נוספה כאן שום אפשרות ליצור/לערוך הערה. -->
+        <div class="commentary-scrim" id="commentary-scrim" onclick="toggleCommentaryPanel()" aria-hidden="true"></div>
         <div id="commentary-panel" hidden inert aria-hidden="true">
-            <div id="commentary-panel-resize-handle" title="גרור כדי לשנות את רוחב החלונית"></div>
+            <div id="commentary-panel-resize-handle" class="pane-resize-handle" data-side="left"></div>
+            <div class="pane-clip">
             <div class="commentary-panel-header">
                 <div class="commentary-tabs-row">
                     <button type="button" class="commentary-tab-btn active" data-subtab="commentary" onclick="switchCommentarySubTab('commentary')" data-tooltip="מפרשים" aria-label="מפרשים">
@@ -989,6 +999,7 @@
             </div>
             <div class="commentary-panel-body" id="commentary-panel-body">
                 <div class="commentary-panel-status">יש לטעון ספר כדי לראות מפרשים כאן.</div>
+            </div>
             </div>
         </div>
     </div>
@@ -1088,5 +1099,6 @@
     <script src="js/commentary-nav-split.js"></script>
     <script src="js/preview-scrollbar.js"></script>
     <script src="js/scrollbar-behavior.js"></script>
+    <script src="js/responsive-layout.js"></script>
 </body>
 </html>
