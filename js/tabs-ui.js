@@ -1049,12 +1049,14 @@ const previewArea = document.getElementById('preview-area');
             // החלונית צמודה לשמאל, לכן חץ ימינה מרחיב
             function syncAria() {
                 const w = Math.round(panel.getBoundingClientRect().width);
-                handle.setAttribute('aria-valuemin', String(SETTINGS_PANEL_MIN_WIDTH));
-                handle.setAttribute('aria-valuemax', String(maxWidth()));
+                // במסך צר הרוחב בפועל (ברירת מחדל 320) עלול לחרוג מהתחום - מוודאים שהערך נשאר בתוך הטווח
+                handle.setAttribute('aria-valuemin', String(Math.min(SETTINGS_PANEL_MIN_WIDTH, w)));
+                handle.setAttribute('aria-valuemax', String(Math.max(maxWidth(), w)));
                 handle.setAttribute('aria-valuenow', String(w));
             }
             handle.addEventListener('keydown', (e) => {
-                if (e.key === 'Home') { applyWidth(null); saveWidth(null); syncAria(); e.preventDefault(); return; }
+                if (e.ctrlKey || e.altKey || e.metaKey) return; // קיצורי דרך עם מקשי שינוי נשארים לטיפול הגלובלי
+                if (e.key === 'Home') { applyWidth(null); saveWidth(null); syncAria(); e.preventDefault(); e.stopPropagation(); return; }
                 if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
                 const step = e.shiftKey ? 48 : 16;
                 const next = Math.round(panel.getBoundingClientRect().width) + (e.key === 'ArrowRight' ? step : -step);
@@ -1062,11 +1064,13 @@ const previewArea = document.getElementById('preview-area');
                 saveWidth(clampWidth(next));
                 syncAria();
                 e.preventDefault();
+                e.stopPropagation();
             });
             handle.addEventListener('focus', syncAria);
             window.addEventListener('resize', () => {
                 const cur = panel.style.getPropertyValue('--settings-panel-width');
                 if (cur) applyWidth(parseInt(cur, 10));
+                syncAria();
             });
         })();
 
