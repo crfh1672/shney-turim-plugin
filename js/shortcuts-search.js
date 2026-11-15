@@ -432,7 +432,7 @@ let searchDebounceTimer = null;
         // מסמן פריט כנוכחי (או מנקה כשאין). הפריט הגלוי המייצג = הפריט עצמו, או ההורה המכווץ הגבוה ביותר
         function setTocCurrentItem(item, reveal) {
             if (tocCurrentItem) { tocCurrentItem.classList.remove('active-item'); tocCurrentItem.removeAttribute('aria-current'); }
-            if (tocCurrentRep) tocCurrentRep.classList.remove('active-parent');
+            if (tocCurrentRep) { tocCurrentRep.classList.remove('active-parent'); tocCurrentRep.removeAttribute('aria-current'); }
             tocCurrentItem = (item && item.isConnected) ? item : null;
             tocCurrentRep = null;
             if (!tocCurrentItem) return;
@@ -447,7 +447,9 @@ let searchDebounceTimer = null;
                 tocCurrentItem.classList.add('active-item');
                 tocCurrentItem.setAttribute('aria-current', 'true');
             } else {
+                // הפריט עצמו מוסתר - סימון "נוכחי" לטכנולוגיות מסייעות עובר להורה הגלוי
                 rep.classList.add('active-parent');
+                rep.setAttribute('aria-current', 'true');
                 tocCurrentRep = rep;
             }
             if (!reveal || rep.offsetParent === null) return;
@@ -472,6 +474,9 @@ let searchDebounceTimer = null;
                 if (isNavTocVisible()) updateTocCurrentHeading(true);
             }, 140);
         }
+
+        // שינוי גודל חלון משנה את קו הייחוס (אמצע אזור התצוגה) - מחשבים מחדש כשהרשימה גלויה
+        window.addEventListener('resize', scheduleTocCurrentUpdate);
 
         function createTocToggle(wrapper) {
             const toggleBtn = document.createElement('button');
