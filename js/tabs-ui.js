@@ -138,6 +138,7 @@ function switchTab(index) {
                 // עצמו - dataset.searchBaseHtml נשאר דבוק ל-#preview-area (תכונה על האלמנט עצמו, לא
                 // נמחקת בהחלפת innerHTML/childNodes) - בלעדי האיפוס הזה חיפוש בטאב החדש היה עלול
                 // "לשחזר" בטעות את תוכן הטאב הישן ולחפש רק בו לנצח.
+                cancelBookSearchRun();
                 clearSearchHighlights();
                 delete previewAreaForReset.dataset.searchBaseHtml;
                 const bookSearchInput = document.getElementById('book-search');
@@ -378,6 +379,7 @@ const previewArea = document.getElementById('preview-area');
             // כאן במפורש, אך ורק אם הטאב שנסגר היה הטאב הפעיל (כי רק תוכן של הטאב הפעיל יכול היה
             // להיות מוצג/מסומן בחיפוש) - כדי לא לפגוע בתוצאות חיפוש שכן שייכות לטאב אחר שנשאר פעיל.
             if (wasActive) {
+                cancelBookSearchRun();
                 clearSearchHighlights();
                 currentSearchResults = [];
                 currentSearchResultIndex = -1;

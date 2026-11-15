@@ -1371,7 +1371,7 @@
             background: var(--color-nav-panel-background);
             border-inline-start: 1px solid var(--color-border-subtle);
             border-radius: 0;
-            overflow: hidden;
+            overflow: visible; /* ידית הגרירה חורגת 20px מחוץ לקצה הפנימי */
             background-clip: padding-box;
             box-shadow: -2px 0 10px rgba(0, 0, 0, 0.12);
             display: flex;
@@ -2135,34 +2135,81 @@
             display: flex;
         }
 
+        /* ידית שינוי הרוחב - כמו ResizableDragHandle באוצריא: שטח לחיצה של 24px (קומפקטי 18px) שרק
+           4px ממנו בתוך החלונית והשאר חורג החוצה, וה"אחיזה" (גלולה) יושבת בדיוק על הקצה הפנימי של
+           החלונית. במצב מנוחה אין קו (showDivider=false); בריחוף האחיזה מתעבה ונצבעת חצי-חצי
+           בצבע הראשי, ובגרירה מתעבה עוד ומקבלת הילה. כל המעברים 150ms easeOut, ובלי מעבר בגרירה. */
         .nav-panel-resize-handle {
+            --handle-hit: 24px;
+            --handle-inner: 4px;
+            --grip-x: calc(var(--handle-hit) - var(--handle-inner));
             position: absolute;
             z-index: 2;
             top: 0;
             bottom: 0;
-            left: 0;
-            width: 12px;
-            cursor: ew-resize;
+            left: calc(var(--handle-inner) - var(--handle-hit));
+            width: var(--handle-hit);
+            cursor: col-resize;
             touch-action: none;
         }
 
+        body.app-compact-density .nav-panel-resize-handle {
+            --handle-hit: 18px;
+        }
+
+        .nav-panel-resize-handle::before,
         .nav-panel-resize-handle::after {
             content: "";
             position: absolute;
             top: 50%;
-            left: 4px;
-            width: 3px;
-            height: 42px;
-            border-radius: var(--radius-pill);
-            background: var(--color-outline);
-            opacity: 0;
-            transform: translateY(-50%);
-            transition: opacity 0.15s;
+            left: var(--grip-x);
+            transform: translate(-50%, -50%);
+            border-radius: 8px;
+            pointer-events: none;
+            transition: width 0.15s ease-out, height 0.15s ease-out, background-color 0.15s ease-out, opacity 0.15s ease-out;
         }
 
-        .nav-panel-resize-handle:hover::after,
+        /* האחיזה (הגלולה) */
+        .nav-panel-resize-handle::after {
+            width: 3px;
+            height: 24px;
+            opacity: 0;
+            background: color-mix(in srgb, var(--color-outline) 55%, transparent);
+        }
+
+        /* ההילה שמאחורי האחיזה */
+        .nav-panel-resize-handle::before {
+            width: 13px;
+            height: 24px;
+            background: transparent;
+        }
+
+        .nav-panel-resize-handle:hover::after {
+            width: 4px;
+            height: 28px;
+            opacity: 1;
+            background: color-mix(in srgb, var(--color-primary) 50%, color-mix(in srgb, var(--color-outline) 55%, transparent));
+        }
+
+        .nav-panel-resize-handle:hover::before {
+            width: 14px;
+            height: 28px;
+            background: color-mix(in srgb, var(--color-primary) 11%, transparent);
+        }
+
         .nav-panel-resize-handle.dragging::after {
-            opacity: 0.55;
+            width: 5px;
+            height: 32px;
+            opacity: 1;
+            background: color-mix(in srgb, var(--color-primary) 95%, transparent);
+            transition: none;
+        }
+
+        .nav-panel-resize-handle.dragging::before {
+            width: 15px;
+            height: 32px;
+            background: color-mix(in srgb, var(--color-primary) 22%, transparent);
+            transition: none;
         }
 
         .search-results-panel {
@@ -4198,3 +4245,87 @@ body.app-compact-density .toolbar-main .nav-heading-btn .ui-icon {
     height: 18px;
     font-size: 18px;
 }
+
+
+/* ==========================================================================================
+   התאמת מגירת הניווט (כותרות / חיפוש / דפים) לחלונית הניווט של אוצריא
+   ========================================================================================== */
+
+/* שורת כותרת בתוכן העניינים = NavTreeTile.heading: 14px, משקל לפי רמה (700/600/500), ריפוד
+   8px לגובה ו-12px לצדדים + 12px להזחה לכל רמה, גובה מינימלי 42px, ושורה נבחרת ברקע secondaryContainer */
+#toc-list .toc-item {
+    box-sizing: border-box;
+    min-height: 42px;
+    padding-block: 8px;
+    padding-inline-end: 12px;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+}
+#toc-list .toc-item[data-level="1"] { font-weight: 700; }
+#toc-list .toc-item[data-level="2"] { font-weight: 600; }
+#toc-list .toc-item:hover { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
+#toc-list .toc-item.active-item {
+    background: var(--color-secondary-container);
+    color: var(--color-on-secondary-container);
+    font-weight: 700;
+}
+
+/* כפתור ההרחבה בסוף השורה (IconButton קומפקטי 32px, אייקון 16px). פתוח = חץ למטה, סגור = חץ שפונה
+   לכיוון הקריאה (שמאלה ב-RTL); הסיבוב 250ms easeInOut */
+#toc-list .toc-toggle {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    margin: 0;
+    margin-inline-start: -4px;
+    border-radius: var(--radius-pill);
+    color: var(--color-on-surface-variant);
+    transform: rotate(90deg);
+    transition: transform 0.25s ease-in-out, background-color 0.15s;
+}
+#toc-list .toc-item-wrapper.expanded > .toc-item .toc-toggle { transform: none; }
+#toc-list .toc-toggle:hover {
+    background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
+    color: var(--color-on-surface-variant);
+}
+#toc-list .toc-item.active-item .toc-toggle { color: var(--color-on-secondary-container); }
+@media (prefers-reduced-motion: reduce) {
+    #toc-list .toc-toggle { transition: none; }
+}
+
+/* פס התקדמות בזמן חיפוש: LinearProgressIndicator ללא ערך (minHeight 4), בראש לשונית החיפוש */
+.search-progress[hidden], .search-results-nav button[hidden] { display: none; }
+.search-progress {
+    position: relative;
+    flex: 0 0 4px;
+    height: 4px;
+    overflow: hidden;
+    background: var(--color-secondary-container);
+}
+.search-progress-bar {
+    position: absolute;
+    inset-block: 0;
+    width: 100%;
+    background: var(--color-primary);
+    transform-origin: 0 50%;
+    animation: search-progress-primary 2s infinite linear;
+}
+.search-progress-bar-secondary { animation-name: search-progress-secondary; }
+@keyframes search-progress-primary {
+    0%   { left: -35%; width: 35%; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+    60%  { left: 100%; width: 100%; }
+    100% { left: 100%; width: 100%; }
+}
+@keyframes search-progress-secondary {
+    0%   { left: -200%; width: 100%; }
+    60%  { left: -200%; width: 100%; animation-timing-function: cubic-bezier(0.1, 0.8, 0.3, 1); }
+    100% { left: 107%; width: 8%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .search-progress-bar { animation-duration: 6s; }
+}
+
+/* בזמן חיפוש מוצגת שורת התוצאות עם "מחפש..." וכפתור עצירה בתחילת הכפתורים */
+#drawer-pane-search.is-searching .search-results-panel { display: flex; }
+#stop-search .ui-icon { width: 18px; height: 18px; font-size: 18px; }
