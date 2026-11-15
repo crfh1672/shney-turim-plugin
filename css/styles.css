@@ -4240,6 +4240,20 @@ body.app-compact-density .toolbar-main .nav-heading-btn .ui-icon {
 #toc-list .toc-item[data-level="1"] { font-weight: 700; }
 #toc-list .toc-item[data-level="2"] { font-weight: 600; }
 #toc-list .toc-item:hover { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
+/* הכותרת הנוכחית: רקע מודגש ומשקל 700 (כמו שורה נבחרת ב-NavTreeTile). כשהיא בתוך ענף מכווץ -
+   ההורה הגלוי מקבל הדגשה עדינה יותר */
+#toc-list .toc-item.active-item {
+    background: var(--color-secondary-container);
+    color: var(--color-on-secondary-container);
+    font-weight: 700;
+}
+#toc-list .toc-item.active-parent {
+    background: color-mix(in srgb, var(--color-secondary-container) 50%, transparent);
+}
+#toc-list .toc-item.active-item:hover,
+#toc-list .toc-item.active-parent:hover {
+    background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-secondary-container));
+}
 
 /* כפתור ההרחבה בסוף השורה (IconButton קומפקטי 32px, אייקון 16px). פתוח = חץ למטה, סגור = חץ שפונה
    לכיוון הקריאה (שמאלה ב-RTL); הסיבוב 250ms easeInOut */

@@ -920,6 +920,7 @@ const previewArea = document.getElementById('preview-area');
             document.querySelector('.overlay-scrim').classList.remove('settings-open'); // ניווט — ללא scrim
             panel.classList.add('open');
             updateNavigationPanelLayout();
+            if (currentRailTab === 'nav') requestAnimationFrame(() => updateTocCurrentHeading(true));
             if (activeTabIndex !== -1 && tabs[activeTabIndex]) {
                 tabs[activeTabIndex].isDrawerOpen = true;
                 setTabDrawerOpen(tabs[activeTabIndex].id, true);
@@ -1088,6 +1089,7 @@ const previewArea = document.getElementById('preview-area');
             previewArea.addEventListener('scroll', () => {
                 if (isScrollingFromTOC) return;
                 if (isPinned) {
+                    if (currentRailTab === 'nav') scheduleTocCurrentUpdate();
                     if (currentRailTab === 'pages' && !currentSettings.isBookView) {
                         clearTimeout(pageNavScrollUpdateTimer);
                         pageNavScrollUpdateTimer = setTimeout(() => {
@@ -1267,6 +1269,7 @@ const previewArea = document.getElementById('preview-area');
                     document.getElementById('toc-filter').focus();
                 }
                 if (document.getElementById('toc-filter').value) filterTOC();
+                requestAnimationFrame(() => updateTocCurrentHeading(true));
             }
             requestAnimationFrame(updateFloatingTocSearch);
         }
