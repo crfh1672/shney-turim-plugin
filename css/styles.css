@@ -334,6 +334,9 @@
                 transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
                 visibility 0s;
         }
+        #commentary-panel[hidden] {
+            display: none !important;
+        }
 
         /* ידית גרירה במראה של ידית חלונית הניווט, בצד הפונה לתוכן הראשי. */
         #commentary-panel-resize-handle {
@@ -805,6 +808,48 @@
             border-radius: 50%;
             animation: commentary-panel-spin 0.8s linear infinite;
         }
+        /* Links use Otzaria's AppFutureBuilder -> LoadingIndicator(): centered 36px Material spinner. */
+        .commentary-panel-loading-indicator {
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 100%;
+            padding: 16px;
+        }
+        .commentary-panel-loading-indicator .preview-loading-spinner {
+            width: 36px;
+            height: 36px;
+            flex: 0 0 36px;
+        }
+        /* CommentaryListBase._buildSkeletonLoading(): four groups, each with a title and three text lines. */
+        .commentary-loading-skeleton {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+        .commentary-loading-skeleton-group {
+            box-sizing: border-box;
+            padding: 12px 16px;
+        }
+        .commentary-loading-skeleton-title {
+            width: 30%;
+            height: 20px;
+            margin-bottom: 12px;
+            border-radius: var(--app-radius, 8px);
+            background: var(--color-surface-container-highest);
+        }
+        .commentary-loading-skeleton-lines {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .commentary-loading-skeleton-line {
+            height: 16px;
+            border-radius: var(--app-radius, 8px);
+            background: var(--color-surface-container-highest);
+        }
         @keyframes commentary-panel-spin {
             to { transform: rotate(360deg); }
         }
@@ -1247,7 +1292,7 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border: 0;
+            border: 1px solid var(--color-outline-variant);
             border-radius: 50%;
             background: var(--color-nav-panel-background);
             color: var(--color-on-surface-variant);
@@ -1507,10 +1552,10 @@
             left: 0; 
             right: auto;
             width: 300px;
-            background: var(--color-surface-container-highest);
-            border-radius: var(--radius-md);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            border: 1px solid var(--color-border-subtle);
+            background: var(--color-surface-container-high);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000) 22%, transparent);
+            border: 1px solid var(--color-outline-variant);
             padding: 8px 0;
             z-index: 300;
             opacity: 0;
@@ -1537,7 +1582,7 @@
             transition: background 0.15s;
         }
         
-        .popover-item:hover { background: var(--color-primary-subtle); }
+        .popover-item:hover { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
 
         .view-mode-menu {
             left: 0;
@@ -1546,9 +1591,9 @@
             width: 168px;
             max-width: calc(100vw - 16px);
             background: var(--color-surface-container-high);
-            border: 0;
+            border: 1px solid var(--color-outline-variant);
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000) 22%, transparent);
             transform-origin: top left;
         }
         .view-mode-menu.opens-left { transform-origin: top right; }
@@ -1939,9 +1984,9 @@
             max-width: calc(100vw - 16px);
             padding: 8px 0;
             background: var(--color-surface-container-high);
-            border: 0;
+            border: 1px solid var(--color-outline-variant);
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000) 22%, transparent);
             transform-origin: top left;
         }
         .more-menu-item {
@@ -2544,7 +2589,9 @@
             inset-inline-end: 24px;
             background: var(--color-nav-panel-background);
             color: var(--color-on-surface-variant);
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+            border: 1px solid var(--color-outline-variant);
+            border-radius: 50%;
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000) 22%, transparent);
         }
 
         .drawer-search-toggle-floating.visible {
@@ -3508,18 +3555,17 @@
             position: fixed;
             background-color: var(--color-surface-container-high);
             color: var(--color-on-surface);
-            padding: 8px 16px;
+            padding: 4px 8px;
             border: 1px solid var(--color-outline-variant);
             border-radius: var(--app-radius, 8px);
-            font-size: 12px;
-            line-height: 16px;
+            font-size: 0.875rem;
             font-family: inherit;
             pointer-events: none;
             z-index: 10000;
             opacity: 0;
             transform: scale(0.95);
-            transition: opacity 0.15s ease, transform 0.15s ease;
-            box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000) 22%, transparent);
+            transition: opacity 0.1s ease, transform 0.1s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
             white-space: nowrap;
         }
         .custom-tooltip.visible {

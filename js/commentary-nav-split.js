@@ -198,6 +198,56 @@
 
     // --- הצגה/הסתרה של חלונית המפרשים (ידית בקצה התצוגה וכפתור סגירה בחלונית) ---
 
+    function setCommentaryPanelOpen(panelEl, isOpen) {
+        if (!panelEl) return;
+
+        if (panelEl.__commentaryPanelCloseTimer) {
+            clearTimeout(panelEl.__commentaryPanelCloseTimer);
+            panelEl.__commentaryPanelCloseTimer = null;
+        }
+        if (panelEl.__commentaryPanelCloseHandler) {
+            panelEl.removeEventListener('transitionend', panelEl.__commentaryPanelCloseHandler);
+            panelEl.__commentaryPanelCloseHandler = null;
+        }
+
+        if (isOpen) {
+            panelEl.hidden = false;
+            panelEl.inert = false;
+            panelEl.removeAttribute('aria-hidden');
+            void panelEl.offsetWidth;
+            panelEl.classList.add('open');
+            return;
+        }
+
+        panelEl.inert = true;
+        panelEl.setAttribute('aria-hidden', 'true');
+        panelEl.classList.remove('open');
+
+        const finishClose = () => {
+            if (!panelEl.classList.contains('open')) panelEl.hidden = true;
+        };
+        const onTransitionEnd = event => {
+            if (event.target !== panelEl || event.propertyName !== 'flex-basis') return;
+            panelEl.removeEventListener('transitionend', onTransitionEnd);
+            panelEl.__commentaryPanelCloseHandler = null;
+            if (panelEl.__commentaryPanelCloseTimer) {
+                clearTimeout(panelEl.__commentaryPanelCloseTimer);
+                panelEl.__commentaryPanelCloseTimer = null;
+            }
+            finishClose();
+        };
+        panelEl.__commentaryPanelCloseHandler = onTransitionEnd;
+        panelEl.addEventListener('transitionend', onTransitionEnd);
+        panelEl.__commentaryPanelCloseTimer = setTimeout(() => {
+            if (panelEl.__commentaryPanelCloseHandler) {
+                panelEl.removeEventListener('transitionend', panelEl.__commentaryPanelCloseHandler);
+                panelEl.__commentaryPanelCloseHandler = null;
+            }
+            panelEl.__commentaryPanelCloseTimer = null;
+            finishClose();
+        }, 350);
+    }
+
     function toggleCommentaryPanel() {
         const tab = getActiveCommentaryTab();
         const panelEl = document.getElementById('commentary-panel');
@@ -205,7 +255,7 @@
         if (!tab || !panelEl) return; // אין ספר טעון - שום דבר לעשות
 
         tab.commentaryPanelOpen = !tab.commentaryPanelOpen;
-        panelEl.classList.toggle('open', tab.commentaryPanelOpen);
+        setCommentaryPanelOpen(panelEl, tab.commentaryPanelOpen);
         if (btn) btn.classList.toggle('active', tab.commentaryPanelOpen);
         if (tab.commentaryPanelOpen) syncCommentarySubTabButtonsUI(tab);
 
@@ -230,7 +280,7 @@
         if (!panelEl) return;
         const tab = getActiveCommentaryTab();
         const isOpen = Boolean(tab && tab.commentaryPanelOpen);
-        panelEl.classList.toggle('open', isOpen);
+        setCommentaryPanelOpen(panelEl, isOpen);
         if (btn) {
             btn.classList.toggle('active', isOpen);
             btn.disabled = !tab; // כמו כפתור ההדפסה - לא רלוונטי בטאב "ספר חדש"/ללא טאב פעיל
@@ -1522,9 +1572,49 @@
         body.replaceChildren(status);
     }
 
+    function renderCommentaryPanelSpinner(body, label) {
+        const status = document.createElement('div');
+        status.className = 'commentary-panel-loading-indicator';
+        status.setAttribute('role', 'status');
+        status.setAttribute('aria-label', label);
+        status.innerHTML = '<svg class="preview-loading-spinner" viewBox="0 0 50 50" aria-hidden="true">' +
+            '<circle class="preview-loading-path" cx="25" cy="25" r="20" fill="none" stroke-width="4" stroke-linecap="round"></circle>' +
+            '</svg>';
+        body.replaceChildren(status);
+    }
+
+    function renderCommentarySkeletonLoading(body) {
+        const root = document.createElement('div');
+        root.className = 'commentary-loading-skeleton';
+        root.setAttribute('role', 'status');
+        root.setAttribute('aria-label', 'טוען תוכן מפרשים');
+
+        for (let index = 0; index < 4; index++) {
+            const group = document.createElement('div');
+            group.className = 'commentary-loading-skeleton-group';
+
+            const titleLine = document.createElement('div');
+            titleLine.className = 'commentary-loading-skeleton-title';
+            group.appendChild(titleLine);
+
+            const textLines = document.createElement('div');
+            textLines.className = 'commentary-loading-skeleton-lines';
+            [95, 92, 88].forEach(width => {
+                const line = document.createElement('div');
+                line.className = 'commentary-loading-skeleton-line';
+                line.style.width = width + '%';
+                textLines.appendChild(line);
+            });
+            group.appendChild(textLines);
+            root.appendChild(group);
+        }
+
+        body.replaceChildren(root);
+    }
+
     function renderCommentaryMefarshimBody(tab, body) {
         if (tab.commentaryLoading) {
-            renderCommentaryPanelStatus(body, 'טוען רשימת מפרשים...', true);
+            renderCommentaryPanelSpinner(body, 'טוען רשימת מפרשים');
             return;
         }
         if (tab.commentaryLoadError) {
@@ -1536,7 +1626,7 @@
             return;
         }
         if (tab.commentaryContentLoading) {
-            renderCommentaryPanelStatus(body, 'טוען תוכן מפרשים...', true);
+            renderCommentarySkeletonLoading(body);
             return;
         }
         const entries = tab.commentaryEntries || [];
@@ -1569,7 +1659,7 @@
     // הטווח המוצג. כל קישור מוצג כפריט נפרד עם כותרת והפניה, כמו ברשימת הקישורים באוצריא.
     function renderCommentaryLinksBody(tab, body) {
         if (tab.linksContentLoading) {
-            renderCommentaryPanelStatus(body, 'טוען קישורים...', true);
+            renderCommentaryPanelSpinner(body, 'טוען קישורים');
             return;
         }
         if (tab.linksLoadError) {
