@@ -295,40 +295,9 @@
             border: 1px solid var(--color-outline-variant);
             border-radius: var(--app-radius, 8px);
             background: var(--commentary-panel-bg-color);
-            overflow: hidden;
+            overflow: visible; /* ידית הגרירה חורגת החוצה; חיתוך הפינות נעשה ב-.pane-clip */
         }
         #commentary-panel.open { display: flex; }
-
-        /* ידית גרירה במראה של ידית חלונית הניווט, בצד הפונה לתוכן הראשי. */
-        #commentary-panel-resize-handle {
-            position: absolute;
-            z-index: 20;
-            top: 0;
-            bottom: 0;
-            inset-inline-start: 0;
-            width: 12px;
-            cursor: ew-resize;
-            touch-action: none;
-        }
-
-        #commentary-panel-resize-handle::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            right: 4px;
-            width: 3px;
-            height: 42px;
-            border-radius: var(--radius-pill);
-            background: var(--color-outline);
-            opacity: 0;
-            transform: translateY(-50%);
-            transition: opacity 0.15s;
-        }
-
-        #commentary-panel-resize-handle:hover::after,
-        #commentary-panel-resize-handle.dragging::after {
-            opacity: 0.55;
-        }
 
         /* שורה עליונה של החלונית - לשוניות (הערות/קישורים/מפרשים, בדיוק כמו בתמונות) יחד עם
            כפתור הסגירה (X) באותה שורה ממש. אין כאן יותר כותרת טקסט קבועה ("מפרשים וקישורים") -
@@ -1412,10 +1381,12 @@
         .settings-panel {
             position: absolute;
             top: 10px; bottom: 10px; left: 10px;
-            width: 320px;
+            box-sizing: border-box;
+            width: var(--settings-panel-width, 320px);
+            max-width: calc(100vw - 20px);
             background: var(--color-surface-container);
             border-radius: var(--radius-lg);
-            overflow: hidden;
+            overflow: visible; /* ידית הגרירה חורגת החוצה */
             background-clip: padding-box;
             box-shadow: 4px 0 32px rgba(0, 0, 0, 0.22);
             display: flex;
@@ -2139,7 +2110,7 @@
            4px ממנו בתוך החלונית והשאר חורג החוצה, וה"אחיזה" (גלולה) יושבת בדיוק על הקצה הפנימי של
            החלונית. במצב מנוחה אין קו (showDivider=false); בריחוף האחיזה מתעבה ונצבעת חצי-חצי
            בצבע הראשי, ובגרירה מתעבה עוד ומקבלת הילה. כל המעברים 150ms easeOut, ובלי מעבר בגרירה. */
-        .nav-panel-resize-handle {
+        .pane-resize-handle {
             --handle-hit: 24px;
             --handle-inner: 4px;
             --grip-x: calc(var(--handle-hit) - var(--handle-inner));
@@ -2153,12 +2124,12 @@
             touch-action: none;
         }
 
-        body.app-compact-density .nav-panel-resize-handle {
+        body.app-compact-density .pane-resize-handle {
             --handle-hit: 18px;
         }
 
-        .nav-panel-resize-handle::before,
-        .nav-panel-resize-handle::after {
+        .pane-resize-handle::before,
+        .pane-resize-handle::after {
             content: "";
             position: absolute;
             top: 50%;
@@ -2170,7 +2141,7 @@
         }
 
         /* האחיזה (הגלולה) */
-        .nav-panel-resize-handle::after {
+        .pane-resize-handle::after {
             width: 3px;
             height: 24px;
             opacity: 0;
@@ -2178,26 +2149,26 @@
         }
 
         /* ההילה שמאחורי האחיזה */
-        .nav-panel-resize-handle::before {
+        .pane-resize-handle::before {
             width: 13px;
             height: 24px;
             background: transparent;
         }
 
-        .nav-panel-resize-handle:hover::after {
+        .pane-resize-handle:hover::after {
             width: 4px;
             height: 28px;
             opacity: 1;
             background: color-mix(in srgb, var(--color-primary) 50%, color-mix(in srgb, var(--color-outline) 55%, transparent));
         }
 
-        .nav-panel-resize-handle:hover::before {
+        .pane-resize-handle:hover::before {
             width: 14px;
             height: 28px;
             background: color-mix(in srgb, var(--color-primary) 11%, transparent);
         }
 
-        .nav-panel-resize-handle.dragging::after {
+        .pane-resize-handle.dragging::after {
             width: 5px;
             height: 32px;
             opacity: 1;
@@ -2205,11 +2176,24 @@
             transition: none;
         }
 
-        .nav-panel-resize-handle.dragging::before {
+        .pane-resize-handle.dragging::before {
             width: 15px;
             height: 32px;
             background: color-mix(in srgb, var(--color-primary) 22%, transparent);
             transition: none;
+        }
+
+        /* חלונית שיושבת בצד שמאל של המסך (מפרשים, הגדרות): הידית על הקצה הימני שלה, פונה לתוכן */
+        .pane-resize-handle[data-side="left"] {
+            left: auto;
+            right: calc(var(--handle-inner) - var(--handle-hit));
+        }
+
+        .pane-resize-handle[data-side="left"]::before,
+        .pane-resize-handle[data-side="left"]::after {
+            left: auto;
+            right: var(--grip-x);
+            transform: translate(50%, -50%);
         }
 
         .search-results-panel {
@@ -4403,3 +4387,16 @@ body.commentary-overlay #commentary-panel.open {
 @media (prefers-reduced-motion: reduce) {
     body.commentary-overlay #commentary-panel.open { animation: none; }
 }
+
+/* מעטפת חיתוך לתוכן חלונית שהשורש שלה overflow:visible (כדי שידית הגרירה תחרוג החוצה): התוכן נחתך
+   בפינות המעוגלות, והידית נשארת מחוץ לחיתוך */
+.pane-clip {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    border-radius: inherit;
+    overflow: hidden;
+}
+.pane-resize-handle:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }

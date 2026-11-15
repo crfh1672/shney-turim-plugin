@@ -174,6 +174,8 @@
 
     <!-- פאנל הגדרות שמאלי -->
         <div class="settings-panel">
+            <div id="settings-panel-resize-handle" class="pane-resize-handle" data-side="left" role="separator" aria-orientation="vertical" aria-label="שינוי רוחב חלונית ההגדרות (חצים ימינה ושמאלה)" tabindex="0"></div>
+            <div class="pane-clip">
             <div class="settings-panel-header">
                 <p class="settings-panel-kicker">הגדרות</p>
                 <button type="button" class="settings-panel-close-btn" onclick="closeSettings()" data-tooltip="סגור הגדרות">
@@ -801,13 +803,14 @@
                 </div><!-- /settings-pane-shortcuts -->
 
             </div>
+            </div>
         </div>
 
     <div class="main-content">
         <div class="nav-panel-scrim" id="nav-panel-scrim" onclick="closeDrawer()" aria-hidden="true"></div>
         <div class="nav-panel-corner" id="nav-panel-corner" aria-hidden="true"></div>
         <div class="overlay-panel" id="nav-panel">
-            <div class="nav-panel-resize-handle" id="nav-panel-resize-handle" title="גרור כדי לשנות את רוחב חלונית הניווט"></div>
+            <div class="pane-resize-handle" id="nav-panel-resize-handle"></div>
             <div class="drawer-icon-rail">
                 <button type="button" class="drawer-icon-btn active" id="rail-nav" onclick="switchRailTab('nav')" data-tooltip="ניווט">
                     <i class="ui-icon otzaria-icon drawer-tab-icon-regular" data-otzaria-icon="list" aria-hidden="true"></i>
@@ -941,7 +944,8 @@
              חדשות מתוך תוסף, ולכן לא נוספה כאן שום אפשרות ליצור/לערוך הערה. -->
         <div class="commentary-scrim" id="commentary-scrim" onclick="toggleCommentaryPanel()" aria-hidden="true"></div>
         <div id="commentary-panel">
-            <div id="commentary-panel-resize-handle" title="גרור כדי לשנות את רוחב החלונית"></div>
+            <div id="commentary-panel-resize-handle" class="pane-resize-handle" data-side="left"></div>
+            <div class="pane-clip">
             <div class="commentary-panel-header">
                 <div class="commentary-tabs-row">
                     <button type="button" class="commentary-tab-btn active" data-subtab="commentary" onclick="switchCommentarySubTab('commentary')" data-tooltip="מפרשים" aria-label="מפרשים">
@@ -974,6 +978,7 @@
             </div>
             <div class="commentary-panel-body" id="commentary-panel-body">
                 <div class="commentary-panel-status">יש לטעון ספר כדי לראות מפרשים כאן.</div>
+            </div>
             </div>
         </div>
     </div>
