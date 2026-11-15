@@ -799,9 +799,6 @@
         @media (max-width: 700px) {
             #btn-hand-mode { display: none; }
         }
-        @media (min-width: 701px) {
-            #btn-toolbar-fullscreen { display: none; }
-        }
 
         select.compact-select {
             padding: 6px 12px;
@@ -1088,12 +1085,6 @@
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
-        }
-
-        /* מצב מסך מלא: לא משנה את המיקום/גודל (זה תפקידו של ה-Fullscreen API/F11 האמיתי) -
-           רק מסתיר את שורת הטאבים כדי לפנות מעט מקום נוסף לתוכן */
-        body.fullscreen-mode .tab-bar-outer {
-            display: none;
         }
 
         /* --- סרגל כלים מצומצם (אופציונלי, דרך ההגדרות) - מקטין מעט את עובי הסרגל העליון --- */

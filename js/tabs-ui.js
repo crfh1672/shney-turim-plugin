@@ -1702,7 +1702,6 @@ const previewArea = document.getElementById('preview-area');
            currentSettings.customShortcuts (מיפוי actionId -> קיצור). מוצג בהגדרות >
            קיצורי מקשים, ונבדק בפועל בתוך מאזין המקלדת הראשי (ראו matchesShortcutAction). */
         const SHORTCUT_DEFS = [
-            { id: 'fullscreen', label: 'מסך מלא', combo: { ctrl: true, shift: true, key: 'M' } },
             { id: 'searchPanel', label: 'פתיחת חיפוש בספר', combo: { ctrl: true, shift: true, key: 'F' } },
             { id: 'headingsPanel', label: 'פתיחת ניווט כותרות', combo: { ctrl: true, shift: true, key: 'L' } },
             { id: 'pagesPanel', label: 'פתיחת לשונית דפים', combo: { ctrl: true, shift: true, key: 'K' } },
