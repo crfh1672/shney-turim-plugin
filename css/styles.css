@@ -281,24 +281,59 @@
            עצמאית לכל טאב, ולכן עצמאית גם בין שני חלוני התצוגה המפוצלת. ============
            ============================================================================ */
         #commentary-panel {
-            display: none;
+            /* Otzaria's AdaptiveSidePane animates its occupied width (300ms)
+               and opacity (200ms), rather than appearing through display:none. */
+            display: flex;
             flex-direction: column;
-            width: 340px;
-            min-width: 220px;
+            width: 0;
+            min-width: 0;
             max-width: 45vw;
-            flex: 0 0 340px;
+            flex: 0 0 0px;
             position: relative;
             container-type: inline-size;
             container-name: commentary-panel;
             margin-block: 14px 10px;
-            margin-inline: 10px 12px;
+            margin-inline: 0;
             border: 1px solid var(--color-outline-variant);
+            border-width: 0;
             border-radius: var(--app-radius, 8px);
             background: var(--commentary-panel-bg-color);
-            box-shadow: 0 2px 6px color-mix(in srgb, var(--color-shadow, #000000) 24%, transparent);
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000000) 22%, transparent);
             overflow: hidden;
+            opacity: 0;
+            transform: translateX(8px);
+            visibility: hidden;
+            pointer-events: none;
+            transition:
+                flex-basis 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                width 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                min-width 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                margin-inline 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                border-width 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 200ms ease,
+                transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                visibility 0s linear 300ms;
         }
-        #commentary-panel.open { display: flex; }
+        #commentary-panel.open {
+            width: 340px;
+            min-width: 220px;
+            flex-basis: 340px;
+            margin-inline: 10px 12px;
+            border-width: 1px;
+            opacity: 1;
+            transform: translateX(0);
+            visibility: visible;
+            pointer-events: auto;
+            transition:
+                flex-basis 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                width 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                min-width 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                margin-inline 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                border-width 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 200ms ease,
+                transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                visibility 0s;
+        }
 
         /* ידית גרירה במראה של ידית חלונית הניווט, בצד הפונה לתוכן הראשי. */
         #commentary-panel-resize-handle {
@@ -1091,8 +1126,31 @@
             padding-inline-start: 14px;
             padding-inline-end: 4px;
             flex-shrink: 0;
+            max-height: 72px;
+            overflow: hidden;
+            opacity: 1;
+            visibility: visible;
+            transition:
+                max-height 150ms ease-out,
+                padding-block 150ms ease-out,
+                opacity 150ms ease-out,
+                visibility 0s;
         }
-        .commentary-picker-search-row[hidden] { display: none !important; }
+        /* Match NavPanelCollapsibleSearch's 150ms AnimatedSize. Keep the
+           element in layout long enough for its height to collapse smoothly. */
+        .commentary-picker-search-row[hidden] {
+            display: flex !important;
+            max-height: 0;
+            padding-block: 0;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition:
+                max-height 150ms ease-out,
+                padding-block 150ms ease-out,
+                opacity 150ms ease-out,
+                visibility 0s linear 150ms;
+        }
         .commentary-picker-search-field {
             position: relative;
             display: flex;
@@ -1183,22 +1241,50 @@
             position: absolute;
             z-index: 5;
             inset-inline-end: 26px;
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             padding: 0;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             border: 0;
-            border-radius: 8px;
+            border-radius: 50%;
             background: var(--color-nav-panel-background);
             color: var(--color-on-surface-variant);
-            box-shadow: 0 1px 4px color-mix(in srgb, var(--color-shadow, #000) 24%, transparent);
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000) 22%, transparent);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: translateY(-4px) scale(0.92);
+            transition:
+                opacity 150ms ease,
+                transform 150ms ease,
+                visibility 0s linear 150ms,
+                background-color 150ms ease;
             cursor: pointer;
         }
-        .commentary-picker-search-toggle-floating[hidden] { display: none !important; }
+        .commentary-picker-search-toggle-floating.is-visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: none;
+            transition:
+                opacity 150ms ease,
+                transform 150ms ease,
+                visibility 0s,
+                background-color 150ms ease;
+        }
+        .commentary-picker-search-toggle-floating.is-visible:hover {
+            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-nav-panel-background));
+        }
+        .commentary-picker-search-toggle-floating.is-visible:active {
+            background: color-mix(in srgb, var(--color-on-surface) 12%, var(--color-nav-panel-background));
+        }
+        .commentary-picker-search-toggle-floating:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
         .commentary-picker-search-toggle-floating .ui-icon { width: 16px; height: 16px; font-size: 16px; }
-        .commentary-picker-screen.search-open .commentary-picker-search-toggle-floating { display: none; }
         .commentary-picker-list {
             flex: 1 1 auto;
             min-height: 0;
@@ -3422,17 +3508,18 @@
             position: fixed;
             background-color: var(--color-surface-container-high);
             color: var(--color-on-surface);
-            padding: 4px 8px;
+            padding: 8px 16px;
             border: 1px solid var(--color-outline-variant);
             border-radius: var(--app-radius, 8px);
-            font-size: 0.875rem;
+            font-size: 12px;
+            line-height: 16px;
             font-family: inherit;
             pointer-events: none;
             z-index: 10000;
             opacity: 0;
             transform: scale(0.95);
-            transition: opacity 0.1s ease, transform 0.1s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000) 22%, transparent);
             white-space: nowrap;
         }
         .custom-tooltip.visible {
@@ -3988,6 +4075,29 @@
                 scrollbar-color: var(--scrollbar-reader-idle) transparent;
             }
         }
+
+/* Respect Otzaria's AppMotion policy when the operating system requests
+   reduced motion. The loading spinner remains animated because it conveys progress. */
+@media (prefers-reduced-motion: reduce) {
+    #commentary-panel,
+    .commentary-panel-header .icon-btn,
+    .commentary-tab-btn,
+    .commentary-toolbar-row .icon-btn,
+    .commentary-picker-search-row,
+    .commentary-picker-search-toggle-floating,
+    .commentary-picker-back-btn,
+    .commentary-picker-search-close,
+    .commentary-picker-search-toggle,
+    .commentary-picker-chip,
+    .commentary-picker-tree-row,
+    .commentary-entry-group-content,
+    .commentary-entry-group-chevron,
+    .custom-tooltip,
+    .nav-panel-scrollbar-thumb {
+        transition-duration: 0.01ms !important;
+        transition-delay: 0ms !important;
+    }
+}
 
 /* --- הגדרות למדפסת האמיתית --- */
         @media print {

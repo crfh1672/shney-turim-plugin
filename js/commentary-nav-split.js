@@ -625,8 +625,9 @@
         const floatingSearchToggle = document.createElement('button');
         floatingSearchToggle.type = 'button';
         floatingSearchToggle.className = 'commentary-picker-search-toggle-floating';
-        floatingSearchToggle.hidden = true;
         floatingSearchToggle.setAttribute('aria-label', 'סינון מפרשים');
+        floatingSearchToggle.setAttribute('aria-hidden', 'true');
+        floatingSearchToggle.tabIndex = -1;
         floatingSearchToggle.setAttribute('data-tooltip', 'סינון מפרשים');
         floatingSearchToggle.innerHTML = fluentIconHTML('search');
         floatingSearchToggle.addEventListener('click', () => {
@@ -651,14 +652,21 @@
         const searchRow = screen.querySelector('.commentary-picker-search-row');
         const header = list && list.querySelector('.commentary-picker-tree-header');
         if (!list || !floating || !searchRow || !header) {
-            if (floating) floating.hidden = true;
+            if (floating) {
+                floating.classList.remove('is-visible');
+                floating.setAttribute('aria-hidden', 'true');
+                floating.tabIndex = -1;
+            }
             return;
         }
         const listRect = list.getBoundingClientRect();
         const headerRect = header.getBoundingClientRect();
         const headerVisible = headerRect.bottom > listRect.top && headerRect.top < listRect.bottom;
-        floating.hidden = !searchRow.hidden || headerVisible;
-        if (!floating.hidden) {
+        const shouldShow = searchRow.hidden && !headerVisible;
+        floating.classList.toggle('is-visible', shouldShow);
+        floating.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+        floating.tabIndex = shouldShow ? 0 : -1;
+        if (shouldShow) {
             const screenRect = screen.getBoundingClientRect();
             floating.style.top = `${Math.round(listRect.top - screenRect.top + 10)}px`;
         }
