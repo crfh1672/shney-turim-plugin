@@ -11,7 +11,7 @@
 (function () {
     'use strict';
 
-    const SELECTOR = '#toc-scroll-area, #search-results-list, #page-nav-list';
+    const SELECTOR = '#toc-scroll-area, #search-results-list, #page-nav-list, #commentary-picker-list';
     const GUTTER_WIDTH = 12;
     const THUMB_WIDTH = 8;
     const THUMB_MARGIN = 2;
@@ -526,6 +526,7 @@
     }
 
     function createScrollbar(element) {
+        if (states.has(element)) return;
         const parent = element.parentElement;
         if (!parent) return;
 
@@ -597,7 +598,6 @@
 
     function init() {
         document.querySelectorAll(SELECTOR).forEach(createScrollbar);
-        if (states.size === 0) return;
 
         document.addEventListener('scroll', onScroll, true);
         document.addEventListener('pointermove', onPointerMove, true);
@@ -637,7 +637,7 @@
             refreshHover(lastPointer);
         });
 
-        for (const state of states.values()) {
+        function observeState(state) {
             resizeObserver.observe(state.element);
             resizeObserver.observe(state.parent);
             observeContentChildren(state);
@@ -646,6 +646,43 @@
                 subtree: true,
                 characterData: true
             });
+        }
+
+        for (const state of states.values()) observeState(state);
+
+        // The commentator picker is rebuilt dynamically inside #commentary-panel-body.
+        // Discover each new list instance and attach the exact same scrollbar behavior.
+        const pickerHost = document.getElementById('commentary-panel-body');
+        if (pickerHost) {
+            const pickerObserver = new MutationObserver(records => {
+                for (const record of records) {
+                    for (const node of record.addedNodes) {
+                        if (!(node instanceof Element)) continue;
+                        const candidates = [];
+                        if (node.matches(SELECTOR)) candidates.push(node);
+                        node.querySelectorAll(SELECTOR).forEach(el => candidates.push(el));
+                        for (const element of candidates) {
+                            if (states.has(element)) continue;
+                            createScrollbar(element);
+                            const state = states.get(element);
+                            if (state) observeState(state);
+                        }
+                    }
+                }
+
+                // Release removed picker instances so opening/closing the screen
+                // repeatedly does not leave detached tracks or stale state behind.
+                for (const [element, state] of states) {
+                    if (element.isConnected) continue;
+                    clearHideTimer(state);
+                    cancelTapAnimation(state);
+                    state.track.remove();
+                    states.delete(element);
+                }
+                for (const state of states.values()) updateTrackPosition(state);
+                refreshHover(lastPointer);
+            });
+            pickerObserver.observe(pickerHost, { childList: true, subtree: true });
         }
 
         window.addEventListener('resize', () => {
