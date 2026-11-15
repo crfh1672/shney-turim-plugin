@@ -567,7 +567,8 @@
             dragOffsetY: 0,
             panStartY: 0,
             panStartScrollTop: 0,
-            tapAnimationFrame: null
+            tapAnimationFrame: null,
+            observedChildren: new Set()
         };
         states.set(element, state);
 
@@ -624,8 +625,16 @@
             // ScrollHeight can change when list items or their direct content
             // resize (for example after a thumbnail/font finishes loading),
             // even while the scroll viewport itself keeps the same height.
-            for (const child of state.element.children) {
+            const currentChildren = new Set(state.element.children);
+            for (const child of state.observedChildren) {
+                if (currentChildren.has(child)) continue;
+                resizeObserver.unobserve(child);
+                state.observedChildren.delete(child);
+            }
+            for (const child of currentChildren) {
+                if (state.observedChildren.has(child)) continue;
                 resizeObserver.observe(child);
+                state.observedChildren.add(child);
             }
         }
 
@@ -672,12 +681,32 @@
 
                 // Release removed picker instances so opening/closing the screen
                 // repeatedly does not leave detached tracks or stale state behind.
+                let removedState = false;
                 for (const [element, state] of states) {
                     if (element.isConnected) continue;
                     clearHideTimer(state);
                     cancelTapAnimation(state);
+                    resizeObserver.unobserve(element);
+                    for (const child of state.observedChildren) resizeObserver.unobserve(child);
+                    state.observedChildren.clear();
                     state.track.remove();
                     states.delete(element);
+                    if (![...states.values()].some(other => other.parent === state.parent)) {
+                        resizeObserver.unobserve(state.parent);
+                    }
+                    removedState = true;
+                }
+                if (removedState) {
+                    // MutationObserver has no unobserve(target); disconnect and
+                    // reattach only the live scroll areas after removing a picker.
+                    mutationObserver.disconnect();
+                    for (const state of states.values()) {
+                        mutationObserver.observe(state.element, {
+                            childList: true,
+                            subtree: true,
+                            characterData: true
+                        });
+                    }
                 }
                 for (const state of states.values()) updateTrackPosition(state);
                 refreshHover(lastPointer);
