@@ -4308,6 +4308,9 @@ body.app-compact-density .toolbar-main .nav-heading-btn .ui-icon {
 
 /* אין מקום לארבעת החיצים: הם עוברים לתפריט, והכותרת מקבלת את כל המרכז (ReaderNavCenter) */
 .toolbar-nav-center.nav-center-no-arrows .nav-heading-btn { display: none; }
+/* מרכז צר מ-240: כפתורי החיצים מצטמצמים ל-36 (כמו ReaderNavCenter באוצריא) */
+.toolbar-nav-center.nav-center-tight .nav-heading-btn { width: 36px; height: 36px; padding: 8px; }
+.toolbar-nav-center.nav-center-tight .nav-heading-btn .ui-icon { width: 18px; height: 18px; font-size: 18px; }
 
 /* שורת אייקוני הניווט בראש התפריט "עוד" - לחיצה עליהם לא סוגרת את התפריט */
 .more-menu-nav-row {
