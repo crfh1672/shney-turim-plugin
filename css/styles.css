@@ -850,6 +850,7 @@
             border-radius: var(--app-radius, 8px);
             background: var(--color-surface-container-highest);
         }
+        .commentary-loading-skeleton-line:last-child { margin-bottom: 8px; }
         @keyframes commentary-panel-spin {
             to { transform: rotate(360deg); }
         }
