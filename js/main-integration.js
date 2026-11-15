@@ -527,48 +527,6 @@
             saveSettings();
         });
 
-        /* --- מסך מלא (F11 / Esc) --- */
-        function isInFullscreenMode() {
-            return Boolean(document.fullscreenElement) || document.body.classList.contains('fullscreen-mode');
-        }
-
-        function enterFullscreen() {
-            // הפעלת מסך מלא אמיתי דרך ה-Fullscreen API של הדפדפן/webview
-            try {
-                const el = document.documentElement;
-                if (el.requestFullscreen) {
-                    const req = el.requestFullscreen();
-                    if (req && typeof req.catch === 'function') {
-                        req.catch(() => {});
-                    }
-                }
-            } catch (e) { /* ignore */ }
-            // התכונה הנוספת שלנו: הסתרת שורת הטאבים כדי לפנות עוד קצת מקום לתוכן
-            document.body.classList.add('fullscreen-mode');
-        }
-
-        function exitFullscreenMode() {
-            if (document.fullscreenElement && document.exitFullscreen) {
-                document.exitFullscreen().catch(() => {});
-            }
-            document.body.classList.remove('fullscreen-mode');
-        }
-
-        function toggleFullscreen() {
-            if (isInFullscreenMode()) {
-                exitFullscreenMode();
-            } else {
-                enterFullscreen();
-            }
-        }
-
-        // אם המשתמש יוצא ממסך מלא אמיתי בדרך אחרת (כפתור מערכת וכד') - נסנכרן ונחזיר את שורת הטאבים
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement) {
-                document.body.classList.remove('fullscreen-mode');
-            }
-        });
-
         /* --- ניווט בין עמודים באמצעות מקלדת --- */
         function goToNextPageScroll() {
             const previewArea = document.getElementById('preview-area');
@@ -643,17 +601,6 @@
             const targetTag = (e.target && e.target.tagName || '').toLowerCase();
             const isTypingContext = targetTag === 'input' || targetTag === 'textarea' || (e.target && e.target.isContentEditable);
 
-            // Ctrl+Shift+M - מסך מלא (במקום F11, עובד גם בתוך שדות טקסט)
-            if (matchesShortcutAction(e, 'fullscreen')) {
-                e.preventDefault();
-                toggleFullscreen();
-                return;
-            }
-            // Esc - יציאה ממסך מלא (גם אמיתי וגם מצב ה-CSS המדומה)
-            if (e.key === 'Escape' && isInFullscreenMode()) {
-                exitFullscreenMode();
-                return;
-            }
             // Ctrl + Shift + F / L / K - מעבר בין חיפוש / כותרות / דפים בפאנל הצד. אלו חייבים
             // להיבדק גם כאן, לפני בדיקת isTypingContext למטה: פתיחת הפאנל ממקדת (focus) את שדה
             // החיפוש/הסינון שבתוכו, כך שברגע שהפאנל כבר פתוח על אחת הלשוניות, ה-focus כבר נמצא

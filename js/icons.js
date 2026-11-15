@@ -26,7 +26,6 @@
             document_text: [0xE558, 0xE564],
             edit: [0xF3DE, 0xF3DD],
             folder: [0xF419, 0xF41D],
-            full_screen_maximize: [0xE685, 0xE692],
             hand_left: [0xE6DC, 0xE6E9],
             keyboard: [0xF4B9, 0xF4C3],
             line_horizontal_3: [0xF0765, 0xF07E2],

@@ -38,17 +38,16 @@
        ========================================================================== */
 
     // ככל שהמספר נמוך יותר - הכפתור עובר לתפריט קודם (toolbarOverflowOrder באוצריא):
-    // חיפוש, מצב יד, זום (זוג אטומי), התאמה לרוחב, טורים, מסך מלא, מצב תצוגה, חזרה לתצוגה הרגילה.
+    // חיפוש, מצב יד, זום (זוג אטומי), התאמה לרוחב, טורים, מצב תצוגה, חזרה לתצוגה הרגילה.
     const ACTION_DEFS = [
-        { id: 'backToReader', rootId: 'btn-back-to-reader', rank: 8 },
+        { id: 'backToReader', rootId: 'btn-back-to-reader', rank: 7 },
         { id: 'columns', rootId: 'column-anchor', rank: 5, popoverId: 'column-popover' },
-        { id: 'viewMode', rootId: 'view-mode-anchor', rank: 7, popoverId: 'view-mode-menu' },
+        { id: 'viewMode', rootId: 'view-mode-anchor', rank: 6, popoverId: 'view-mode-menu' },
         { id: 'search', rootId: 'btn-toolbar-search', rank: 1 },
         { id: 'hand', rootId: 'btn-hand-mode', rank: 2 },
         { id: 'zoomIn', rootId: 'btn-increase-font', rank: 3, atomic: 'zoom' },
         { id: 'zoomOut', rootId: 'btn-decrease-font', rank: 3, atomic: 'zoom' },
-        { id: 'fit', rootId: 'btn-fit-width', rank: 4 },
-        { id: 'fullscreen', rootId: 'btn-toolbar-fullscreen', rank: 6 }
+        { id: 'fit', rootId: 'btn-fit-width', rank: 4 }
     ];
 
     // port של partitionToolbarActionsForWidth (responsive_action_bar.dart)
