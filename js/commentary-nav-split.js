@@ -1457,9 +1457,14 @@
             document.body.classList.contains('app-compact-density') || width < 240) ? 36 : 40;
         // מחוון העמודים (13/639) הוא רכיב בגודל קבוע בתוך המרכז, ולכן הוא נספר יחד עם החיצים: אחרת
         // המרכז צר מתוכנו הטבעי והתוכן גולש על כפתורי הסרגל שבצדדים
+        // המדידה דורשת שהמרכז יהיה מוצג (ב-display:none הרוחב 0), ולכן מציגים אותו לרגע; אם בסוף
+        // יתברר שאין מקום - הענף שמטה מחזיר את ההסתרה
+        const wasHidden = center.classList.contains('nav-center-hidden');
+        if (wasHidden) center.classList.remove('nav-center-hidden');
         const indicatorEl = document.getElementById('page-indicator');
         const indicatorWidth = indicatorEl && !indicatorEl.hidden ? Math.ceil(indicatorEl.getBoundingClientRect().width) : 0;
-        const arrowsWidth = 4 * navBtn + indicatorWidth + 5 * 4;
+        // 6 פריטים (4 כפתורים, כותרת, מחוון) = 5 רווחים; בלי מחוון - 4 רווחים
+        const arrowsWidth = 4 * navBtn + indicatorWidth + (indicatorWidth > 0 ? 5 : 4) * 4;
         const arrowsFit = width >= arrowsWidth;
         window.__navArrowsInBar = arrowsFit;
         if (width < Math.max(NAV_CENTER_MIN_WIDTH, indicatorWidth)) {
