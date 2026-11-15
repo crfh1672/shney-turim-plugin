@@ -301,7 +301,7 @@
             box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000000) 22%, transparent);
             overflow: hidden;
             opacity: 0;
-            transform: translateX(8px);
+            transform: translateX(-8px);
             visibility: hidden;
             pointer-events: none;
             transition:
