@@ -129,6 +129,9 @@ function switchTab(index) {
             
             clearTimeout(fontSizeChangeTimer);
             
+            // כל מעבר טאב מבטל חיפוש רץ ומאפס את השאילתה האחרונה (התוכן מתחלף, אז אותה שאילתה חייבת להיבדק מחדש)
+            cancelBookSearchRun();
+            lastSearchedQuery = null;
             if (activeTabIndex !== -1) {
                 const prevTab = tabs[activeTabIndex];
                 const previewAreaForReset = document.getElementById('preview-area');
@@ -138,7 +141,6 @@ function switchTab(index) {
                 // עצמו - dataset.searchBaseHtml נשאר דבוק ל-#preview-area (תכונה על האלמנט עצמו, לא
                 // נמחקת בהחלפת innerHTML/childNodes) - בלעדי האיפוס הזה חיפוש בטאב החדש היה עלול
                 // "לשחזר" בטעות את תוכן הטאב הישן ולחפש רק בו לנצח.
-                cancelBookSearchRun();
                 clearSearchHighlights();
                 delete previewAreaForReset.dataset.searchBaseHtml;
                 const bookSearchInput = document.getElementById('book-search');
@@ -1145,6 +1147,8 @@ const previewArea = document.getElementById('preview-area');
             if (tab === 'nav' && navSubTab === 'pages') tab = 'pages';
             currentRailTab = tab;
             document.querySelectorAll('.drawer-icon-btn[id^="rail-"]').forEach(btn => btn.classList.remove('active'));
+            // יציאה מלשונית החיפוש באמצע חיפוש עוצרת אותו (אחרת הוא ממשיך לסרוק ולשנות את התצוגה מאחורי הקלעים)
+            if (tab !== 'search') stopBookSearch();
             document.getElementById('rail-' + tab).classList.add('active');
             document.getElementById('drawer-pane-nav').classList.toggle('active', tab === 'nav');
             document.getElementById('drawer-pane-search').classList.toggle('active', tab === 'search');

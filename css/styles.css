@@ -4265,11 +4265,6 @@ body.app-compact-density .toolbar-main .nav-heading-btn .ui-icon {
 #toc-list .toc-item[data-level="1"] { font-weight: 700; }
 #toc-list .toc-item[data-level="2"] { font-weight: 600; }
 #toc-list .toc-item:hover { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
-#toc-list .toc-item.active-item {
-    background: var(--color-secondary-container);
-    color: var(--color-on-secondary-container);
-    font-weight: 700;
-}
 
 /* כפתור ההרחבה בסוף השורה (IconButton קומפקטי 32px, אייקון 16px). פתוח = חץ למטה, סגור = חץ שפונה
    לכיוון הקריאה (שמאלה ב-RTL); הסיבוב 250ms easeInOut */
@@ -4289,7 +4284,6 @@ body.app-compact-density .toolbar-main .nav-heading-btn .ui-icon {
     background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
     color: var(--color-on-surface-variant);
 }
-#toc-list .toc-item.active-item .toc-toggle { color: var(--color-on-secondary-container); }
 @media (prefers-reduced-motion: reduce) {
     #toc-list .toc-toggle { transition: none; }
 }

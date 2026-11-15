@@ -344,26 +344,35 @@ let searchDebounceTimer = null;
         // תלות בכותרות HTML שהתגלו בפועל בטקסט המעובד.
         // כפתור הרחבה/כיווץ של שורת כותרת - בסוף השורה (כמו IconButton של NavTreeTile באוצריא), עם
         // טולטיפ לפי הפעולה ("הרחב"/"כווץ") ושברון שמסתובב לפי המצב
+        function syncTocToggle(toggleBtn) {
+            const wrapper = toggleBtn.closest('.toc-item-wrapper');
+            const expanded = Boolean(wrapper && wrapper.classList.contains('expanded'));
+            const label = expanded ? 'כווץ' : 'הרחב';
+            toggleBtn.setAttribute('data-tooltip', label);
+            toggleBtn.setAttribute('aria-label', label);
+            toggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        }
+
+        // מרענן את מצב כל הכפתורים אחרי הרחבה/כיווץ תכנותיים (שחזור מצב, סינון, ניקוי סינון)
+        function refreshTocToggleStates() {
+            document.querySelectorAll('#toc-list .toc-toggle').forEach(syncTocToggle);
+        }
+
         function createTocToggle(wrapper) {
             const toggleBtn = document.createElement('button');
             toggleBtn.type = 'button';
             toggleBtn.className = 'toc-toggle';
-            const sync = () => {
-                const label = wrapper.classList.contains('expanded') ? 'כווץ' : 'הרחב';
-                toggleBtn.setAttribute('data-tooltip', label);
-                toggleBtn.setAttribute('aria-label', label);
-                toggleBtn.setAttribute('aria-expanded', wrapper.classList.contains('expanded') ? 'true' : 'false');
-            };
             toggleBtn.innerHTML = fluentIconHTML('chevron_down');
             toggleBtn.onclick = (e) => {
                 e.stopPropagation();
                 wrapper.classList.toggle('expanded');
-                sync();
+                syncTocToggle(toggleBtn);
             };
-            sync();
-            // הרחבה גם מבחוץ (סינון, מעקב אחרי הכותרת הפעילה) - מרעננים את הטולטיפ לפני שהוא מוצג
-            toggleBtn.addEventListener('pointerenter', sync);
-            toggleBtn.addEventListener('focus', sync);
+            // הכפתור עדיין לא מחובר לשורה בזמן היצירה - המצב ההתחלתי נלקח מהעטיפה ישירות
+            const expanded = wrapper.classList.contains('expanded');
+            toggleBtn.setAttribute('data-tooltip', expanded ? 'כווץ' : 'הרחב');
+            toggleBtn.setAttribute('aria-label', expanded ? 'כווץ' : 'הרחב');
+            toggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
             return toggleBtn;
         }
 
@@ -441,6 +450,7 @@ let searchDebounceTimer = null;
                 tocList.querySelectorAll('.toc-item-wrapper[data-toc-key]').forEach(w => {
                     if (prevState.has(w.dataset.tocKey)) w.classList.toggle('expanded', prevState.get(w.dataset.tocKey));
                 });
+                refreshTocToggleStates();
                 tocScrollArea.scrollTop = prevScroll;
                 const filterInput = document.getElementById('toc-filter');
                 if (filterInput && filterInput.value) filterTOC();
@@ -637,6 +647,7 @@ function buildTOCCore() {
                     w.classList.toggle('expanded', isTopLevel);
                 });
                 tocHighlightIndex = -1;
+                refreshTocToggleStates();
                 return;
             }
 
@@ -655,6 +666,7 @@ function buildTOCCore() {
                 }
             });
             tocHighlightIndex = -1;
+            refreshTocToggleStates();
         }
 
         // ניווט בחיצים משדה החיפוש/סינון של הכותרות אל תוך הרשימה עצמה - offsetParent (לא display

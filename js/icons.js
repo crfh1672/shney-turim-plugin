@@ -39,7 +39,7 @@
             print: [0xF62B, 0xF635],
             search: [0xF690, 0xF69A],
             settings: [0xF6AA, 0xF6B3],
-            stop: [0xF72B, 0xF72B],
+            stop: [0xF72B, 0xF743],
             split_vertical: [0xEB61, 0xEB6A],
             text_bullet_list: [0xF0291, 0xF02A4],
             text_bullet_list_ltr: [0xECDA, 0xECD8],
