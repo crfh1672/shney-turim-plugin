@@ -689,10 +689,24 @@
            same right-hand edge while preserving RTL for every list row. */
         .commentary-picker-list {
             flex: 1;
+            min-height: 0;
+            box-sizing: border-box;
             overflow-y: auto;
             margin: 0 -14px;
             padding: 0 14px;
             direction: ltr;
+            /* Use the same reserved gutter and custom thumb as the navigation pane. */
+            scrollbar-width: none;
+            scrollbar-color: transparent transparent;
+        }
+        .commentary-picker-list.has-scrollbar-gutter {
+            /* Keep the existing 14px content inset and reserve the 12px scrollbar lane. */
+            padding-right: 26px;
+        }
+        .commentary-picker-list::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
         }
         .commentary-picker-list > * { direction: rtl; }
         .commentary-picker-master-row {
