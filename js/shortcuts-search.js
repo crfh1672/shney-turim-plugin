@@ -358,6 +358,121 @@ let searchDebounceTimer = null;
             document.querySelectorAll('#toc-list .toc-toggle').forEach(syncTocToggle);
         }
 
+
+        // ===== הדגשת הכותרת הנוכחית בתוכן העניינים (כמו השורה הנבחרת ב-NavTreeTile באוצריא) =====
+        // "הכותרת הנוכחית" = הכותרת האחרונה שהתחילה עד קו הייחוס: אמצע אזור התצוגה בגלילה רגילה,
+        // ועד סוף העמוד המוצג בתצוגת ספר. כשהכותרת נמצאת בתוך ענף מכווץ, ההדגשה (העדינה) עוברת להורה
+        // המכווץ הגלוי הקרוב - כך שתמיד רואים באיזה חלק של הספר נמצאים.
+        let tocCurrentItem = null;
+        let tocCurrentRep = null;
+        let tocCurrentTimer = null;
+
+        function isNavTocVisible() {
+            const panel = document.querySelector('.overlay-panel');
+            return Boolean(panel && panel.classList.contains('open') && currentRailTab === 'nav');
+        }
+
+        function computeCurrentTocItem() {
+            const tocList = document.getElementById('toc-list');
+            const previewArea = document.getElementById('preview-area');
+            if (!tocList || !previewArea) return null;
+            const items = Array.from(tocList.querySelectorAll('.toc-item[data-line-index], .toc-item[data-heading-id]'));
+            if (items.length === 0) return null;
+            const pages = Array.from(previewArea.querySelectorAll('.print-page'));
+            if (pages.length === 0) return null;
+            const isBook = Boolean(currentSettings.isBookView);
+            const pageIdx = Math.min(Math.max(isBook ? currentLeaf * 2 : getScrollCurrentPage(), 0), pages.length - 1);
+            const refLine = previewArea.getBoundingClientRect().top + previewArea.clientHeight * 0.5;
+
+            // חיפוש בינארי על פריטים שמסודרים לפי סדר הטקסט: האחרון שמקיים את התנאי
+            const lastWhere = (pred) => {
+                let lo = 0, hi = items.length - 1, best = -1;
+                while (lo <= hi) {
+                    const mid = (lo + hi) >> 1;
+                    if (pred(items[mid])) { best = mid; lo = mid + 1; } else { hi = mid - 1; }
+                }
+                return best >= 0 ? items[best] : null;
+            };
+
+            if (items[0].dataset.lineIndex !== undefined) {
+                let lineIdx = -1;
+                if (isBook) {
+                    for (let p = pageIdx; p >= 0 && lineIdx < 0; p--) {
+                        const marked = pages[p].querySelectorAll('[data-line-idx]');
+                        if (marked.length) lineIdx = parseInt(marked[marked.length - 1].getAttribute('data-line-idx'), 10);
+                    }
+                } else {
+                    const from = Math.max(0, pageIdx - 1);
+                    for (let p = from; p <= Math.min(pages.length - 1, pageIdx + 1); p++) {
+                        pages[p].querySelectorAll('[data-line-idx]').forEach((el) => {
+                            const v = parseInt(el.getAttribute('data-line-idx'), 10);
+                            if (!isNaN(v) && el.getBoundingClientRect().top <= refLine && v > lineIdx) lineIdx = v;
+                        });
+                    }
+                    if (lineIdx < 0) {
+                        const first = pages[pageIdx].querySelector('[data-line-idx]');
+                        if (first) lineIdx = parseInt(first.getAttribute('data-line-idx'), 10);
+                    }
+                }
+                if (isNaN(lineIdx) || lineIdx < 0) return null;
+                return lastWhere((it) => Number(it.dataset.lineIndex) <= lineIdx);
+            }
+
+            const pageEl = pages[pageIdx];
+            return lastWhere((it) => {
+                const h = document.getElementById(it.dataset.headingId);
+                if (!h) return false;
+                if (isBook) {
+                    return h === pageEl || Boolean(pageEl.compareDocumentPosition(h) & (Node.DOCUMENT_POSITION_PRECEDING | Node.DOCUMENT_POSITION_CONTAINED_BY));
+                }
+                return h.getBoundingClientRect().top <= refLine;
+            });
+        }
+
+        // מסמן פריט כנוכחי (או מנקה כשאין). הפריט הגלוי המייצג = הפריט עצמו, או ההורה המכווץ הגבוה ביותר
+        function setTocCurrentItem(item, reveal) {
+            if (tocCurrentItem) { tocCurrentItem.classList.remove('active-item'); tocCurrentItem.removeAttribute('aria-current'); }
+            if (tocCurrentRep) tocCurrentRep.classList.remove('active-parent');
+            tocCurrentItem = (item && item.isConnected) ? item : null;
+            tocCurrentRep = null;
+            if (!tocCurrentItem) return;
+            let rep = tocCurrentItem;
+            let w = tocCurrentItem.closest('.toc-item-wrapper');
+            w = w && w.parentElement ? w.parentElement.closest('.toc-item-wrapper') : null;
+            while (w) {
+                if (!w.classList.contains('expanded')) rep = w.querySelector(':scope > .toc-item') || rep;
+                w = w.parentElement ? w.parentElement.closest('.toc-item-wrapper') : null;
+            }
+            if (rep === tocCurrentItem) {
+                tocCurrentItem.classList.add('active-item');
+                tocCurrentItem.setAttribute('aria-current', 'true');
+            } else {
+                rep.classList.add('active-parent');
+                tocCurrentRep = rep;
+            }
+            if (!reveal || rep.offsetParent === null) return;
+            const area = document.getElementById('toc-scroll-area');
+            if (!area) return;
+            const areaRect = area.getBoundingClientRect();
+            const r = rep.getBoundingClientRect();
+            if (r.top < areaRect.top || r.bottom > areaRect.bottom) {
+                area.scrollTop += r.top - areaRect.top - (area.clientHeight - r.height) / 2;
+            }
+        }
+
+        function updateTocCurrentHeading(reveal) {
+            if (isScrollingFromTOC) return; // אחרי לחיצה על כותרת - ההדגשה כבר נקבעה
+            setTocCurrentItem(computeCurrentTocItem(), reveal);
+        }
+
+        // גרסה מושהית לקריאה מאירועי גלילה/דפדוף - פועלת רק כשרשימת הכותרות גלויה
+        function scheduleTocCurrentUpdate() {
+            clearTimeout(tocCurrentTimer);
+            tocCurrentTimer = setTimeout(() => {
+                if (isNavTocVisible()) updateTocCurrentHeading(true);
+            }, 140);
+        }
+
         function createTocToggle(wrapper) {
             const toggleBtn = document.createElement('button');
             toggleBtn.type = 'button';
@@ -367,6 +482,7 @@ let searchDebounceTimer = null;
                 e.stopPropagation();
                 wrapper.classList.toggle('expanded');
                 syncTocToggle(toggleBtn);
+                setTocCurrentItem(tocCurrentItem); // ההדגשה עוברת בין השורה עצמה להורה המכווץ
             };
             // הכפתור עדיין לא מחובר לשורה בזמן היצירה - המצב ההתחלתי נלקח מהעטיפה ישירות
             const expanded = wrapper.classList.contains('expanded');
@@ -402,6 +518,7 @@ let searchDebounceTimer = null;
 
                 const el = document.createElement('div');
                 el.className = 'toc-item';
+                el.dataset.lineIndex = String(node.lineIndex);
                 el.dataset.level = String(Math.min(node.level, 3));
                 el.style.paddingInlineStart = (12 + (node.level - 1) * 12) + 'px';
 
@@ -411,7 +528,7 @@ let searchDebounceTimer = null;
 
                 el.onclick = () => {
                     const pageIdx = locatePageIndexForLineIndex(node.lineIndex);
-                    if (pageIdx >= 0) goToPageIndex(pageIdx);
+                    if (pageIdx >= 0) { goToPageIndex(pageIdx); setTocCurrentItem(el); }
                 };
 
                 wrapper.appendChild(el);
@@ -462,6 +579,8 @@ let searchDebounceTimer = null;
             }
             requestAnimationFrame(updateFloatingTocSearch);
             if (typeof scheduleNavBarUpdate === 'function') scheduleNavBarUpdate();
+            tocCurrentItem = null; tocCurrentRep = null; // האלמנטים הישנים הוחלפו
+            updateTocCurrentHeading(false);
         }
 
         // השורה (data-line-idx) הגדולה ביותר שכבר קיימת ב-DOM - העמודים נוספים לפי סדר הטקסט, ולכן זו
@@ -573,6 +692,7 @@ function buildTOCCore() {
 
                 const item = document.createElement('div');
                 item.className = 'toc-item';
+                item.dataset.headingId = node.heading.id;
                 item.dataset.level = String(Math.min(node.level, 3));
                 item.style.paddingInlineStart = (12 + (node.level - 1) * 12) + 'px';
 
@@ -604,6 +724,7 @@ function buildTOCCore() {
                         }
 
                         setTimeout(() => { isScrollingFromTOC = false; }, 1500);
+                        setTocCurrentItem(item);
                         if (window.innerWidth < 800) closeAllDrawers();
                     }
                 };
