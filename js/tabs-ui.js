@@ -1013,6 +1013,7 @@ const previewArea = document.getElementById('preview-area');
                 : (e.changedTouches && e.changedTouches.length ? e.changedTouches[0].clientX : e.clientX));
 
             function onDown(e) {
+                if (e.type === 'mousedown' && e.button !== 0) return; // רק הכפתור הראשי
                 dragging = true;
                 handle.classList.add('dragging');
                 panel.style.transition = 'none';
@@ -1034,6 +1035,7 @@ const previewArea = document.getElementById('preview-area');
                 panel.style.transition = '';
                 document.body.style.userSelect = '';
                 saveWidth(Math.round(panel.getBoundingClientRect().width));
+                syncAria();
             }
             handle.addEventListener('mousedown', onDown);
             handle.addEventListener('touchstart', onDown, { passive: false });
@@ -1042,7 +1044,26 @@ const previewArea = document.getElementById('preview-area');
             document.addEventListener('mouseup', onUp);
             document.addEventListener('touchend', onUp);
             document.addEventListener('touchcancel', onUp);
-            handle.addEventListener('dblclick', () => { applyWidth(null); saveWidth(null); });
+            handle.addEventListener('dblclick', () => { applyWidth(null); saveWidth(null); syncAria(); });
+            // מקלדת (separator): חצים משנים ב-16px, עם Shift ב-48px; Home מאפס לברירת המחדל.
+            // החלונית צמודה לשמאל, לכן חץ ימינה מרחיב
+            function syncAria() {
+                const w = Math.round(panel.getBoundingClientRect().width);
+                handle.setAttribute('aria-valuemin', String(SETTINGS_PANEL_MIN_WIDTH));
+                handle.setAttribute('aria-valuemax', String(maxWidth()));
+                handle.setAttribute('aria-valuenow', String(w));
+            }
+            handle.addEventListener('keydown', (e) => {
+                if (e.key === 'Home') { applyWidth(null); saveWidth(null); syncAria(); e.preventDefault(); return; }
+                if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+                const step = e.shiftKey ? 48 : 16;
+                const next = Math.round(panel.getBoundingClientRect().width) + (e.key === 'ArrowRight' ? step : -step);
+                applyWidth(next);
+                saveWidth(clampWidth(next));
+                syncAria();
+                e.preventDefault();
+            });
+            handle.addEventListener('focus', syncAria);
             window.addEventListener('resize', () => {
                 const cur = panel.style.getPropertyValue('--settings-panel-width');
                 if (cur) applyWidth(parseInt(cur, 10));

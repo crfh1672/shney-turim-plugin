@@ -174,7 +174,8 @@
 
     <!-- פאנל הגדרות שמאלי -->
         <div class="settings-panel">
-            <div id="settings-panel-resize-handle" class="pane-resize-handle" data-side="left"></div>
+            <div id="settings-panel-resize-handle" class="pane-resize-handle" data-side="left" role="separator" aria-orientation="vertical" aria-label="שינוי רוחב חלונית ההגדרות (חצים ימינה ושמאלה)" tabindex="0"></div>
+            <div class="pane-clip">
             <div class="settings-panel-header">
                 <p class="settings-panel-kicker">הגדרות</p>
                 <button type="button" class="settings-panel-close-btn" onclick="closeSettings()" data-tooltip="סגור הגדרות">
@@ -802,6 +803,7 @@
                 </div><!-- /settings-pane-shortcuts -->
 
             </div>
+            </div>
         </div>
 
     <div class="main-content">
@@ -943,6 +945,7 @@
         <div class="commentary-scrim" id="commentary-scrim" onclick="toggleCommentaryPanel()" aria-hidden="true"></div>
         <div id="commentary-panel">
             <div id="commentary-panel-resize-handle" class="pane-resize-handle" data-side="left"></div>
+            <div class="pane-clip">
             <div class="commentary-panel-header">
                 <div class="commentary-tabs-row">
                     <button type="button" class="commentary-tab-btn active" data-subtab="commentary" onclick="switchCommentarySubTab('commentary')" data-tooltip="מפרשים" aria-label="מפרשים">
@@ -975,6 +978,7 @@
             </div>
             <div class="commentary-panel-body" id="commentary-panel-body">
                 <div class="commentary-panel-status">יש לטעון ספר כדי לראות מפרשים כאן.</div>
+            </div>
             </div>
         </div>
     </div>

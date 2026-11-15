@@ -295,7 +295,7 @@
             border: 1px solid var(--color-outline-variant);
             border-radius: var(--app-radius, 8px);
             background: var(--commentary-panel-bg-color);
-            overflow: visible; /* ידית הגרירה חורגת החוצה; התוכן הפנימי מעוגל בעצמו (ראו .commentary-panel-clip) */
+            overflow: visible; /* ידית הגרירה חורגת החוצה; חיתוך הפינות נעשה ב-.pane-clip */
         }
         #commentary-panel.open { display: flex; }
 
@@ -1381,6 +1381,7 @@
         .settings-panel {
             position: absolute;
             top: 10px; bottom: 10px; left: 10px;
+            box-sizing: border-box;
             width: var(--settings-panel-width, 320px);
             max-width: calc(100vw - 20px);
             background: var(--color-surface-container);
@@ -4386,3 +4387,16 @@ body.commentary-overlay #commentary-panel.open {
 @media (prefers-reduced-motion: reduce) {
     body.commentary-overlay #commentary-panel.open { animation: none; }
 }
+
+/* מעטפת חיתוך לתוכן חלונית שהשורש שלה overflow:visible (כדי שידית הגרירה תחרוג החוצה): התוכן נחתך
+   בפינות המעוגלות, והידית נשארת מחוץ לחיתוך */
+.pane-clip {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    border-radius: inherit;
+    overflow: hidden;
+}
+.pane-resize-handle:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
