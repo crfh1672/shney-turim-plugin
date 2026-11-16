@@ -704,7 +704,7 @@
                Restore RTL on each rendered content root so text and layout
                direction remain unchanged. */
             direction: ltr;
-            padding: 0 14px;
+            padding: 0;
             /* WebKit uses the custom thumb rules below. The reader color is set
                only in the non-WebKit fallback, where scrollbar-color is supported. */
             scrollbar-color: auto;
