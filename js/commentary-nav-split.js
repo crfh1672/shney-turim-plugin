@@ -212,7 +212,12 @@
             panelEl.__commentaryPanelCloseHandler = null;
         }
 
+        // ידית הפתיחה מוסתרת כל עוד החלונית פתוחה, וחוזרת רק אחרי שהסגירה הסתיימה
+        // (אחרת היא מופיעה על רקע חלונית שעדיין מתכווצת).
+        const handleEl = document.getElementById('btn-commentary-panel');
+        const wasHidden = panelEl.hidden;
         if (isOpen) {
+            if (handleEl) handleEl.classList.add('active');
             panelEl.hidden = false;
             panelEl.inert = false;
             panelEl.removeAttribute('aria-hidden');
@@ -230,8 +235,11 @@
         panelEl.classList.remove('open');
 
         const finishClose = () => {
-            if (!panelEl.classList.contains('open')) panelEl.hidden = true;
+            if (panelEl.classList.contains('open')) return;
+            panelEl.hidden = true;
+            if (handleEl) handleEl.classList.remove('active');
         };
+        if (wasHidden) { finishClose(); return; }
         const onTransitionEnd = event => {
             if (event.target !== panelEl || event.propertyName !== 'flex-basis') return;
             panelEl.removeEventListener('transitionend', onTransitionEnd);
@@ -257,12 +265,10 @@
     function toggleCommentaryPanel() {
         const tab = getActiveCommentaryTab();
         const panelEl = document.getElementById('commentary-panel');
-        const btn = document.getElementById('btn-commentary-panel');
         if (!tab || !panelEl) return; // אין ספר טעון - שום דבר לעשות
 
         tab.commentaryPanelOpen = !tab.commentaryPanelOpen;
         setCommentaryPanelOpen(panelEl, tab.commentaryPanelOpen);
-        if (btn) btn.classList.toggle('active', tab.commentaryPanelOpen);
         if (tab.commentaryPanelOpen) syncCommentarySubTabButtonsUI(tab);
 
         if (tab.commentaryPanelOpen) showCommentaryContentForTab(tab);
@@ -294,7 +300,6 @@
         const isOpen = Boolean(tab && tab.commentaryPanelOpen);
         setCommentaryPanelOpen(panelEl, isOpen);
         if (btn) {
-            btn.classList.toggle('active', isOpen);
             btn.disabled = !tab; // כמו כפתור ההדפסה - לא רלוונטי בטאב "ספר חדש"/ללא טאב פעיל
         }
         if (!tab || !isOpen) return;

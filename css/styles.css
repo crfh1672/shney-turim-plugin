@@ -89,11 +89,14 @@
             --font-book: 'Segoe UI', Arial, sans-serif;
             --font-commentators: 'Shofar', serif;
             --font-size-book: 14pt;
-            /* Material elevation 1 של אוצריא (חלונית מוצמדת, AppTokens.elevation1): צל קרוב וצר,
-               בניגוד ל-elevation2 (0 2px 8px) שמיועד לתפריטים וחלוניות צפות. */
+            /* צללי Material של אוצריא (shadowColor בשקיפות 22%): החלונית המוצמדת ברמה 1 והצפה ברמה 2.
+               ב-Flutter הצל הנראה חלש בהרבה מ-box-shadow רגיל, ולכן ערכים נמוכים כאן. */
             --shadow-elevation-1:
-                0 1px 1px color-mix(in srgb, var(--color-shadow, #000000) 10%, transparent),
-                0 1px 3px color-mix(in srgb, var(--color-shadow, #000000) 14%, transparent);
+                0 1px 2px color-mix(in srgb, var(--color-shadow, #000000) 7%, transparent),
+                0 1px 1px color-mix(in srgb, var(--color-shadow, #000000) 4%, transparent);
+            --shadow-elevation-2:
+                0 2px 5px color-mix(in srgb, var(--color-shadow, #000000) 8%, transparent),
+                0 1px 2px color-mix(in srgb, var(--color-shadow, #000000) 5%, transparent);
             --font-size-commentators: 22px;
             --font-size-commentary-panel: var(--font-size-commentators);
             --line-height-commentary-panel: var(--line-height-book);
@@ -676,13 +679,15 @@
             padding: 4px 0;
         }
         .commentary-links-chip-row[hidden] { display: none !important; }
+        /* Material Chip של אוצריא (compactFilterChips): מסגרת outlineVariant, רקע שקוף, גובה 24
+           (VisualDensity.compact), ריפוד פנימי 6/2 - המסגרת נכללת בו ולכן 5/1 + 1px. */
         .commentary-filter-chip {
             box-sizing: border-box;
-            min-height: 28px;
-            padding: 2px 6px;
-            border: 0;
+            min-height: 24px;
+            padding: 1px 5px;
+            border: 1px solid var(--color-outline-variant);
             border-radius: 8px;
-            background: var(--color-surface-container-low, var(--color-surface));
+            background: transparent;
             color: var(--color-on-surface-variant);
             font-family: var(--font-ui);
             font-size: 12px;
@@ -693,10 +698,10 @@
             -webkit-tap-highlight-color: transparent;
         }
         .commentary-filter-chip:hover {
-            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-surface-container-low, var(--color-surface)));
+            background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
         }
         .commentary-filter-chip:active {
-            background: color-mix(in srgb, var(--color-on-surface) 12%, var(--color-surface-container-low, var(--color-surface)));
+            background: color-mix(in srgb, var(--color-on-surface) 12%, transparent);
         }
         .commentary-filter-chip.selected {
             background: var(--color-secondary-container);
@@ -908,6 +913,14 @@
             padding: 0 14px;
             border-bottom: 1px solid var(--color-border-subtle);
         }
+        /* לשונית הקישורים באוצריא היא ExpansionTile: הקו התחתון (outlineVariant, דק) מצויר רק
+           לקישור פתוח; בין קישורים סגורים אין קו (collapsedShape שקוף). */
+        .commentary-entry-group[data-subtab="links"]:has(> .commentary-entry-group-header) {
+            border-bottom-color: transparent;
+        }
+        .commentary-entry-group[data-subtab="links"]:has(> .commentary-entry-group-header.expanded) {
+            border-bottom-color: var(--color-outline-variant);
+        }
 
         /* כותרת קבוצת מפרשים/קישורים - השורה כולה (כולל החץ) לחיצה אחת שמרחיבה/מכווצת את
            תוכן הקבוצה, בדיוק כמו _CommentaryGroupHeader באוצריא עצמה (InkWell על כל השורה,
@@ -1116,13 +1129,15 @@
             width: 1px;
             background: var(--color-outline-variant, var(--color-border-subtle));
         }
+        /* Material Chip של אוצריא (compactFilterChips): מסגרת outlineVariant, רקע שקוף, גובה 24
+           (VisualDensity.compact), ריפוד פנימי 6/2 - המסגרת נכללת בו ולכן 5/1 + 1px. */
         .commentary-picker-chip {
             box-sizing: border-box;
-            min-height: 28px;
-            padding: 2px 6px;
-            border: 0;
+            min-height: 24px;
+            padding: 1px 5px;
+            border: 1px solid var(--color-outline-variant);
             border-radius: 8px;
-            background: var(--color-surface-container-low, var(--color-surface));
+            background: transparent;
             color: var(--color-on-surface-variant);
             font-family: var(--font-ui);
             font-size: 12px;
@@ -1133,7 +1148,7 @@
             -webkit-tap-highlight-color: transparent;
         }
         .commentary-picker-chip:hover {
-            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-surface-container-low, var(--color-surface)));
+            background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
         }
         .commentary-picker-chip.selected {
             background: var(--color-secondary-container);
@@ -5123,7 +5138,7 @@ body.commentary-overlay #commentary-panel {
     margin: 0;
     z-index: 160;
     max-width: calc(100% - 20px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+    box-shadow: var(--shadow-elevation-2);
 }
 body.commentary-overlay #commentary-panel.open {
     animation: commentary-overlay-in 0.18s ease-out;
