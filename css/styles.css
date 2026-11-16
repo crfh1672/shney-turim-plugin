@@ -485,6 +485,10 @@
         .commentary-search-field input:focus {
             background: color-mix(in srgb, var(--color-primary) 12%, transparent);
         }
+        .commentary-search-field input:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: -2px;
+        }
         .commentary-search-field-icon {
             position: absolute;
             z-index: 1;
@@ -532,6 +536,10 @@
         }
         .commentary-links-search-row input:focus {
             background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+        }
+        .commentary-links-search-row input:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: -2px;
         }
         .commentary-links-search-icon {
             position: absolute;
@@ -704,7 +712,7 @@
                Restore RTL on each rendered content root so text and layout
                direction remain unchanged. */
             direction: ltr;
-            padding: 0;
+            padding: 0 14px;
             /* WebKit uses the custom thumb rules below. The reader color is set
                only in the non-WebKit fallback, where scrollbar-color is supported. */
             scrollbar-color: auto;
@@ -1198,6 +1206,10 @@
         }
         .commentary-picker-search-field input:focus {
             background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+        }
+        .commentary-picker-search-field input:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: -2px;
         }
         .commentary-picker-search-icon {
             position: absolute;

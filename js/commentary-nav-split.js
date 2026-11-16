@@ -347,7 +347,10 @@
     // תוכן המפרשים והקישורים מגיע מספריית המשתמש (כולל ספרים פרטיים) והערות אישיות, ונכנס ל-innerHTML.
     // הניקוי נעשה במסמך אינרטי (DOMParser): בלי הרצת סקריפטים ובלי טעינת תמונות בזמן הניתוח.
     const COMMENTARY_BLOCKED_TAGS = 'script,style,iframe,object,embed,link,meta,base,form,svg,math';
-    const COMMENTARY_UNSAFE_URL = /^\s*(javascript|vbscript|data:(?!image\/))/i;
+    // רווחים/תווי בקרה בתוך הסכמה ("java&#9;script:") מוסרים לפני הבדיקה, כמו שהדפדפן עושה.
+    const COMMENTARY_UNSAFE_URL = /^(javascript|vbscript|data:(?!image\/))/i;
+    // style מוטמע יכול לטעון משאבי רשת (url()/@import/image-set) - מסירים רק כשיש כאלה.
+    const COMMENTARY_UNSAFE_STYLE = /url\s*\(|@import|image-set|expression\s*\(|javascript:/i;
 
     function sanitizeCommentaryHtml(html) {
         const doc = new DOMParser().parseFromString('<body>' + String(html || '') + '</body>', 'text/html');
@@ -356,7 +359,8 @@
             Array.from(el.attributes).forEach(attr => {
                 const name = attr.name.toLowerCase();
                 const isUrlAttr = name === 'href' || name === 'src' || name === 'xlink:href' || name === 'action' || name === 'formaction';
-                if (name.startsWith('on') || name === 'srcdoc' || (isUrlAttr && COMMENTARY_UNSAFE_URL.test(attr.value))) {
+                if (name.startsWith('on') || name === 'srcdoc' || (isUrlAttr && COMMENTARY_UNSAFE_URL.test(attr.value.replace(/[\u0000-\u0020]/g, ''))) ||
+                    (name === 'style' && COMMENTARY_UNSAFE_STYLE.test(attr.value))) {
                     el.removeAttribute(attr.name);
                 }
             });
@@ -471,14 +475,27 @@
     // נכנסים אליה רק דרך לחיצה על כפתור בחירת המפרשים (היא אינה אחת מלשוניות הכותרת הרגילות),
     // ויוצאים ממנה רק דרך חץ החזרה שבראשה - שמחזיר בדיוק ללשונית שממנה נכנסו (בפועל תמיד
     // "מפרשים", כי כפתור בחירת המפרשים מוצג רק שם).
-    async function fetchCommentaryPickerTypeLinksWindow(tab, startLine, endLine, connectionTypes) {
+    // מגביל מקביליות: רק הקריאה לגשר עצמה תופסת מקום (לא ההמתנה לתת-חלונות), ולכן אין קיפאון.
+    function createCommentaryLimiter(max) {
+        let active = 0;
+        const queue = [];
+        const next = () => {
+            if (active >= max || queue.length === 0) return;
+            active++;
+            const { fn, resolve, reject } = queue.shift();
+            Promise.resolve().then(fn).then(resolve, reject).finally(() => { active--; next(); });
+        };
+        return fn => new Promise((resolve, reject) => { queue.push({ fn, resolve, reject }); next(); });
+    }
+
+    async function fetchCommentaryPickerTypeLinksWindow(tab, startLine, endLine, connectionTypes, limiter) {
         try {
-            const { data } = await Otzaria.call('library.getLinks', {
+            const { data } = await limiter(() => Otzaria.call('library.getLinks', {
                 bookId: tab.id,
                 startLine,
                 endLine,
                 connectionTypes
-            });
+            }));
             const links = data && Array.isArray(data.links) ? data.links : [];
             if (!data || !data.truncated) return { links, complete: Boolean(data) };
             if (startLine >= endLine) return { links, complete: false };
@@ -487,8 +504,8 @@
             // קישור שמופיעים בהמשך הטווח. כל תת-חלון נשאר בתוך מגבלת 200 השורות.
             const middle = Math.floor((startLine + endLine) / 2);
             const [left, right] = await Promise.all([
-                fetchCommentaryPickerTypeLinksWindow(tab, startLine, middle, connectionTypes),
-                fetchCommentaryPickerTypeLinksWindow(tab, middle + 1, endLine, connectionTypes)
+                fetchCommentaryPickerTypeLinksWindow(tab, startLine, middle, connectionTypes, limiter),
+                fetchCommentaryPickerTypeLinksWindow(tab, middle + 1, endLine, connectionTypes, limiter)
             ]);
             return {
                 links: [...left.links, ...right.links],
@@ -507,8 +524,10 @@
                 Math.min(endLine, start + 199)
             ]);
         }
+        // מגבלת מקביליות משותפת לכל הרמות (כולל חלוקה רקורסיבית של חלונות חתוכים).
+        const limiter = tab._pickerLinksLimiter || (tab._pickerLinksLimiter = createCommentaryLimiter(4));
         const results = await Promise.all(windows.map(([start, end]) =>
-            fetchCommentaryPickerTypeLinksWindow(tab, start, end, connectionTypes)
+            fetchCommentaryPickerTypeLinksWindow(tab, start, end, connectionTypes, limiter)
         ));
         return {
             links: results.flatMap(result => result.links),
@@ -916,7 +935,7 @@
         }
         chips.appendChild(axes);
 
-        const term = searchTerm;
+        const term = searchTerm.trim();
         const visibleEntries = groups.map(group => {
             const label = group.title || 'שאר מפרשים';
             const names = (group.commentators || []).filter(name => {
@@ -1242,7 +1261,7 @@
             ['MODERN', 'מחברי זמננו']
         ];
         for (const [key, label] of ordered) {
-            if (categories.has(label)) return key;
+            if (categories.has(label.replace(/["״׳]/g, ''))) return key;
         }
         return 'OTHER';
     }
