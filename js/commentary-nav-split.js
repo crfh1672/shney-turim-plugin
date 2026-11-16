@@ -212,17 +212,24 @@
             panelEl.__commentaryPanelCloseHandler = null;
         }
 
-        // ידית הפתיחה מוסתרת כל עוד החלונית פתוחה, וחוזרת רק אחרי שהסגירה הסתיימה
-        // (אחרת היא מופיעה על רקע חלונית שעדיין מתכווצת).
+        // ידית הפתיחה מוסתרת בזמן שהחלונית פתוחה או דועכת החוצה.
         const handleEl = document.getElementById('btn-commentary-panel');
         const wasHidden = panelEl.hidden;
         if (isOpen) {
             if (handleEl) handleEl.classList.add('active');
+            const alreadyOpen = !wasHidden &&
+                panelEl.classList.contains('open') &&
+                !panelEl.classList.contains('closing');
             panelEl.hidden = false;
             panelEl.inert = false;
             panelEl.removeAttribute('aria-hidden');
-            void panelEl.offsetWidth;
-            panelEl.classList.add('open');
+            panelEl.classList.remove('closing');
+            if (!alreadyOpen) {
+                // One initial layout read starts the opacity/transform transition;
+                // width/flex-basis themselves are no longer animated frame by frame.
+                void panelEl.offsetWidth;
+                panelEl.classList.add('open');
+            }
             return;
         }
 
@@ -232,16 +239,27 @@
         }
         panelEl.inert = true;
         panelEl.setAttribute('aria-hidden', 'true');
-        panelEl.classList.remove('open');
 
+        const wasVisible = !wasHidden &&
+            (panelEl.classList.contains('open') || panelEl.classList.contains('closing'));
         const finishClose = () => {
             if (panelEl.classList.contains('open')) return;
             panelEl.hidden = true;
+            panelEl.classList.remove('closing');
             if (handleEl) handleEl.classList.remove('active');
         };
-        if (wasHidden) { finishClose(); return; }
+        if (!wasVisible) {
+            panelEl.classList.remove('open', 'closing');
+            finishClose();
+            return;
+        }
+
+        // Retain the pane's width while fading; release its flex space only once the
+        // opacity transition ends. This avoids continuous layout work over 300ms.
+        panelEl.classList.add('closing');
+        panelEl.classList.remove('open');
         const onTransitionEnd = event => {
-            if (event.target !== panelEl || event.propertyName !== 'flex-basis') return;
+            if (event.target !== panelEl || event.propertyName !== 'opacity') return;
             panelEl.removeEventListener('transitionend', onTransitionEnd);
             panelEl.__commentaryPanelCloseHandler = null;
             if (panelEl.__commentaryPanelCloseTimer) {
@@ -259,7 +277,7 @@
             }
             panelEl.__commentaryPanelCloseTimer = null;
             finishClose();
-        }, 350);
+        }, 220);
     }
 
     function toggleCommentaryPanel() {
@@ -1691,11 +1709,11 @@
         body.replaceChildren(status);
     }
 
-    function renderCommentarySkeletonLoading(body) {
+    function renderCommentarySkeletonLoading(body, label = 'טוען תוכן מפרשים') {
         const root = document.createElement('div');
         root.className = 'commentary-loading-skeleton';
         root.setAttribute('role', 'status');
-        root.setAttribute('aria-label', 'טוען תוכן מפרשים');
+        root.setAttribute('aria-label', label);
 
         for (let index = 0; index < 4; index++) {
             const group = document.createElement('div');
@@ -1771,7 +1789,8 @@
     // הטווח המוצג. כל קישור מוצג כפריט נפרד עם כותרת והפניה, כמו ברשימת הקישורים באוצריא.
     function renderCommentaryLinksBody(tab, body) {
         if (tab.linksContentLoading) {
-            renderCommentaryPanelSpinner(body, 'טוען קישורים');
+            // Use the same animated skeleton shown while commentary content is loading.
+            renderCommentarySkeletonLoading(body, 'טוען קישורים');
             return;
         }
         if (tab.linksLoadError) {

@@ -289,8 +289,8 @@
            עצמאית לכל טאב, ולכן עצמאית גם בין שני חלוני התצוגה המפוצלת. ============
            ============================================================================ */
         #commentary-panel {
-            /* Otzaria's AdaptiveSidePane animates its occupied width (300ms)
-               and opacity (200ms), rather than appearing through display:none. */
+            /* Set the pane's layout width once. Animate only opacity/transform so opening
+               and closing do not trigger repeated flex/layout recalculation every frame. */
             display: flex;
             flex-direction: column;
             width: 0;
@@ -309,40 +309,34 @@
             box-shadow: var(--shadow-elevation-1);
             overflow: visible; /* ידית הגרירה חורגת החוצה; חיתוך הפינות נעשה ב-.pane-clip */
             opacity: 0;
-            transform: translateX(-8px);
+            transform: translateX(-6px);
             visibility: hidden;
             pointer-events: none;
             transition:
-                flex-basis 300ms cubic-bezier(0.4, 0, 0.2, 1),
-                width 300ms cubic-bezier(0.4, 0, 0.2, 1),
-                min-width 300ms cubic-bezier(0.4, 0, 0.2, 1),
-                margin-inline 300ms cubic-bezier(0.4, 0, 0.2, 1),
-                border-width 300ms cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 200ms ease,
-                transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
-                visibility 0s linear 300ms;
+                opacity 160ms ease,
+                transform 160ms ease,
+                visibility 0s linear 160ms;
         }
-        #commentary-panel.open {
+        /* Keep the occupied width during the short fade-out, then release it in one layout pass. */
+        #commentary-panel.open,
+        #commentary-panel.closing {
             width: 340px;
-            /* רוחב מזערי כמו באוצריא (280), בלי תקרה של 45vw - הרוחב בפועל נקבע ב-JS */
             min-width: 280px;
             max-width: none;
             flex-basis: 340px;
             margin-inline: 10px 12px;
             border-width: 1px;
+            visibility: visible;
+        }
+        #commentary-panel.open {
             opacity: 1;
             transform: translateX(0);
-            visibility: visible;
             pointer-events: auto;
-            transition:
-                flex-basis 300ms cubic-bezier(0.4, 0, 0.2, 1),
-                width 300ms cubic-bezier(0.4, 0, 0.2, 1),
-                min-width 300ms cubic-bezier(0.4, 0, 0.2, 1),
-                margin-inline 300ms cubic-bezier(0.4, 0, 0.2, 1),
-                border-width 300ms cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 200ms ease,
-                transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
-                visibility 0s;
+        }
+        #commentary-panel.closing {
+            opacity: 0;
+            transform: translateX(-6px);
+            pointer-events: none;
         }
         #commentary-panel[hidden] {
             display: none !important;
@@ -654,14 +648,15 @@
         }
         body.app-compact-density .commentary-links-search-content { min-height: 32px; }
         body.app-compact-density .commentary-links-search-content input { margin-inline: 7px; }
-        /* Keep one consistent 4px horizontal rhythm both between chips and
-           between the type/era groups, matching compactFilterChips. */
+        /* Matches LinksListView: outer Wrap uses AppTokens.spaceMD (16px)
+           between type/era groups; compactFilterChips uses AppTokens.spaceXS (4px)
+           between chips inside each group. */
         .commentary-links-chip-groups {
             display: flex;
             flex-flow: row wrap;
             align-items: center;
             justify-content: center;
-            column-gap: 4px;
+            column-gap: 16px;
             row-gap: 0;
             padding: 0 8px 4px;
             margin-bottom: 8px;
@@ -823,6 +818,8 @@
             padding: 12px 16px;
         }
         .commentary-loading-skeleton-title {
+            position: relative;
+            overflow: hidden;
             width: 30%;
             height: 20px;
             margin-bottom: 12px;
@@ -835,9 +832,29 @@
             gap: 8px;
         }
         .commentary-loading-skeleton-line {
+            position: relative;
+            overflow: hidden;
             height: 16px;
             border-radius: var(--app-radius, 8px);
             background: var(--color-surface-container-highest);
+        }
+        .commentary-loading-skeleton-title::after,
+        .commentary-loading-skeleton-line::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                color-mix(in srgb, var(--color-surface) 55%, transparent),
+                transparent
+            );
+            transform: translateX(100%);
+            animation: commentary-loading-shimmer 1.4s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes commentary-loading-shimmer {
+            to { transform: translateX(-100%); }
         }
         .commentary-loading-skeleton-line:last-child { margin-bottom: 8px; }
         @keyframes commentary-panel-spin {
@@ -3751,9 +3768,11 @@
             100% { stroke-dasharray: 89, 200; stroke-dashoffset: -124px; }
         }
         @media (prefers-reduced-motion: reduce) {
-            /* בלי אנימציית ההתארכות/התקצרות של הקשת - קשת קבועה שמסתובבת לאט, כדי שעדיין יהיה ברור שמשהו נטען */
+            /* Keep progress legible while slowing non-essential loading motion. */
             .preview-loading-spinner { animation-duration: 3s; }
             .preview-loading-path { animation: none; stroke-dasharray: 60, 200; }
+            .commentary-loading-skeleton-title::after,
+            .commentary-loading-skeleton-line::after { animation-duration: 3s; }
         }
         @media print { #preview-loading { display: none !important; } }
 
@@ -5145,16 +5164,7 @@ body.commentary-overlay #commentary-panel {
     max-width: calc(100% - 20px);
     box-shadow: var(--shadow-elevation-2);
 }
-body.commentary-overlay #commentary-panel.open {
-    animation: commentary-overlay-in 0.18s ease-out;
-}
-@keyframes commentary-overlay-in {
-    from { opacity: 0; transform: translateX(-24px); }
-    to { opacity: 1; transform: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-    body.commentary-overlay #commentary-panel.open { animation: none; }
-}
+/* Overlay mode uses the same lightweight opacity/transform transition as the docked pane. */
 
 /* מעטפת חיתוך לתוכן חלונית שהשורש שלה overflow:visible (כדי שידית הגרירה תחרוג החוצה): התוכן נחתך
    בפינות המעוגלות, והידית נשארת מחוץ לחיתוך */
