@@ -654,14 +654,14 @@
         }
         body.app-compact-density .commentary-links-search-content { min-height: 32px; }
         body.app-compact-density .commentary-links-search-content input { margin-inline: 7px; }
-        /* Mirrors LinksListView: outer Wrap (16px between type/era groups),
-           with each compactFilterChips group wrapping its own chips (4px). */
+        /* Keep one consistent 4px horizontal rhythm both between chips and
+           between the type/era groups, matching compactFilterChips. */
         .commentary-links-chip-groups {
             display: flex;
             flex-flow: row wrap;
             align-items: center;
             justify-content: center;
-            column-gap: 16px;
+            column-gap: 4px;
             row-gap: 0;
             padding: 0 8px 4px;
             margin-bottom: 8px;
@@ -679,8 +679,6 @@
             padding: 4px 0;
         }
         .commentary-links-chip-row[hidden] { display: none !important; }
-        /* Material Chip של אוצריא (compactFilterChips): מסגרת outlineVariant, רקע שקוף, גובה 24
-           (VisualDensity.compact), ריפוד פנימי 6/2 - המסגרת נכללת בו ולכן 5/1 + 1px. */
         /* Material Chip כמו compactFilterChips באוצריא: משטח אטום,
            מסגרת outlineVariant, גובה קומפקטי וריפוד פנימי תואם. */
         .commentary-filter-chip {
