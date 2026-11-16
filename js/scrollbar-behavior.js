@@ -664,6 +664,7 @@
         const pickerHost = document.getElementById('commentary-panel-body');
         if (pickerHost) {
             const pickerObserver = new MutationObserver(records => {
+                let structureChanged = false;
                 for (const record of records) {
                     for (const node of record.addedNodes) {
                         if (!(node instanceof Element)) continue;
@@ -674,7 +675,7 @@
                             if (states.has(element)) continue;
                             createScrollbar(element);
                             const state = states.get(element);
-                            if (state) observeState(state);
+                            if (state) { observeState(state); structureChanged = true; }
                         }
                     }
                 }
@@ -693,6 +694,7 @@
                         resizeObserver.unobserve(state.parent);
                     }
                     removedState = true;
+                    structureChanged = true;
                 }
                 if (removedState) {
                     // MutationObserver cannot unobserve a single target.
@@ -705,6 +707,8 @@
                         });
                     }
                 }
+                // שינוי תוכן בתוך גלילה קיימת מטופל ב-mutationObserver של אותה גלילה; כאן רק שינוי מבנה
+                if (!structureChanged) return;
                 for (const state of states.values()) updateTrackPosition(state);
                 refreshHover(lastPointer);
             });

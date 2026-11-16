@@ -221,6 +221,10 @@
             return;
         }
 
+        if (panelEl.contains(document.activeElement)) {
+            const opener = document.getElementById('btn-commentary-panel');
+            if (opener && !opener.disabled) opener.focus();
+        }
         panelEl.inert = true;
         panelEl.setAttribute('aria-hidden', 'true');
         panelEl.classList.remove('open');
@@ -310,7 +314,10 @@
         const isPicker = (name === 'picker');
         const effectiveTabName = isPicker ? 'commentary' : name;
         document.querySelectorAll('#commentary-panel .commentary-tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.subtab === effectiveTabName);
+            const isActive = btn.dataset.subtab === effectiveTabName;
+            btn.classList.toggle('active', isActive);
+            btn.setAttribute('aria-selected', String(isActive));
+            btn.tabIndex = isActive ? 0 : -1;
         });
         const toolbarRow = document.getElementById('commentary-toolbar-row');
         const searchRow = document.getElementById('commentary-search-row');
@@ -428,6 +435,24 @@
         syncCommentarySubTabButtonsUI(tab);
         scheduleCommentarySearchRender(tab, true);
     }
+
+    // ניווט בחצים בין הלשוניות (תבנית tablist): ימין/שמאל לפי כיוון הקריאה, Home/End לקצוות
+    document.addEventListener('keydown', e => {
+        const btn = e.target && e.target.closest && e.target.closest('#commentary-panel .commentary-tab-btn');
+        if (!btn || e.ctrlKey || e.altKey || e.metaKey) return;
+        const tabs = Array.from(document.querySelectorAll('#commentary-panel .commentary-tab-btn'));
+        const i = tabs.indexOf(btn);
+        let next = -1;
+        if (e.key === 'ArrowLeft') next = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowRight') next = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') next = 0;
+        else if (e.key === 'End') next = tabs.length - 1;
+        if (next < 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        tabs[next].focus();
+        switchCommentarySubTab(tabs[next].dataset.subtab);
+    });
 
     function switchCommentarySubTab(name) {
         const tab = getActiveCommentaryTab();
@@ -556,9 +581,7 @@
                 });
             }
 
-            tab.commentaryPickerLinks = linksComplete ? linkData.links : [];
             tab.commentaryPickerCommentatorsByType = byType;
-            tab.commentaryPickerContextTruncated = Boolean(linkData && !linkData.complete);
             tab.commentaryPickerContextError = relevant === null || !linksComplete;
             tab.commentaryPickerContextLoaded = true;
 
@@ -667,10 +690,12 @@
         searchInput.placeholder = 'סינון מפרשים...';
         searchInput.setAttribute('aria-label', 'סינון מפרשים');
         searchInput.value = tab.commentaryPickerSearchTerm || '';
+        let pickerSearchTimer = null;
         searchInput.addEventListener('input', () => {
             tab.commentaryPickerSearchTerm = searchInput.value;
             clearSearchButton.hidden = !searchInput.value;
-            renderCommentaryPickerListOnly(tab);
+            clearTimeout(pickerSearchTimer);
+            pickerSearchTimer = setTimeout(() => renderCommentaryPickerListOnly(tab), 120);
         });
 
         const clearSearchButton = document.createElement('button');
@@ -681,6 +706,7 @@
         clearSearchButton.setAttribute('data-tooltip', 'נקה חיפוש');
         clearSearchButton.innerHTML = fluentIconHTML('dismiss');
         clearSearchButton.addEventListener('click', () => {
+            clearTimeout(pickerSearchTimer);
             tab.commentaryPickerSearchTerm = '';
             searchInput.value = '';
             clearSearchButton.hidden = true;
@@ -766,8 +792,17 @@
         const list = document.getElementById('commentary-picker-list');
         const chips = document.getElementById('commentary-picker-era-chips');
         if (!list || !chips) return;
+        // הרשימה נבנית מחדש בכל שינוי; מחזירים את המיקוד לשורה שהייתה בו (אחרת הוא נופל ל-body)
+        const focused = document.activeElement;
+        const focusKey = focused && list.contains(focused) ? focused.dataset.pickerKey : null;
         list.replaceChildren();
         chips.replaceChildren();
+        if (focusKey) {
+            queueMicrotask(() => {
+                const again = Array.from(list.querySelectorAll('[data-picker-key]')).find(el => el.dataset.pickerKey === focusKey);
+                if (again) again.focus({ preventScroll: true });
+            });
+        }
 
         if (tab.commentaryLoadError) {
             const error = document.createElement('div');
@@ -961,6 +996,7 @@
             row.type = 'button';
             row.className = 'commentary-picker-tree-row ' + kind + (selectedRow ? ' selected' : '');
             row.setAttribute('aria-pressed', checked ? 'true' : 'false');
+            row.dataset.pickerKey = kind + ':' + label;
             const iconBox = document.createElement('span');
             iconBox.className = 'commentary-picker-icon-box';
             iconBox.innerHTML = kind === 'book'
@@ -978,6 +1014,12 @@
             card.className = 'commentary-picker-tree-card';
             return card;
         };
+        // הנתונים של לשונית "מפרשים" נטענים מחדש בחזרה אליה (מפתח הטווח כולל את הבחירה)
+        const commitSelection = next => {
+            tab.activeCommentators = orderCommentarySelection(tab, Array.from(next), uniqueVisibleNames);
+            saveActiveCommentatorsForBook(tab);
+            renderCommentaryPickerListOnly(tab);
+        };
         const updateSelection = names => {
             const allSelected = names.length > 0 && names.every(name => selected.has(name));
             const next = new Set(tab.activeCommentators || []);
@@ -985,10 +1027,7 @@
                 if (allSelected) next.delete(name);
                 else next.add(name);
             });
-            tab.activeCommentators = orderCommentarySelection(tab, Array.from(next), uniqueVisibleNames);
-            saveActiveCommentatorsForBook(tab);
-            refreshCommentaryPanel(true);
-            renderCommentaryPickerListOnly(tab);
+            commitSelection(next);
         };
 
         const masterCard = makeCard();
@@ -1029,10 +1068,7 @@
                         const next = new Set(tab.activeCommentators || []);
                         if (next.has(name)) next.delete(name);
                         else next.add(name);
-                        tab.activeCommentators = orderCommentarySelection(tab, Array.from(next), uniqueVisibleNames);
-                        saveActiveCommentatorsForBook(tab);
-                        refreshCommentaryPanel(true);
-                        renderCommentaryPickerListOnly(tab);
+                        commitSelection(next);
                     }
                 }));
             });
@@ -1434,6 +1470,7 @@
         headerEl.classList.toggle('expanded', expanded);
         headerEl.setAttribute('aria-expanded', String(expanded));
         contentEl.classList.toggle('collapsed', !expanded);
+        contentEl.inert = !expanded; // תוכן מכווץ לא נגיש במקלדת ובקורא מסך
     }
 
     function syncCommentaryGroupExpansionUI(tab, subTabKey, names) {
@@ -1552,6 +1589,7 @@
 
         const contentWrapEl = document.createElement('div');
         contentWrapEl.className = 'commentary-entry-group-content' + (isExpanded ? '' : ' collapsed');
+        contentWrapEl.inert = !isExpanded;
         const innerEl = document.createElement('div');
         innerEl.className = 'commentary-entry-group-inner';
 

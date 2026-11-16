@@ -944,16 +944,16 @@
             <div id="commentary-panel-resize-handle" class="pane-resize-handle" data-side="left"></div>
             <div class="pane-clip">
             <div class="commentary-panel-header">
-                <div class="commentary-tabs-row">
-                    <button type="button" class="commentary-tab-btn active" data-subtab="commentary" onclick="switchCommentarySubTab('commentary')" data-tooltip="מפרשים" aria-label="מפרשים">
+                <div class="commentary-tabs-row" role="tablist" aria-label="לשוניות חלונית מפרשים">
+                    <button type="button" class="commentary-tab-btn active" data-subtab="commentary" role="tab" aria-selected="true" aria-controls="commentary-panel-body" onclick="switchCommentarySubTab('commentary')" data-tooltip="מפרשים" aria-label="מפרשים">
                         <span class="commentary-tab-icon"><i class="ui-icon otzaria-icon" data-otzaria-icon="book" aria-hidden="true"></i></span>
                         <span class="commentary-tab-label">מפרשים</span>
                     </button>
-                    <button type="button" class="commentary-tab-btn" data-subtab="links" onclick="switchCommentarySubTab('links')" data-tooltip="קישורים" aria-label="קישורים">
+                    <button type="button" class="commentary-tab-btn" data-subtab="links" role="tab" aria-selected="false" aria-controls="commentary-panel-body" onclick="switchCommentarySubTab('links')" data-tooltip="קישורים" aria-label="קישורים">
                         <span class="commentary-tab-icon"><i class="ui-icon otzaria-icon" data-otzaria-icon="links" aria-hidden="true"></i></span>
                         <span class="commentary-tab-label">קישורים</span>
                     </button>
-                    <button type="button" class="commentary-tab-btn" data-subtab="notes" onclick="switchCommentarySubTab('notes')" data-tooltip="הערות" aria-label="הערות">
+                    <button type="button" class="commentary-tab-btn" data-subtab="notes" role="tab" aria-selected="false" aria-controls="commentary-panel-body" onclick="switchCommentarySubTab('notes')" data-tooltip="הערות" aria-label="הערות">
                         <span class="commentary-tab-icon"><i class="ui-icon" data-fluent-icon="note" aria-hidden="true"></i></span>
                         <span class="commentary-tab-label">הערות</span>
                     </button>
@@ -997,7 +997,7 @@
                     <div class="commentary-links-chip-row" id="commentary-links-era-chips"></div>
                 </div>
             </div>
-            <div class="commentary-panel-body" id="commentary-panel-body">
+            <div class="commentary-panel-body" id="commentary-panel-body" role="tabpanel">
                 <div class="commentary-panel-status">יש לטעון ספר כדי לראות מפרשים כאן.</div>
             </div>
             </div>
