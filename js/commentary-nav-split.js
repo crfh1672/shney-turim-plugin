@@ -2545,10 +2545,20 @@
         // מקבלת את כל המרכז. מתחת לרוחב מזערי של כותרת (80) המרכז כולו מוסתר.
         const navBtn = (document.body.classList.contains('compact-toolbar') ||
             document.body.classList.contains('app-compact-density') || width < 240) ? 36 : 40;
-        const arrowsWidth = 4 * navBtn + 2 * 4;
+        // מחוון העמודים הוא רכיב ברוחב קבוע בתוך המרכז, ולכן הוא חייב להיכלל
+        // בחישוב רוחב החיצים; אחרת הוא עלול לגלוש על כפתורי הסרגל שבצדדים.
+        // כשהמרכז מוסתר זמנית ברוחב קטן, מציגים אותו לרגע כדי למדוד את המחוון.
+        const wasHidden = center.classList.contains('nav-center-hidden');
+        if (wasHidden) center.classList.remove('nav-center-hidden');
+        const indicatorEl = document.getElementById('page-indicator');
+        const indicatorWidth = indicatorEl && !indicatorEl.hidden
+            ? Math.ceil(indicatorEl.getBoundingClientRect().width)
+            : 0;
+        // 4 חיצים, כותרת ומחוון = 5 רווחים; בלי מחוון = 4 רווחים.
+        const arrowsWidth = 4 * navBtn + indicatorWidth + (indicatorWidth > 0 ? 5 : 4) * 4;
         const arrowsFit = width >= arrowsWidth;
         window.__navArrowsInBar = arrowsFit;
-        if (width < NAV_CENTER_MIN_WIDTH) {
+        if (width < Math.max(NAV_CENTER_MIN_WIDTH, indicatorWidth)) {
             center.classList.add('nav-center-hidden');
             toolbar.style.removeProperty('--nav-start-max');
             window.__navArrowsInBar = false;
@@ -2557,6 +2567,7 @@
         }
         center.classList.remove('nav-center-hidden');
         center.classList.toggle('nav-center-no-arrows', !arrowsFit);
+        center.classList.toggle('nav-center-tight', width < 240);
         if (typeof window.renderToolbarOverflowMenu === 'function') window.renderToolbarOverflowMenu();
         // ממורכזת בסרגל כשיש מקום; אם לא - זזה בדיוק כמה שצריך כדי לא לכסות אף לחצן
         const idealLeft = toolbar.clientWidth / 2 - width / 2;

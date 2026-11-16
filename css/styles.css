@@ -681,13 +681,15 @@
         .commentary-links-chip-row[hidden] { display: none !important; }
         /* Material Chip של אוצריא (compactFilterChips): מסגרת outlineVariant, רקע שקוף, גובה 24
            (VisualDensity.compact), ריפוד פנימי 6/2 - המסגרת נכללת בו ולכן 5/1 + 1px. */
+        /* Material Chip כמו compactFilterChips באוצריא: משטח אטום,
+           מסגרת outlineVariant, גובה קומפקטי וריפוד פנימי תואם. */
         .commentary-filter-chip {
             box-sizing: border-box;
-            min-height: 24px;
+            min-height: 28px;
             padding: 1px 5px;
             border: 1px solid var(--color-outline-variant);
             border-radius: 8px;
-            background: transparent;
+            background: var(--color-surface);
             color: var(--color-on-surface-variant);
             font-family: var(--font-ui);
             font-size: 12px;
@@ -698,10 +700,10 @@
             -webkit-tap-highlight-color: transparent;
         }
         .commentary-filter-chip:hover {
-            background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
+            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-surface));
         }
         .commentary-filter-chip:active {
-            background: color-mix(in srgb, var(--color-on-surface) 12%, transparent);
+            background: color-mix(in srgb, var(--color-on-surface) 12%, var(--color-surface));
         }
         .commentary-filter-chip.selected {
             background: var(--color-secondary-container);
@@ -1131,13 +1133,15 @@
         }
         /* Material Chip של אוצריא (compactFilterChips): מסגרת outlineVariant, רקע שקוף, גובה 24
            (VisualDensity.compact), ריפוד פנימי 6/2 - המסגרת נכללת בו ולכן 5/1 + 1px. */
+        /* Material Chip כמו compactFilterChips באוצריא: משטח אטום,
+           מסגרת outlineVariant, גובה קומפקטי וריפוד פנימי תואם. */
         .commentary-picker-chip {
             box-sizing: border-box;
-            min-height: 24px;
+            min-height: 28px;
             padding: 1px 5px;
             border: 1px solid var(--color-outline-variant);
             border-radius: 8px;
-            background: transparent;
+            background: var(--color-surface);
             color: var(--color-on-surface-variant);
             font-family: var(--font-ui);
             font-size: 12px;
@@ -1148,7 +1152,7 @@
             -webkit-tap-highlight-color: transparent;
         }
         .commentary-picker-chip:hover {
-            background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
+            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-surface));
         }
         .commentary-picker-chip.selected {
             background: var(--color-secondary-container);
@@ -5083,6 +5087,9 @@ body.app-compact-density .toolbar-main .nav-heading-btn .ui-icon {
 
 /* אין מקום לארבעת החיצים: הם עוברים לתפריט, והכותרת מקבלת את כל המרכז (ReaderNavCenter) */
 .toolbar-nav-center.nav-center-no-arrows .nav-heading-btn { display: none; }
+/* מרכז צר מ-240: כפתורי החיצים מצטמצמים ל-36, כמו ReaderNavCenter באוצריא. */
+.toolbar-nav-center.nav-center-tight .nav-heading-btn { width: 36px; height: 36px; padding: 8px; }
+.toolbar-nav-center.nav-center-tight .nav-heading-btn .ui-icon { width: 18px; height: 18px; font-size: 18px; }
 
 /* שורת אייקוני הניווט בראש התפריט "עוד" - לחיצה עליהם לא סוגרת את התפריט */
 .more-menu-nav-row {
