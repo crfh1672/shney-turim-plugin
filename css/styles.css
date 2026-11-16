@@ -100,6 +100,28 @@
             --radius-lg: var(--app-radius, 8px);
             --radius-pill: 999px;
             --app-radius: 8px;
+
+            /* טוקני מערכת העיצוב של אוצריא (lib/theme/app_tokens.dart ו-app_input_tokens.dart) */
+            --space-2xs: 2px;
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-smd: 12px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --font-sm: 12px;
+            --font-md: 14px;
+            --font-lg: 16px;
+            --border-thin: 1px;
+            --card-row-gap: 1.5px;
+            --motion-panel-opacity: 200ms;
+            --motion-panel-slide: 300ms;
+            --color-scrim: color-mix(in srgb, #000 13%, transparent);
+            --shadow-floating: 0 2px 8px rgb(0 0 0 / 22%);
+            --overlay-panel-inset-top: 10px;
+            --overlay-panel-inset-bottom: 12px;
+            --overlay-panel-inset-side: 10px;
+            --input-height: 48px;
+            --input-font-size: 16px;
             --top-bar-height: 56px;
             --toolbar-button-size: 40px;
             --toolbar-icon-size: 20px;
@@ -1280,10 +1302,10 @@
         .overlay-scrim {
             position: absolute;
             inset: 0;
-            background: rgba(0, 0, 0, 0.35);
+            background: var(--color-scrim);
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.25s;
+            transition: opacity var(--motion-panel-opacity);
             z-index: 240;
         }
 
@@ -1368,26 +1390,27 @@
             display: none;
         }
 
-        /* פאנל הגדרות שמאלי — מלא גובה, מכסה סרגלים, עם צל */
+        /* פאנל הגדרות שמאלי — ContextOverlayPanel של אוצריא: משטח צף עם מסגרת וצל */
         .settings-panel {
             position: absolute;
-            top: 10px; bottom: 10px; left: 10px;
+            top: var(--overlay-panel-inset-top);
+            bottom: var(--overlay-panel-inset-bottom);
+            left: var(--overlay-panel-inset-side);
             box-sizing: border-box;
             width: var(--settings-panel-width, 320px);
-            max-width: calc(100vw - 20px);
-            background: var(--color-surface-container);
+            max-width: calc(100vw - 2 * var(--overlay-panel-inset-side));
+            background: var(--color-nav-panel-background);
+            border: var(--border-thin) solid var(--color-outline-variant);
             border-radius: var(--radius-lg);
             overflow: visible; /* ידית הגרירה חורגת החוצה */
-            background-clip: padding-box;
-            box-shadow: 4px 0 32px rgba(0, 0, 0, 0.22);
+            box-shadow: var(--shadow-floating);
             display: flex;
             flex-direction: column;
             z-index: 250;
             opacity: 0;
             transform: translateX(-100%);
             pointer-events: none;
-            transition: opacity 0.25s, transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-            border-inline-end: 1px solid var(--color-border-subtle);
+            transition: opacity var(--motion-panel-opacity), transform var(--motion-panel-slide) ease-in-out;
         }
 
         .settings-panel.open {
@@ -1396,36 +1419,44 @@
             pointer-events: auto;
         }
 
+        @media (prefers-reduced-motion: reduce) {
+            .settings-panel,
+            .overlay-scrim {
+                transition: none;
+            }
+        }
+
         .settings-panel-header {
-            padding: 18px 16px 12px;
-            border-bottom: none;
-            background: var(--color-surface-container);
+            position: relative;
+            padding: var(--space-md) var(--space-md) var(--space-smd);
             display: flex;
             align-items: center;
-            justify-content: space-between;
         }
 
         .settings-panel-close-btn {
+            position: absolute;
+            inset-inline-end: var(--space-smd);
+            top: 50%;
+            transform: translateY(-50%);
             background: none;
             border: none;
             cursor: pointer;
             color: var(--color-on-surface);
             padding: 6px;
-            border-radius: var(--radius-sm);
+            border-radius: 50%;
             display: flex !important;
             align-items: center;
             justify-content: center;
-            /* דחיפה מפורשת לקצה הנגדי (שמאל ב-RTL) + מניעת כיווץ - לא מסתמכים רק על space-between */
-            margin-inline-start: auto;
-            flex-shrink: 0;
-            opacity: 0.75;
-            transition: background 0.15s, color 0.15s, opacity 0.15s;
+            transition: background 0.15s, color 0.15s;
         }
 
         .settings-panel-close-btn:hover {
-            background: var(--color-primary-subtle);
+            background: color-mix(in srgb, var(--color-primary) 8%, transparent);
             color: var(--color-primary);
-            opacity: 1;
+        }
+
+        .settings-panel-close-btn:active {
+            background: color-mix(in srgb, var(--color-primary) 12%, transparent);
         }
 
         .settings-panel-close-btn .ui-icon {
@@ -1437,7 +1468,11 @@
 
         .settings-panel-kicker {
             margin: 0;
+            flex: 1;
             min-width: 0;
+            /* מקום לכפתור הסגירה משני הצדדים, כדי שהכותרת תהיה במרכז הפאנל */
+            padding-inline: 44px;
+            text-align: center;
             color: var(--color-on-surface);
             font-family: 'Segoe UI', Arial, sans-serif !important;
             font-size: 1.35rem !important;
@@ -1447,47 +1482,45 @@
             text-transform: none;
         }
 
+        .settings-panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-md);
+        }
+
+        /* כותרת סעיף: AppSectionLabel מעל כרטיס ההגדרות (titleMedium, primary) */
         .settings-section-title {
-            margin: 0 0 6px;
+            margin: 0;
+            padding: var(--space-lg) var(--space-md) var(--space-smd);
             color: var(--color-primary);
-            font-size: 1rem;
+            font-size: var(--font-lg);
             font-weight: 700;
         }
 
+        /* AppCard.section: מסגרת דקה בלי צל, פינות מעוגלות ורווח בין שורות שמראה את רקע הפאנל */
         .settings-group {
             display: flex;
             flex-direction: column;
-            gap: 0px;
+            gap: var(--card-row-gap);
+            background: var(--color-nav-panel-background);
+            border: var(--border-thin) solid var(--color-outline-variant);
+            border-radius: var(--radius-md);
+            overflow: hidden;
         }
 
         .settings-card {
-            background: var(--color-on-primary);
-            border: none;
-            border-radius: var(--radius-md);
-            padding: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            background: var(--color-card-background);
+            padding: var(--space-sm) var(--space-md);
         }
 
-        .settings-group .settings-card {
-            border-radius: var(--radius-md);
-            box-shadow: none;
+        /* כפתור איפוס בתחתית לשונית, מופרד בקו */
+        .settings-reset-row {
+            margin-top: var(--space-lg);
+            padding-top: var(--space-md);
+            border-top: var(--border-thin) solid var(--color-border-subtle);
         }
 
-        .settings-group .settings-card:first-child:not(:last-child) {
-            border-bottom-left-radius: 0;
-            border-bottom-right-radius: 0;
-        }
-
-        .settings-group .settings-card:last-child:not(:first-child) {
-            border-top-left-radius: 0;
-            border-top-right-radius: 0;
-        }
-
-        .settings-group .settings-card:not(:first-child):not(:last-child) {
-            border-radius: 0;
-        }
-
-        /* כפתור איפוס משני */
+/* כפתור איפוס משני */
         .btn-secondary {
             background: var(--color-primary);
             color: var(--color-on-primary);
@@ -1669,11 +1702,40 @@
             border-color: var(--color-primary);
         }
 
-        /* --- לשוניות פאנל ההגדרות (כללי / קיצורים) - משתמשות באותם עיצוב .nav-subtabs/.nav-subtab-btn --- */
+        /* לשוניות פאנל ההגדרות: TabBar של אוצריא (אינדיקטור secondaryContainer, בלי מסגרת וקו מפריד) */
+        .settings-panel .nav-subtabs {
+            gap: 0;
+            padding: var(--space-sm) var(--space-md) 0;
+        }
+
+        .settings-panel .nav-subtab-btn {
+            min-height: 48px;
+            background: transparent;
+            border: none;
+            color: var(--color-on-surface-variant);
+            font-size: var(--font-md);
+            font-weight: 400;
+        }
+
+        .settings-panel .nav-subtab-btn:hover:not(.active) {
+            background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+            color: var(--color-on-surface-variant);
+        }
+
+        .settings-panel .nav-subtab-btn.active {
+            background: var(--color-secondary-container);
+            color: var(--color-on-surface);
+            font-weight: 600;
+        }
+
+        .settings-panel .nav-subtab-btn.active:hover {
+            background: color-mix(in srgb, var(--color-primary) 8%, var(--color-secondary-container));
+        }
+
+        /* --- לשוניות פאנל ההגדרות (כללי / קיצורים) --- */
         .settings-tab-pane {
             display: none;
             flex-direction: column;
-            gap: 14px;
         }
         .settings-tab-pane.active {
             display: flex;
@@ -2115,6 +2177,11 @@
             touch-action: none;
         }
 
+        body.app-compact-density {
+            --input-height: 36px;
+            --input-font-size: 13px;
+        }
+
         body.app-compact-density .pane-resize-handle {
             --handle-hit: 18px;
         }
@@ -2444,13 +2511,22 @@
         .settings-control-group {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            padding: 4px 0;
+            gap: var(--space-xs);
         }
         .settings-control-group label {
-            font-size: 0.9rem;
-            font-weight: 500;
+            font-size: var(--font-lg);
+            font-weight: 400;
             color: var(--color-on-surface);
+        }
+
+        /* שורת מתג: כותרת בצד אחד והמתג בקצה */
+        .settings-switch-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-md);
+            width: 100%;
+            cursor: pointer;
         }
 
         .settings-select {
@@ -2466,6 +2542,44 @@
             cursor: pointer;
         }
 
+        /* AppDropdownField: FilledButton.tonal בגובה 40, עם חץ בקצה (שדות הבחירה בפאנל ההגדרות) */
+        .settings-select-field {
+            position: relative;
+            display: block;
+        }
+        .settings-select-field > .settings-select {
+            appearance: none;
+            -webkit-appearance: none;
+            min-height: 40px;
+            padding: 0 var(--space-md);
+            padding-inline-end: calc(var(--space-sm) + 24px + var(--space-sm));
+            border: none;
+            background: var(--color-secondary-container);
+            color: var(--color-on-secondary-container);
+            font-size: var(--font-md);
+            font-weight: 500;
+            text-overflow: ellipsis;
+        }
+        .settings-select-field > .settings-select:hover {
+            background: color-mix(in srgb, var(--color-on-primary) 8%, var(--color-secondary-container));
+        }
+        .settings-select-field > .settings-select:focus-visible,
+        .font-picker-trigger:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+        .settings-select-field > .ui-icon {
+            position: absolute;
+            inset-inline-end: var(--space-sm);
+            top: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 24px;
+            transform: translateY(-50%);
+            color: var(--color-on-secondary-container);
+            pointer-events: none;
+        }
+
         .page-size-custom-row {
             display: flex;
             align-items: center;
@@ -2476,60 +2590,87 @@
             flex: 1;
             min-width: 0;
             box-sizing: border-box;
-            padding: 7px 8px;
+            height: var(--input-height);
+            padding: 0 var(--space-sm);
             border: 1px solid var(--color-outline);
             border-radius: var(--radius-sm);
             background: var(--color-surface);
             color: var(--color-on-surface);
             font-family: inherit;
-            font-size: 0.9rem;
+            font-size: var(--input-font-size);
         }
 
         .page-size-custom-row span {
             color: var(--color-on-surface-subtle);
         }
+        /* SettingsSliderTile: שורת כותרת עם תגית ערך בקצה, והמחוון ברוחב מלא מתחתיה */
         .settings-slider-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            display: contents;
         }
+        .settings-control-group:has(> .settings-slider-wrapper) {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            column-gap: var(--space-sm);
+            row-gap: 0;
+        }
+        .settings-control-group:has(> .settings-slider-wrapper) > label {
+            grid-area: 1 / 1;
+        }
+        .settings-slider-wrapper .settings-value-indicator {
+            grid-area: 1 / 2;
+        }
+        /* Slider של M3: מסלול 4px (הפעיל ב-primary), וידית עגולה בקוטר 20 */
         .settings-slider-wrapper input[type="range"] {
-            flex: 1;
+            grid-area: 2 / 1 / 3 / 3;
+            --range-progress: 0%;
             -webkit-appearance: none;
             appearance: none;
+            width: 100%;
+            height: 32px;
+            margin: 0;
             background: transparent;
             cursor: pointer;
-            height: 24px;
         }
         .settings-slider-wrapper input[type="range"]::-webkit-slider-runnable-track {
-            background: var(--color-surface-container-highest);
-            height: 6px;
+            height: 4px;
             border-radius: var(--radius-pill);
+            /* הכיוון ימינה (RTL): הערך המינימלי בצד ימין */
+            background: linear-gradient(to left, var(--color-primary) var(--range-progress), var(--color-surface-container-highest) var(--range-progress));
         }
         .settings-slider-wrapper input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            margin-top: -5px;
-            background-color: var(--color-primary);
-            height: 16px;
-            width: 16px;
+            width: 20px;
+            height: 20px;
+            margin-top: -8px;
             border-radius: 50%;
-            transition: background-color 0.1s;
+            background-color: var(--color-primary);
+            transition: box-shadow 0.1s;
         }
-        .settings-slider-wrapper input[type="range"]::-webkit-slider-thumb:hover {
-            background-color: var(--color-secondary);
+        .settings-slider-wrapper input[type="range"]:hover::-webkit-slider-thumb {
+            box-shadow: 0 0 0 10px color-mix(in srgb, var(--color-primary) 8%, transparent);
+        }
+        .settings-slider-wrapper input[type="range"]:active::-webkit-slider-thumb,
+        .settings-slider-wrapper input[type="range"]:focus-visible::-webkit-slider-thumb {
+            box-shadow: 0 0 0 10px color-mix(in srgb, var(--color-primary) 12%, transparent);
         }
         .settings-slider-wrapper input[type="range"]::-moz-range-track {
-            background: var(--color-surface-container-highest);
-            height: 6px;
+            height: 4px;
             border-radius: var(--radius-pill);
+            background: var(--color-surface-container-highest);
+        }
+        .settings-slider-wrapper input[type="range"]::-moz-range-progress {
+            height: 4px;
+            border-radius: var(--radius-pill);
+            background: var(--color-primary);
         }
         .settings-slider-wrapper input[type="range"]::-moz-range-thumb {
-            background-color: var(--color-primary);
+            width: 20px;
+            height: 20px;
             border: none;
-            height: 16px;
-            width: 16px;
             border-radius: 50%;
+            background-color: var(--color-primary);
         }
 
         /* --- בורר גופן (הגדרות > הגדרות גופן) --- */
@@ -2537,25 +2678,28 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: var(--space-sm);
             width: 100%;
+            min-height: 40px;
             box-sizing: border-box;
-            padding: 9px 12px;
-            border: 1px solid var(--color-outline);
+            padding: 0 var(--space-sm) 0 var(--space-md);
+            border: none;
             border-radius: var(--radius-sm);
-            background: var(--color-surface);
-            color: var(--color-on-surface);
+            background: var(--color-secondary-container);
+            color: var(--color-on-secondary-container);
             font-family: inherit;
-            font-size: 0.9rem;
+            font-size: var(--font-md);
+            font-weight: 500;
             cursor: pointer;
         }
         .font-picker-trigger:hover {
-            border-color: var(--color-primary);
+            background: color-mix(in srgb, var(--color-on-primary) 8%, var(--color-secondary-container));
         }
         .font-picker-trigger .ui-icon {
-            width: 16px;
-            height: 16px;
-            font-size: 16px;
-            color: var(--color-outline);
+            width: 24px;
+            height: 24px;
+            font-size: 24px;
+            color: currentColor;
             flex-shrink: 0;
             transition: transform 0.15s ease;
         }
@@ -2864,12 +3008,15 @@
         .color-picker-reset-btn {
             width: 100%;
         }
+        /* MetaChip: תגית קריאה בלבד */
         .settings-value-indicator {
-            font-size: 0.85rem;
-            color: var(--color-on-surface-subtle);
-            width: 55px;
-            text-align: left;
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-sm);
+            background: var(--color-surface-container-highest);
+            color: var(--color-on-surface-variant);
+            font-size: var(--font-sm);
             font-family: inherit;
+            white-space: nowrap;
         }
 
         /* --- עיצוב Tooltip מותאם אישית --- */
@@ -3506,12 +3653,12 @@
             }
         }
 
-/* --- עיצוב כפתור הזזה (Toggle Switch) בסגנון Fluent --- */
+/* --- מתג (CustomSwitch של אוצריא, מידות M3: מסלול 52×32, ידית 16 כבוי ו-24 דלוק) --- */
         .switch {
             position: relative;
             display: inline-block;
-            width: 40px;
-            height: 20px;
+            width: 52px;
+            height: 32px;
             flex-shrink: 0;
         }
 
@@ -3522,40 +3669,47 @@
             height: 0;
         }
 
-        /* רקע כפתור ההזזה */
+        /* המסלול */
         .slider {
             position: absolute;
             cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: var(--color-surface);
-            transition: 0.2s ease;
-            border-radius: 20px;
-            border: 1.5px solid var(--color-outline);
+            inset: 0;
+            background-color: var(--color-surface-container-highest);
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            border-radius: var(--radius-pill);
+            border: 2px solid var(--color-outline);
         }
 
-        /* עיגול ההזזה הפנימי (הכפתור) */
+        /* הידית */
         .slider:before {
             position: absolute;
             content: "";
-            height: 12px;
-            width: 12px;
-            left: 3px;
-            bottom: 2.5px;
+            top: 50%;
+            left: 6px;
+            width: 16px;
+            height: 16px;
+            margin-top: -8px;
             background-color: var(--color-outline);
-            transition: 0.2s ease;
+            transition: left 0.2s ease, width 0.2s ease, height 0.2s ease, margin-top 0.2s ease, background-color 0.2s ease;
             border-radius: 50%;
         }
 
-        /* עיצוב במצב פעיל (Checked) */
         .switch input:checked + .slider {
             background-color: var(--color-primary);
-            border-color: var(--color-primary);
+            border-color: transparent;
         }
 
-        /* הזזת העיגול הפנימי ימינה ושינוי צבעו ללבן כשהכפתור פעיל */
         .switch input:checked + .slider:before {
-            transform: translateX(20px);
+            left: 22px;
+            width: 24px;
+            height: 24px;
+            margin-top: -12px;
             background-color: var(--color-on-primary);
+        }
+
+        .switch input:focus-visible + .slider {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
         }
 
 /* --- עיצוב כותרת עליונה משתקפת (ספר פתוח) --- */

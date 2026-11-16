@@ -942,6 +942,7 @@ const previewArea = document.getElementById('preview-area');
             }
             scrim.classList.add('settings-open'); // הגדרות — עם scrim
             panel.classList.add('open');
+            syncSettingsRangeFill();
             updateNavigationPanelLayout();
         }
 
@@ -979,6 +980,31 @@ const previewArea = document.getElementById('preview-area');
                 closeSettings();
             }
         }
+
+        // המסלול הפעיל של מחווני ההגדרות (Slider של M3): אחוז הערך בין המינימום למקסימום
+        function syncSettingsRangeFill(root) {
+            (root || document.querySelector('.settings-panel')).querySelectorAll('input[type="range"]').forEach(input => {
+                const min = parseFloat(input.min) || 0;
+                const max = parseFloat(input.max) || 100;
+                const pct = max > min ? ((parseFloat(input.value) - min) / (max - min)) * 100 : 0;
+                input.style.setProperty('--range-progress', pct + '%');
+            });
+        }
+
+        document.addEventListener('input', (e) => {
+            const input = e.target;
+            if (input.matches && input.matches('.settings-panel input[type="range"]')) syncSettingsRangeFill(input.parentElement);
+        });
+
+        // סגירה ב-Esc (ContextOverlayPanel), אלא אם Esc שייך לשדה טקסט, לבחירה או לפעולה אחרת
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape' || e.defaultPrevented) return;
+            const panel = document.querySelector('.settings-panel');
+            if (!panel || !panel.classList.contains('open')) return;
+            const ae = document.activeElement;
+            if (ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || (ae.tagName === 'INPUT' && !/^(range|checkbox)$/.test(ae.type)))) return;
+            closeSettings();
+        });
 
         // === שינוי רוחב חלונית ההגדרות ע"י גרירה (#settings-panel-resize-handle) ===
         // החלונית יושבת בצד שמאל; הידית על הקצה הימני שלה. הרוחב נשמר ב-localStorage (כמו רוחב חלונית
