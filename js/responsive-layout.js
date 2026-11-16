@@ -326,13 +326,14 @@
         const widths = commentaryWidths(available, saved);
 
         // רוחב החלונית - גם כשאין גרירה פעילה (בגרירה הרוחב נקבע ע"י הידית עצמה)
+        // החלונית הסגורה נשארת בלי רוחב מוטבע כדי שמעבר הרוחב (300ms) של הסגירה/פתיחה יפעל
+        const isOpen = panel.classList.contains('open');
         if (!panel.classList.contains('resizing')) {
-            panel.style.flexBasis = widths.pane + 'px';
-            panel.style.width = widths.pane + 'px';
+            panel.style.flexBasis = isOpen ? widths.pane + 'px' : '';
+            panel.style.width = isOpen ? widths.pane + 'px' : '';
         }
 
         const hasRoom = available >= widths.pane + OTZ.paneGaps + OTZ.commentaryMinMain;
-        const isOpen = panel.classList.contains('open');
         document.body.classList.toggle('commentary-overlay', !hasRoom);
         if (scrim) scrim.classList.toggle('visible', isOpen && !hasRoom);
     }

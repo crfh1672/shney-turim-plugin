@@ -316,7 +316,9 @@
         }
         #commentary-panel.open {
             width: 340px;
-            min-width: 220px;
+            /* רוחב מזערי כמו באוצריא (280), בלי תקרה של 45vw - הרוחב בפועל נקבע ב-JS */
+            min-width: 280px;
+            max-width: none;
             flex-basis: 340px;
             margin-inline: 10px 12px;
             border-width: 1px;
@@ -5083,9 +5085,6 @@ html[dir="rtl"] .more-menu-nav-btn .ui-icon { transform: scaleX(-1); }
 }
 .more-menu-item[role="menuitemradio"] .view-mode-check { opacity: 0; }
 .more-menu-item[role="menuitemradio"][aria-checked="true"] .view-mode-check { opacity: 1; }
-
-/* חלונית המפרשים: רוחב מזערי כמו באוצריא (280), בלי תקרה של 45vw - הרוחב נקבע ב-JS */
-#commentary-panel { min-width: 280px; max-width: none; }
 
 /* הצללה מאחורי חלונית מפרשים מרחפת */
 .commentary-scrim {
