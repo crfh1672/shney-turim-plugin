@@ -289,8 +289,8 @@
            עצמאית לכל טאב, ולכן עצמאית גם בין שני חלוני התצוגה המפוצלת. ============
            ============================================================================ */
         #commentary-panel {
-            /* Set the pane's layout width once. Animate only opacity/transform so opening
-               and closing do not trigger repeated flex/layout recalculation every frame. */
+            /* Layout width changes once. The short opacity fade is driven by Web Animations,
+               avoiding CSS visibility delays and forced layout reads before the first frame. */
             display: flex;
             flex-direction: column;
             width: 0;
@@ -309,15 +309,10 @@
             box-shadow: var(--shadow-elevation-1);
             overflow: visible; /* ידית הגרירה חורגת החוצה; חיתוך הפינות נעשה ב-.pane-clip */
             opacity: 0;
-            transform: translateX(-6px);
             visibility: hidden;
             pointer-events: none;
-            transition:
-                opacity 160ms ease,
-                transform 160ms ease,
-                visibility 0s linear 160ms;
         }
-        /* Keep the occupied width during the short fade-out, then release it in one layout pass. */
+        /* Keep the occupied width during fade-out, then release it in one layout pass. */
         #commentary-panel.open,
         #commentary-panel.closing {
             width: 340px;
@@ -328,16 +323,8 @@
             border-width: 1px;
             visibility: visible;
         }
-        #commentary-panel.open {
-            opacity: 1;
-            transform: translateX(0);
-            pointer-events: auto;
-        }
-        #commentary-panel.closing {
-            opacity: 0;
-            transform: translateX(-6px);
-            pointer-events: none;
-        }
+        #commentary-panel.open { opacity: 1; pointer-events: auto; }
+        #commentary-panel.closing { opacity: 0; pointer-events: none; }
         #commentary-panel[hidden] {
             display: none !important;
         }

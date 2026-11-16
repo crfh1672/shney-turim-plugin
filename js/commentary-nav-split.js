@@ -207,14 +207,40 @@
             clearTimeout(panelEl.__commentaryPanelCloseTimer);
             panelEl.__commentaryPanelCloseTimer = null;
         }
-        if (panelEl.__commentaryPanelCloseHandler) {
-            panelEl.removeEventListener('transitionend', panelEl.__commentaryPanelCloseHandler);
-            panelEl.__commentaryPanelCloseHandler = null;
-        }
 
-        // ידית הפתיחה מוסתרת בזמן שהחלונית פתוחה או דועכת החוצה.
         const handleEl = document.getElementById('btn-commentary-panel');
         const wasHidden = panelEl.hidden;
+        const activeAnimation = panelEl.__commentaryPanelAnimation;
+        const currentOpacity = wasHidden
+            ? 0
+            : activeAnimation
+                ? Math.max(0, Math.min(1, Number.parseFloat(getComputedStyle(panelEl).opacity) || 0))
+                : panelEl.classList.contains('open') ? 1 : 0;
+
+        if (activeAnimation) {
+            activeAnimation.onfinish = null;
+            activeAnimation.cancel();
+            panelEl.__commentaryPanelAnimation = null;
+        }
+
+        const animateOpacity = (from, to, duration, onFinish) => {
+            if (typeof panelEl.animate !== 'function' || duration <= 0) {
+                if (onFinish) onFinish();
+                return null;
+            }
+            const animation = panelEl.animate(
+                [{ opacity: from }, { opacity: to }],
+                { duration, easing: 'ease-out', fill: 'none' }
+            );
+            panelEl.__commentaryPanelAnimation = animation;
+            animation.onfinish = () => {
+                if (panelEl.__commentaryPanelAnimation !== animation) return;
+                panelEl.__commentaryPanelAnimation = null;
+                if (onFinish) onFinish();
+            };
+            return animation;
+        };
+
         if (isOpen) {
             if (handleEl) handleEl.classList.add('active');
             const alreadyOpen = !wasHidden &&
@@ -224,11 +250,10 @@
             panelEl.inert = false;
             panelEl.removeAttribute('aria-hidden');
             panelEl.classList.remove('closing');
-            if (!alreadyOpen) {
-                // One initial layout read starts the opacity/transform transition;
-                // width/flex-basis themselves are no longer animated frame by frame.
-                void panelEl.offsetWidth;
-                panelEl.classList.add('open');
+            panelEl.classList.add('open');
+            if (!alreadyOpen && currentOpacity < 1) {
+                // Web Animations starts on the next paint without a forced offsetWidth/layout read.
+                animateOpacity(currentOpacity, 1, 110);
             }
             return;
         }
@@ -254,30 +279,46 @@
             return;
         }
 
-        // Retain the pane's width while fading; release its flex space only once the
-        // opacity transition ends. This avoids continuous layout work over 300ms.
+        // Fade immediately; only after the short opacity animation release the pane's width.
         panelEl.classList.add('closing');
         panelEl.classList.remove('open');
-        const onTransitionEnd = event => {
-            if (event.target !== panelEl || event.propertyName !== 'opacity') return;
-            panelEl.removeEventListener('transitionend', onTransitionEnd);
-            panelEl.__commentaryPanelCloseHandler = null;
-            if (panelEl.__commentaryPanelCloseTimer) {
-                clearTimeout(panelEl.__commentaryPanelCloseTimer);
+        const duration = Math.max(70, Math.round(110 * currentOpacity));
+        const animation = animateOpacity(currentOpacity, 0, duration, finishClose);
+        if (animation) {
+            panelEl.__commentaryPanelCloseTimer = setTimeout(() => {
+                if (panelEl.__commentaryPanelAnimation !== animation) return;
+                animation.onfinish = null;
+                panelEl.__commentaryPanelAnimation = null;
+                animation.cancel();
                 panelEl.__commentaryPanelCloseTimer = null;
-            }
+                finishClose();
+            }, duration + 100);
+        } else {
             finishClose();
-        };
-        panelEl.__commentaryPanelCloseHandler = onTransitionEnd;
-        panelEl.addEventListener('transitionend', onTransitionEnd);
-        panelEl.__commentaryPanelCloseTimer = setTimeout(() => {
-            if (panelEl.__commentaryPanelCloseHandler) {
-                panelEl.removeEventListener('transitionend', panelEl.__commentaryPanelCloseHandler);
-                panelEl.__commentaryPanelCloseHandler = null;
+        }
+    }
+
+    function cancelCommentaryOpenRender(panelEl) {
+        if (!panelEl) return;
+        for (const key of ['__commentaryOpenRenderFrame1', '__commentaryOpenRenderFrame2']) {
+            if (panelEl[key]) {
+                cancelAnimationFrame(panelEl[key]);
+                panelEl[key] = null;
             }
-            panelEl.__commentaryPanelCloseTimer = null;
-            finishClose();
-        }, 220);
+        }
+    }
+
+    function scheduleCommentaryOpenRender(tab, panelEl) {
+        cancelCommentaryOpenRender(panelEl);
+        // Let the open state reach the screen before rendering potentially large cached lists.
+        panelEl.__commentaryOpenRenderFrame1 = requestAnimationFrame(() => {
+            panelEl.__commentaryOpenRenderFrame1 = null;
+            panelEl.__commentaryOpenRenderFrame2 = requestAnimationFrame(() => {
+                panelEl.__commentaryOpenRenderFrame2 = null;
+                if (getActiveCommentaryTab() !== tab || !tab.commentaryPanelOpen || panelEl.hidden) return;
+                showCommentaryContentForTab(tab);
+            });
+        });
     }
 
     function toggleCommentaryPanel() {
@@ -286,10 +327,12 @@
         if (!tab || !panelEl) return; // אין ספר טעון - שום דבר לעשות
 
         tab.commentaryPanelOpen = !tab.commentaryPanelOpen;
+        if (!tab.commentaryPanelOpen) cancelCommentaryOpenRender(panelEl);
         setCommentaryPanelOpen(panelEl, tab.commentaryPanelOpen);
-        if (tab.commentaryPanelOpen) syncCommentarySubTabButtonsUI(tab);
-
-        if (tab.commentaryPanelOpen) showCommentaryContentForTab(tab);
+        if (tab.commentaryPanelOpen) {
+            syncCommentarySubTabButtonsUI(tab);
+            scheduleCommentaryOpenRender(tab, panelEl);
+        }
     }
 
     // טוענת (פעם אחת, גם אם נקראת שוב בזמן הטעינה) את רשימת המפרשים של הטאב ומציגה את תוכן החלונית.
@@ -320,9 +363,12 @@
         if (btn) {
             btn.disabled = !tab; // כמו כפתור ההדפסה - לא רלוונטי בטאב "ספר חדש"/ללא טאב פעיל
         }
-        if (!tab || !isOpen) return;
+        if (!tab || !isOpen) {
+            if (panelEl) cancelCommentaryOpenRender(panelEl);
+            return;
+        }
         syncCommentarySubTabButtonsUI(tab);
-        showCommentaryContentForTab(tab);
+        scheduleCommentaryOpenRender(tab, panelEl);
     }
 
     // --- לשוניות חלונית המפרשים (מפרשים / קישורים / הערות / בחירת מפרשים) ---
