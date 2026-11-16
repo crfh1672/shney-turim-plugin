@@ -89,6 +89,11 @@
             --font-book: 'Segoe UI', Arial, sans-serif;
             --font-commentators: 'Shofar', serif;
             --font-size-book: 14pt;
+            /* Material elevation 1 של אוצריא (חלונית מוצמדת, AppTokens.elevation1): צל קרוב וצר,
+               בניגוד ל-elevation2 (0 2px 8px) שמיועד לתפריטים וחלוניות צפות. */
+            --shadow-elevation-1:
+                0 1px 1px color-mix(in srgb, var(--color-shadow, #000000) 10%, transparent),
+                0 1px 3px color-mix(in srgb, var(--color-shadow, #000000) 14%, transparent);
             --font-size-commentators: 22px;
             --font-size-commentary-panel: var(--font-size-commentators);
             --line-height-commentary-panel: var(--line-height-book);
@@ -298,7 +303,7 @@
             border-width: 0;
             border-radius: var(--app-radius, 8px);
             background: var(--commentary-panel-bg-color);
-            box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000000) 22%, transparent);
+            box-shadow: var(--shadow-elevation-1);
             overflow: visible; /* ידית הגרירה חורגת החוצה; חיתוך הפינות נעשה ב-.pane-clip */
             opacity: 0;
             transform: translateX(-8px);
