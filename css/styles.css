@@ -3758,8 +3758,9 @@
             /* Keep progress legible while slowing non-essential loading motion. */
             .preview-loading-spinner { animation-duration: 3s; }
             .preview-loading-path { animation: none; stroke-dasharray: 60, 200; }
+            /* השימר של שלד הטעינה הוא תנועה לא חיונית: בלי תנועה נשאר שלד סטטי. */
             .commentary-loading-skeleton-title::after,
-            .commentary-loading-skeleton-line::after { animation-duration: 3s; }
+            .commentary-loading-skeleton-line::after { animation: none; }
         }
         @media print { #preview-loading { display: none !important; } }
 

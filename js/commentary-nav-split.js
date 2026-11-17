@@ -224,7 +224,9 @@
         }
 
         const animateOpacity = (from, to, duration, onFinish) => {
-            if (typeof panelEl.animate !== 'function' || duration <= 0) {
+            const reduceMotion = typeof window.matchMedia === 'function' &&
+                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reduceMotion || typeof panelEl.animate !== 'function' || duration <= 0) {
                 if (onFinish) onFinish();
                 return null;
             }
@@ -243,15 +245,12 @@
 
         if (isOpen) {
             if (handleEl) handleEl.classList.add('active');
-            const alreadyOpen = !wasHidden &&
-                panelEl.classList.contains('open') &&
-                !panelEl.classList.contains('closing');
             panelEl.hidden = false;
             panelEl.inert = false;
             panelEl.removeAttribute('aria-hidden');
             panelEl.classList.remove('closing');
             panelEl.classList.add('open');
-            if (!alreadyOpen && currentOpacity < 1) {
+            if (currentOpacity < 1) {
                 // Web Animations starts on the next paint without a forced offsetWidth/layout read.
                 animateOpacity(currentOpacity, 1, 110);
             }
