@@ -2102,6 +2102,8 @@
             }
         };
         loadNonCommentaryLinksForRange(tab, range.start, range.end, isStale).then(async entries => {
+            // טווח שהוחלף (גלילה) לא שולח בקשות getBookDetails עבור קישורים שכבר לא יוצגו
+            if (isStale()) return [];
             await ensureLinkTargetEras(tab, entries);
             return sortCommentaryLinkEntries(tab, dedupeCommentaryLinkEntries(entries));
         }).then(entries => finish(entries, false), () => finish([], true));
