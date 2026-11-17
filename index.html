@@ -940,20 +940,20 @@
              (ראו הערה מפורטת ב-renderCommentaryNotesBody) - אין באוצריא כרגע API לכתיבת הערות
              חדשות מתוך תוסף, ולכן לא נוספה כאן שום אפשרות ליצור/לערוך הערה. -->
         <div class="commentary-scrim" id="commentary-scrim" onclick="toggleCommentaryPanel()" aria-hidden="true"></div>
-        <div id="commentary-panel">
+        <div id="commentary-panel" hidden inert aria-hidden="true">
             <div id="commentary-panel-resize-handle" class="pane-resize-handle" data-side="left"></div>
             <div class="pane-clip">
             <div class="commentary-panel-header">
-                <div class="commentary-tabs-row">
-                    <button type="button" class="commentary-tab-btn active" data-subtab="commentary" onclick="switchCommentarySubTab('commentary')" data-tooltip="מפרשים" aria-label="מפרשים">
+                <div class="commentary-tabs-row" role="tablist" aria-label="לשוניות חלונית מפרשים">
+                    <button type="button" class="commentary-tab-btn active" data-subtab="commentary" role="tab" aria-selected="true" aria-controls="commentary-panel-body" onclick="switchCommentarySubTab('commentary')" data-tooltip="מפרשים" aria-label="מפרשים">
                         <span class="commentary-tab-icon"><i class="ui-icon otzaria-icon" data-otzaria-icon="book" aria-hidden="true"></i></span>
                         <span class="commentary-tab-label">מפרשים</span>
                     </button>
-                    <button type="button" class="commentary-tab-btn" data-subtab="links" onclick="switchCommentarySubTab('links')" data-tooltip="קישורים" aria-label="קישורים">
+                    <button type="button" class="commentary-tab-btn" data-subtab="links" role="tab" aria-selected="false" aria-controls="commentary-panel-body" onclick="switchCommentarySubTab('links')" data-tooltip="קישורים" aria-label="קישורים">
                         <span class="commentary-tab-icon"><i class="ui-icon otzaria-icon" data-otzaria-icon="links" aria-hidden="true"></i></span>
                         <span class="commentary-tab-label">קישורים</span>
                     </button>
-                    <button type="button" class="commentary-tab-btn" data-subtab="notes" onclick="switchCommentarySubTab('notes')" data-tooltip="הערות" aria-label="הערות">
+                    <button type="button" class="commentary-tab-btn" data-subtab="notes" role="tab" aria-selected="false" aria-controls="commentary-panel-body" onclick="switchCommentarySubTab('notes')" data-tooltip="הערות" aria-label="הערות">
                         <span class="commentary-tab-icon"><i class="ui-icon" data-fluent-icon="note" aria-hidden="true"></i></span>
                         <span class="commentary-tab-label">הערות</span>
                     </button>
@@ -963,17 +963,41 @@
                 </button>
             </div>
             <div class="commentary-toolbar-row" id="commentary-toolbar-row">
+                <div class="popover-anchor" id="commentary-picker-anchor" style="position:relative;">
+                    <button class="icon-btn" id="btn-commentary-picker" onclick="openCommentaryPickerScreen()" data-tooltip="בחירת מפרשים" aria-label="בחירת מפרשים">
+                        <i class="ui-icon otzaria-icon" data-otzaria-icon="apps_list" aria-hidden="true"></i>
+                    </button>
+                </div>
                 <button class="icon-btn" id="btn-commentary-expand-all" onclick="toggleCommentaryGroupsExpandAll()" data-tooltip="הרחב את כל המפרשים" aria-label="הרחב את כל המפרשים">
                     <i class="ui-icon" data-fluent-icon="arrow_expand_all" id="commentary-expand-all-icon" aria-hidden="true"></i>
                 </button>
-                <div class="commentary-toolbar-spacer"></div>
-                <div class="popover-anchor" id="commentary-picker-anchor" style="position:relative;">
-                    <button class="icon-btn" id="btn-commentary-picker" onclick="openCommentaryPickerScreen()" data-tooltip="בחר אילו מפרשים יוצגו">
-                        <i class="ui-icon" data-fluent-icon="text_bullet_list" aria-hidden="true"></i>
-                    </button>
+                <button class="icon-btn" id="btn-commentary-search" onclick="toggleCommentarySearch()" data-tooltip="חיפוש" aria-label="חיפוש">
+                    <i class="ui-icon" data-fluent-icon="search" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="commentary-search-row" id="commentary-search-row" hidden>
+                <div class="commentary-search-field"><span class="commentary-search-field-icon" aria-hidden="true"><i class="ui-icon otzaria-icon" data-otzaria-icon="search_in_library"></i></span><input id="commentary-search-input" type="search" placeholder="חפש במפרשים המוצגים..." oninput="updateCommentarySearch(this.value)" aria-label="חיפוש במפרשים"><button type="button" id="commentary-search-clear" class="commentary-search-clear" hidden onclick="clearCommentarySearchInput()" aria-label="נקה חיפוש" data-tooltip="נקה חיפוש"><i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i></button></div>
+                <button class="icon-btn" type="button" onclick="closeCommentarySearch()" data-tooltip="סגור חיפוש" aria-label="סגור חיפוש">
+                    <i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="commentary-links-tools" id="commentary-links-tools" hidden>
+                <div class="commentary-links-search-tools">
+                    <div class="commentary-links-search-row">
+                        <span class="commentary-links-search-icon" aria-hidden="true"><i class="ui-icon otzaria-icon" data-otzaria-icon="search_in_titles"></i></span>
+                        <input id="commentary-links-search-input" type="search" placeholder="חפש בתוך הקישורים המוצגים..." oninput="updateCommentaryLinkSearch(this.value)" aria-label="חיפוש בקישורים"><button type="button" id="commentary-links-search-clear" class="commentary-links-search-clear" hidden onclick="clearCommentaryLinksSearch()" aria-label="נקה חיפוש" data-tooltip="נקה חיפוש"><i class="ui-icon" data-fluent-icon="dismiss" aria-hidden="true"></i></button>
+                    </div>
+                    <label class="commentary-links-search-content" id="commentary-links-search-content-row" hidden>
+                        <input id="commentary-links-search-in-content" type="checkbox" onchange="updateCommentaryLinkContentSearch(this.checked)">
+                        <span>חפש גם בתוכן הקישורים</span>
+                    </label>
+                </div>
+                <div class="commentary-links-chip-groups" id="commentary-links-chip-groups">
+                    <div class="commentary-links-chip-row" id="commentary-links-type-chips"></div>
+                    <div class="commentary-links-chip-row" id="commentary-links-era-chips"></div>
                 </div>
             </div>
-            <div class="commentary-panel-body" id="commentary-panel-body">
+            <div class="commentary-panel-body" id="commentary-panel-body" role="tabpanel">
                 <div class="commentary-panel-status">יש לטעון ספר כדי לראות מפרשים כאן.</div>
             </div>
             </div>

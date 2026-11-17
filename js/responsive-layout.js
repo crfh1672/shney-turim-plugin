@@ -326,13 +326,15 @@
         const widths = commentaryWidths(available, saved);
 
         // רוחב החלונית - גם כשאין גרירה פעילה (בגרירה הרוחב נקבע ע"י הידית עצמה)
-        if (!panel.classList.contains('resizing')) {
-            panel.style.flexBasis = widths.pane + 'px';
-            panel.style.width = widths.pane + 'px';
+        // החלונית הסגורה נשארת בלי רוחב מוטבע כדי שמעבר הרוחב (300ms) של הסגירה/פתיחה יפעל
+        const isOpen = panel.classList.contains('open');
+        // בזמן החלקת הסגירה החלונית צפה עם מידות מוטבעות מה-JS - לא נוגעים בהן.
+        if (!panel.classList.contains('resizing') && !panel.classList.contains('closing')) {
+            panel.style.flexBasis = isOpen ? widths.pane + 'px' : '';
+            panel.style.width = isOpen ? widths.pane + 'px' : '';
         }
 
         const hasRoom = available >= widths.pane + OTZ.paneGaps + OTZ.commentaryMinMain;
-        const isOpen = panel.classList.contains('open');
         document.body.classList.toggle('commentary-overlay', !hasRoom);
         if (scrim) scrim.classList.toggle('visible', isOpen && !hasRoom);
     }
@@ -356,6 +358,9 @@
         window[name] = function () {
             const r = orig.apply(this, arguments);
             updateCommentaryLayout();
+            // הרוחב של התוכן השתנה מיד: מתאימים את הדף עכשיו ולא אחרי דיבאונס של 120ms,
+            // כדי שלא תהיה השהיה נראית בין הלחיצה לשינוי.
+            if (typeof flushFitEvaluation === 'function') flushFitEvaluation();
             return r;
         };
     });
@@ -485,9 +490,23 @@
     window.scheduleResponsiveLayout = scheduleResponsiveLayout;
 
     let fitTimer = null;
+    let lastFlushedFit = null; // { at, width } של ההתאמה המיידית האחרונה (פתיחה/סגירת חלונית)
     function scheduleFitEvaluation() {
+        // ה-ResizeObserver של אזור התצוגה נורה אחרי ההתאמה המיידית עם אותו רוחב: אין צורך להתאים שוב.
+        const pa = $('preview-area');
+        if (lastFlushedFit && pa && performance.now() - lastFlushedFit.at < 600 &&
+            pa.clientWidth === lastFlushedFit.width) return;
         clearTimeout(fitTimer);
         fitTimer = setTimeout(() => raf(evaluatePageFit), 120);
+    }
+
+    function flushFitEvaluation() {
+        clearTimeout(fitTimer);
+        raf(() => {
+            const pa = $('preview-area');
+            lastFlushedFit = { at: performance.now(), width: pa ? pa.clientWidth : 0 };
+            evaluatePageFit();
+        });
     }
 
     window.addEventListener('resize', () => { scheduleResponsiveLayout(); scheduleFitEvaluation(); });

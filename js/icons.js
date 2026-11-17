@@ -1,6 +1,7 @@
         // Glyph code points from fluentui_system_icons 1.1.273, used by Otzaria.
         const FLUENT_ICON_GLYPHS = Object.freeze({
             arrow_next: [0xF16B, 0xF16B],
+            arrow_left: [0xF15C, 0xF15C],
             arrow_previous: [0xF16D, 0xF16D],
             arrow_autofit_height: [0xF8CD, 0xF8E5],
             arrow_autofit_width: [0xF8CE, 0xF8E6],
@@ -52,6 +53,9 @@
 
         // Otzaria Icons 0.7.0 glyphs; license and attribution are in fonts/OtzariaIcons-NOTICE.txt.
         const OTZARIA_ICON_GLYPHS = Object.freeze({
+            apps_list: [0xE032, 0xE031],
+            search_in_titles: [0xE081, 0xE081],
+            search_in_library: [0xE02E, 0xE02E],
             book: [0xE001, 0xE001],
             book_open_medium_lines: [0xE011, 0xE011],
             document_column: [0xE024, 0xE024],
