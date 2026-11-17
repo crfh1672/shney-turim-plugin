@@ -328,7 +328,8 @@
         // רוחב החלונית - גם כשאין גרירה פעילה (בגרירה הרוחב נקבע ע"י הידית עצמה)
         // החלונית הסגורה נשארת בלי רוחב מוטבע כדי שמעבר הרוחב (300ms) של הסגירה/פתיחה יפעל
         const isOpen = panel.classList.contains('open');
-        if (!panel.classList.contains('resizing')) {
+        // בזמן החלקת הסגירה החלונית צפה עם מידות מוטבעות מה-JS - לא נוגעים בהן.
+        if (!panel.classList.contains('resizing') && !panel.classList.contains('closing')) {
             panel.style.flexBasis = isOpen ? widths.pane + 'px' : '';
             panel.style.width = isOpen ? widths.pane + 'px' : '';
         }
@@ -357,6 +358,9 @@
         window[name] = function () {
             const r = orig.apply(this, arguments);
             updateCommentaryLayout();
+            // הרוחב של התוכן השתנה מיד: מתאימים את הדף עכשיו ולא אחרי דיבאונס של 120ms,
+            // כדי שלא תהיה השהיה נראית בין הלחיצה לשינוי.
+            if (typeof flushFitEvaluation === 'function') flushFitEvaluation();
             return r;
         };
     });
@@ -489,6 +493,11 @@
     function scheduleFitEvaluation() {
         clearTimeout(fitTimer);
         fitTimer = setTimeout(() => raf(evaluatePageFit), 120);
+    }
+
+    function flushFitEvaluation() {
+        clearTimeout(fitTimer);
+        raf(evaluatePageFit);
     }
 
     window.addEventListener('resize', () => { scheduleResponsiveLayout(); scheduleFitEvaluation(); });

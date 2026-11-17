@@ -312,9 +312,7 @@
             visibility: hidden;
             pointer-events: none;
         }
-        /* Keep the occupied width during fade-out, then release it in one layout pass. */
-        #commentary-panel.open,
-        #commentary-panel.closing {
+        #commentary-panel.open {
             width: 340px;
             min-width: 280px;
             max-width: none;
@@ -322,9 +320,21 @@
             margin-inline: 10px 12px;
             border-width: 1px;
             visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
         }
-        #commentary-panel.open { opacity: 1; pointer-events: auto; }
-        #commentary-panel.closing { opacity: 0; pointer-events: none; }
+        /* בסגירה החלונית יוצאת מהזרימה (מיקום/גודל מוטבעים ב-JS) ומחליקה החוצה כמו חלונית ההגדרות,
+           בזמן שהתוכן שמאחוריה כבר קיבל את הרוחב. */
+        #commentary-panel.closing {
+            min-width: 0;
+            max-width: none;
+            flex: none;
+            border-width: 1px;
+            visibility: visible;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 240;
+        }
         #commentary-panel[hidden] {
             display: none !important;
         }

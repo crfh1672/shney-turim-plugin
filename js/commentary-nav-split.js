@@ -200,6 +200,16 @@
 
     // --- הצגה/הסתרה של חלונית המפרשים (ידית בקצה התצוגה וכפתור סגירה בחלונית) ---
 
+    // אותם תזמונים ועקומה כמו פתיחת/סגירת חלונית ההגדרות (.settings-panel): החלקה + דעיכה,
+    // שמתחילות מיד בלחיצה ורצות על ה-compositor (transform/opacity בלבד).
+    const COMMENTARY_PANEL_SLIDE_MS = 280;
+    const COMMENTARY_PANEL_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
+
+    function clearCommentaryPanelGhost(panelEl) {
+        panelEl.classList.remove('closing');
+        ['position', 'top', 'left', 'width', 'height', 'margin'].forEach(prop => panelEl.style.removeProperty(prop));
+    }
+
     function setCommentaryPanelOpen(panelEl, isOpen) {
         if (!panelEl) return;
 
@@ -211,7 +221,8 @@
         const handleEl = document.getElementById('btn-commentary-panel');
         const wasHidden = panelEl.hidden;
         const activeAnimation = panelEl.__commentaryPanelAnimation;
-        const currentOpacity = wasHidden
+        // כמה מהחלונית כבר "בפנים" (0..1): נקודת המוצא כשהכיוון מתהפך באמצע אנימציה.
+        const progress = wasHidden
             ? 0
             : activeAnimation
                 ? Math.max(0, Math.min(1, Number.parseFloat(getComputedStyle(panelEl).opacity) || 0))
@@ -223,17 +234,19 @@
             panelEl.__commentaryPanelAnimation = null;
         }
 
-        const animateOpacity = (from, to, duration, onFinish) => {
+        const animate = (from, to, side, onFinish) => {
             const reduceMotion = typeof window.matchMedia === 'function' &&
                 window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            if (reduceMotion || typeof panelEl.animate !== 'function' || duration <= 0) {
+            if (reduceMotion || typeof panelEl.animate !== 'function') {
                 if (onFinish) onFinish();
                 return null;
             }
-            const animation = panelEl.animate(
-                [{ opacity: from }, { opacity: to }],
-                { duration, easing: 'ease-out', fill: 'none' }
-            );
+            const tx = (p) => `translateX(${(1 - p) * 100 * side}%)`;
+            const duration = Math.max(120, Math.round(COMMENTARY_PANEL_SLIDE_MS * Math.abs(to - from)));
+            const animation = panelEl.animate([
+                { opacity: from, transform: tx(from) },
+                { opacity: to, transform: tx(to), offset: 1 }
+            ], { duration, easing: COMMENTARY_PANEL_EASING, fill: 'none' });
             panelEl.__commentaryPanelAnimation = animation;
             animation.onfinish = () => {
                 if (panelEl.__commentaryPanelAnimation !== animation) return;
@@ -242,18 +255,17 @@
             };
             return animation;
         };
+        // לכיוון הקצה הקרוב של המסך (בדיוק כמו פאנל ההגדרות שנכנס מהצד שלו)
+        const sideOf = (rect) => ((rect.left + rect.width / 2) < window.innerWidth / 2 ? -1 : 1);
 
         if (isOpen) {
             if (handleEl) handleEl.classList.add('active');
+            clearCommentaryPanelGhost(panelEl);
             panelEl.hidden = false;
             panelEl.inert = false;
             panelEl.removeAttribute('aria-hidden');
-            panelEl.classList.remove('closing');
             panelEl.classList.add('open');
-            if (currentOpacity < 1) {
-                // Web Animations starts on the next paint without a forced offsetWidth/layout read.
-                animateOpacity(currentOpacity, 1, 110);
-            }
+            if (progress < 1) animate(progress, 1, sideOf(panelEl.getBoundingClientRect()));
             return;
         }
 
@@ -268,21 +280,32 @@
             (panelEl.classList.contains('open') || panelEl.classList.contains('closing'));
         const finishClose = () => {
             if (panelEl.classList.contains('open')) return;
+            clearCommentaryPanelGhost(panelEl);
             panelEl.hidden = true;
-            panelEl.classList.remove('closing');
             if (handleEl) handleEl.classList.remove('active');
         };
         if (!wasVisible) {
-            panelEl.classList.remove('open', 'closing');
+            panelEl.classList.remove('open');
             finishClose();
             return;
         }
 
-        // Fade immediately; only after the short opacity animation release the pane's width.
-        panelEl.classList.add('closing');
+        // התוכן שמאחורי החלונית מקבל את הרוחב מיד (בלי להמתין לסיום האנימציה); החלונית עצמה
+        // ממשיכה להחליק החוצה כשכבה צפה באותו מקום, כמו חלונית ההגדרות.
+        const rect = panelEl.getBoundingClientRect();
+        const side = sideOf(rect);
+        const wasGhost = panelEl.classList.contains('closing');
+        if (!wasGhost) {
+            panelEl.style.position = 'fixed';
+            panelEl.style.top = rect.top + 'px';
+            panelEl.style.left = rect.left + 'px';
+            panelEl.style.width = rect.width + 'px';
+            panelEl.style.height = rect.height + 'px';
+            panelEl.style.margin = '0';
+            panelEl.classList.add('closing');
+        }
         panelEl.classList.remove('open');
-        const duration = Math.max(70, Math.round(110 * currentOpacity));
-        const animation = animateOpacity(currentOpacity, 0, duration, finishClose);
+        const animation = animate(progress, 0, side, finishClose);
         if (animation) {
             panelEl.__commentaryPanelCloseTimer = setTimeout(() => {
                 if (panelEl.__commentaryPanelAnimation !== animation) return;
@@ -291,7 +314,7 @@
                 animation.cancel();
                 panelEl.__commentaryPanelCloseTimer = null;
                 finishClose();
-            }, duration + 100);
+            }, COMMENTARY_PANEL_SLIDE_MS + 120);
         } else {
             finishClose();
         }
