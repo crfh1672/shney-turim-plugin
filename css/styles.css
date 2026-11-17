@@ -89,10 +89,18 @@
             --font-book: 'Segoe UI', Arial, sans-serif;
             --font-commentators: 'Shofar', serif;
             --font-size-book: 14pt;
+            /* צללי Material של אוצריא (shadowColor בשקיפות 22%): החלונית המוצמדת ברמה 1 והצפה ברמה 2.
+               ב-Flutter הצל הנראה חלש בהרבה מ-box-shadow רגיל, ולכן ערכים נמוכים כאן. */
+            --shadow-elevation-1:
+                0 1px 2px color-mix(in srgb, var(--color-shadow, #000000) 7%, transparent),
+                0 1px 1px color-mix(in srgb, var(--color-shadow, #000000) 4%, transparent);
+            --shadow-elevation-2:
+                0 2px 5px color-mix(in srgb, var(--color-shadow, #000000) 8%, transparent),
+                0 1px 2px color-mix(in srgb, var(--color-shadow, #000000) 5%, transparent);
             --font-size-commentators: 22px;
             --font-size-commentary-panel: var(--font-size-commentators);
             --line-height-commentary-panel: var(--line-height-book);
-            --commentary-panel-bg-color: #F6EDE5;
+            --commentary-panel-bg-color: var(--color-panel-background);
             --line-height-book: 1.5;
             --paragraph-spacing: 0.3em;
             --radius-sm: var(--app-radius, 8px);
@@ -303,23 +311,55 @@
            עצמאית לכל טאב, ולכן עצמאית גם בין שני חלוני התצוגה המפוצלת. ============
            ============================================================================ */
         #commentary-panel {
-            display: none;
+            /* Layout width changes once. The short opacity fade is driven by Web Animations,
+               avoiding CSS visibility delays and forced layout reads before the first frame. */
+            display: flex;
             flex-direction: column;
-            width: 340px;
-            min-width: 220px;
+            width: 0;
+            min-width: 0;
             max-width: 45vw;
-            flex: 0 0 340px;
+            flex: 0 0 0px;
             position: relative;
             container-type: inline-size;
             container-name: commentary-panel;
             margin-block: 14px 10px;
-            margin-inline: 10px 12px;
+            margin-inline: 0;
             border: 1px solid var(--color-outline-variant);
+            border-width: 0;
             border-radius: var(--app-radius, 8px);
             background: var(--commentary-panel-bg-color);
+            box-shadow: var(--shadow-elevation-1);
             overflow: visible; /* ידית הגרירה חורגת החוצה; חיתוך הפינות נעשה ב-.pane-clip */
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
         }
-        #commentary-panel.open { display: flex; }
+        #commentary-panel.open {
+            width: 340px;
+            min-width: 280px;
+            max-width: none;
+            flex-basis: 340px;
+            margin-inline: 10px 12px;
+            border-width: 1px;
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+        }
+        /* בסגירה החלונית יוצאת מהזרימה (מיקום/גודל מוטבעים ב-JS) ומחליקה החוצה כמו חלונית ההגדרות,
+           בזמן שהתוכן שמאחוריה כבר קיבל את הרוחב. */
+        #commentary-panel.closing {
+            min-width: 0;
+            max-width: none;
+            flex: none;
+            border-width: 1px;
+            visibility: visible;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 240;
+        }
+        #commentary-panel[hidden] {
+            display: none !important;
+        }
 
         /* שורה עליונה של החלונית - לשוניות (הערות/קישורים/מפרשים, בדיוק כמו בתמונות) יחד עם
            כפתור הסגירה (X) באותה שורה ממש. אין כאן יותר כותרת טקסט קבועה ("מפרשים וקישורים") -
@@ -338,6 +378,12 @@
             min-width: 32px;
             height: 32px;
             padding: 0;
+        }
+        body.app-compact-density .commentary-panel-header .icon-btn {
+            flex-basis: 28px;
+            width: 28px;
+            min-width: 28px;
+            height: 28px;
         }
         .commentary-panel-header .icon-btn .ui-icon { width: 16px; font-size: 16px; height: 16px; }
 
@@ -385,27 +431,305 @@
             .commentary-tab-label { display: none; }
         }
 
-        /* שורת הכלים (כיווץ/הרחב הכל + בחירת מפרשים) - מתחת לשורת הלשוניות, לא לידה */
+        /* סרגל פעולות ממורכז — בחירה, הרחבה/כיווץ וחיפוש. */
         .commentary-toolbar-row {
             display: flex;
             align-items: center;
-            gap: 4px;
-            padding: 6px 8px;
-            border-bottom: 1px solid var(--color-border-subtle);
+            justify-content: center;
+            gap: 16px;
+            min-height: 48px;
+            padding: 0;
+            border: 0;
             flex-shrink: 0;
         }
-        .commentary-toolbar-row .icon-btn { width: 40px; height: 40px; padding: 8px; }
-        .commentary-toolbar-row .icon-btn .ui-icon { width: 20px; font-size: 20px; height: 20px; }
+        .commentary-toolbar-row .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            min-width: 48px;
+            height: 48px;
+            padding: 8px;
+            border: 0;
+            border-radius: 50%;
+            background: transparent;
+        }
+        .commentary-toolbar-row .icon-btn .ui-icon { width: 24px; font-size: 24px; height: 24px; }
+        body.app-compact-density .commentary-toolbar-row,
+        body.app-compact-density .commentary-toolbar-row .icon-btn { min-height: 44px; height: 44px; }
         .commentary-toolbar-row .icon-btn:hover:not(:disabled) {
             background: color-mix(in srgb, var(--color-primary) 8%, transparent);
         }
         .commentary-toolbar-row .icon-btn:active:not(:disabled) {
             background: color-mix(in srgb, var(--color-primary) 12%, transparent);
         }
-        .commentary-toolbar-spacer { flex: 1; }
+        .commentary-toolbar-row[hidden],
+        .commentary-search-row[hidden],
+        .commentary-links-tools[hidden] { display: none !important; }
+
+        .commentary-search-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding-block: 8px 4px;
+            padding-inline-start: 14px;
+            padding-inline-end: 4px;
+            flex-shrink: 0;
+        }
+        .commentary-search-field {
+            position: relative;
+            display: flex;
+            align-items: center;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .commentary-search-field input {
+            box-sizing: border-box;
+            width: 100%;
+            min-width: 0;
+            height: 48px;
+            padding: 0 44px 0 40px;
+            border: 0;
+            border-radius: var(--app-radius, 8px);
+            background: color-mix(in srgb, var(--color-on-surface) 7%, transparent);
+            color: var(--color-on-surface);
+            font-family: var(--font-ui);
+            font-size: 16px;
+            outline: none;
+            appearance: none;
+        }
+        body.app-compact-density .commentary-search-field input {
+            height: 36px;
+            padding: 0 36px 0 32px;
+            font-size: 13px;
+        }
+        .commentary-search-field input:focus {
+            background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+        }
+        .commentary-search-field input:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: -2px;
+        }
+        .commentary-search-field-icon {
+            position: absolute;
+            z-index: 1;
+            inset-inline-start: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 100%;
+            color: var(--color-on-surface-variant);
+            pointer-events: none;
+        }
+        .commentary-search-field-icon .ui-icon { width: 20px; height: 20px; font-size: 20px; }
+        body.app-compact-density .commentary-search-field-icon { width: 36px; }
+        body.app-compact-density .commentary-search-field-icon .ui-icon {
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
+        }
+        .commentary-links-search-row {
+            position: relative;
+            display: flex;
+            align-items: center;
+            min-width: 0;
+        }
+        .commentary-links-search-row input {
+            box-sizing: border-box;
+            width: 100%;
+            min-width: 0;
+            height: 48px;
+            padding-inline: 44px 40px;
+            border: 0;
+            border-radius: var(--app-radius, 8px);
+            background: color-mix(in srgb, var(--color-on-surface) 7%, transparent);
+            color: var(--color-on-surface);
+            font-family: var(--font-ui);
+            font-size: 16px;
+            outline: none;
+            appearance: none;
+        }
+        body.app-compact-density .commentary-links-search-row input {
+            height: 36px;
+            padding-inline: 36px 32px;
+            font-size: 13px;
+        }
+        .commentary-links-search-row input:focus {
+            background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+        }
+        .commentary-links-search-row input:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: -2px;
+        }
+        .commentary-links-search-icon {
+            position: absolute;
+            z-index: 1;
+            inset-inline-start: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 100%;
+            color: var(--color-on-surface-variant);
+            pointer-events: none;
+        }
+        .commentary-links-search-icon .ui-icon {
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
+        }
+        .commentary-search-clear,
+        .commentary-links-search-clear {
+            position: absolute;
+            z-index: 2;
+            inset-inline-end: 0;
+            top: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 100%;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            color: var(--color-on-surface-variant);
+            transform: translateY(-50%);
+            cursor: pointer;
+        }
+        .commentary-search-row.has-query .commentary-search-clear,
+        .commentary-links-search-row.has-query .commentary-links-search-clear {
+            display: inline-flex;
+        }
+        .commentary-search-clear .ui-icon,
+        .commentary-links-search-clear .ui-icon {
+            width: 16px;
+            height: 16px;
+            font-size: 16px;
+        }
+        body.app-compact-density .commentary-search-clear,
+        body.app-compact-density .commentary-links-search-clear { width: 32px; }
+
+        body.app-compact-density .commentary-links-search-icon { width: 36px; }
+        body.app-compact-density .commentary-links-search-icon .ui-icon {
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
+        }
+        .commentary-search-row .icon-btn {
+            flex: 0 0 32px;
+            width: 32px;
+            min-width: 32px;
+            height: 32px;
+            padding: 0;
+            border: 0;
+            border-radius: 50%;
+            background: transparent;
+            color: var(--color-on-surface-variant);
+        }
+        .commentary-search-row .icon-btn .ui-icon { width: 16px; height: 16px; font-size: 16px; }
+
+        /* LinksListView: the search field and optional checkbox share one
+           all-around 8px padding; the chip Wrap is a separate sibling. */
+        .commentary-links-tools {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            padding: 0;
+            flex-shrink: 0;
+        }
+        .commentary-links-search-tools {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            padding: 8px;
+            flex-shrink: 0;
+        }
+        .commentary-links-search-content {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            min-height: 40px;
+            margin-top: 8px;
+            padding: 0;
+            color: var(--color-on-surface);
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .commentary-links-search-content[hidden] { display: none !important; }
+        .commentary-links-search-content input {
+            width: 18px;
+            height: 18px;
+            margin: 0 11px;
+            accent-color: var(--color-primary);
+            flex-shrink: 0;
+        }
+        body.app-compact-density .commentary-links-search-content { min-height: 32px; }
+        body.app-compact-density .commentary-links-search-content input { margin-inline: 7px; }
+        /* Matches LinksListView: outer Wrap uses AppTokens.spaceMD (16px)
+           between type/era groups; compactFilterChips uses AppTokens.spaceXS (4px)
+           between chips inside each group. */
+        .commentary-links-chip-groups {
+            display: flex;
+            flex-flow: row wrap;
+            align-items: center;
+            justify-content: center;
+            column-gap: 16px;
+            row-gap: 0;
+            padding: 0 8px 4px;
+            margin-bottom: 8px;
+        }
+        .commentary-links-chip-row {
+            display: flex;
+            flex: 0 1 auto;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            width: max-content;
+            max-width: 100%;
+            column-gap: 4px;
+            row-gap: 4px;
+            padding: 4px 0;
+        }
+        .commentary-links-chip-row[hidden] { display: none !important; }
+        /* Material Chip כמו compactFilterChips באוצריא: משטח אטום,
+           מסגרת outlineVariant, גובה קומפקטי וריפוד פנימי תואם. */
+        .commentary-filter-chip {
+            box-sizing: border-box;
+            min-height: 28px;
+            padding: 1px 5px;
+            border: 1px solid var(--color-outline-variant);
+            border-radius: 8px;
+            background: var(--color-surface);
+            color: var(--color-on-surface-variant);
+            font-family: var(--font-ui);
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 16px;
+            cursor: pointer;
+            white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .commentary-filter-chip:hover {
+            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-surface));
+        }
+        .commentary-filter-chip:active {
+            background: color-mix(in srgb, var(--color-on-surface) 12%, var(--color-surface));
+        }
+        .commentary-filter-chip.selected {
+            background: var(--color-secondary-container);
+            color: var(--color-on-secondary-container);
+            font-weight: 600;
+        }
+        .commentary-filter-chip:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
 
         .commentary-panel-body {
             flex: 1;
+            min-height: 0;
             overflow-y: auto;
             /* Keep the scroll track on the physical right edge, like Otzaria's
                ScrollablePositionedListScrollbar (the leading edge in RTL).
@@ -413,9 +737,6 @@
                direction remain unchanged. */
             direction: ltr;
             padding: 0 14px;
-            /* Keep the scrollbar at the physical right edge like Otzaria's
-               ScrollablePositionedListScrollbar, while preserving RTL content below. */
-            direction: ltr;
             /* WebKit uses the custom thumb rules below. The reader color is set
                only in the non-WebKit fallback, where scrollbar-color is supported. */
             scrollbar-color: auto;
@@ -424,11 +745,8 @@
             direction: rtl;
         }
 
-        .commentary-panel-body > * {
-            direction: rtl;
-        }
-
         .commentary-panel-empty {
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -437,6 +755,24 @@
             margin: 0 -14px;
             padding: 12px 16px;
             text-align: center;
+        }
+        /* The empty Notes state occupies the panel's remaining height instead
+           of sizing itself from its own text and leaving a short strip behind. */
+        .commentary-panel-body[data-subtab="notes"] {
+            display: flex;
+            flex: 1 1 0;
+            flex-direction: column;
+            align-items: stretch;
+            min-height: 0;
+            height: 100%;
+        }
+        .commentary-panel-body[data-subtab="notes"] > .commentary-panel-empty {
+            box-sizing: border-box;
+            flex: 1 1 0;
+            align-self: stretch;
+            width: 100%;
+            min-height: 0;
+            height: auto;
         }
         .commentary-panel-empty-icon {
             width: 36px;
@@ -475,6 +811,71 @@
             border-radius: 50%;
             animation: commentary-panel-spin 0.8s linear infinite;
         }
+        /* Links use Otzaria's AppFutureBuilder -> LoadingIndicator(): centered 36px Material spinner. */
+        .commentary-panel-loading-indicator {
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 100%;
+            padding: 16px;
+        }
+        .commentary-panel-loading-indicator .preview-loading-spinner {
+            width: 36px;
+            height: 36px;
+            flex: 0 0 36px;
+        }
+        /* CommentaryListBase._buildSkeletonLoading(): four groups, each with a title and three text lines. */
+        .commentary-loading-skeleton {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+        .commentary-loading-skeleton-group {
+            box-sizing: border-box;
+            padding: 12px 16px;
+        }
+        .commentary-loading-skeleton-title {
+            position: relative;
+            overflow: hidden;
+            width: 30%;
+            height: 20px;
+            margin-bottom: 12px;
+            border-radius: var(--app-radius, 8px);
+            background: var(--color-surface-container-highest);
+        }
+        .commentary-loading-skeleton-lines {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .commentary-loading-skeleton-line {
+            position: relative;
+            overflow: hidden;
+            height: 16px;
+            border-radius: var(--app-radius, 8px);
+            background: var(--color-surface-container-highest);
+        }
+        .commentary-loading-skeleton-title::after,
+        .commentary-loading-skeleton-line::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                color-mix(in srgb, var(--color-surface) 55%, transparent),
+                transparent
+            );
+            transform: translateX(100%);
+            animation: commentary-loading-shimmer 1.4s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes commentary-loading-shimmer {
+            to { transform: translateX(-100%); }
+        }
+        .commentary-loading-skeleton-line:last-child { margin-bottom: 8px; }
         @keyframes commentary-panel-spin {
             to { transform: rotate(360deg); }
         }
@@ -547,6 +948,14 @@
             margin: 0 -14px;
             padding: 0 14px;
             border-bottom: 1px solid var(--color-border-subtle);
+        }
+        /* לשונית הקישורים באוצריא היא ExpansionTile: הקו התחתון (outlineVariant, דק) מצויר רק
+           לקישור פתוח; בין קישורים סגורים אין קו (collapsedShape שקוף). */
+        .commentary-entry-group[data-subtab="links"]:has(> .commentary-entry-group-header) {
+            border-bottom-color: transparent;
+        }
+        .commentary-entry-group[data-subtab="links"]:has(> .commentary-entry-group-header.expanded) {
+            border-bottom-color: var(--color-outline-variant);
         }
 
         /* כותרת קבוצת מפרשים/קישורים - השורה כולה (כולל החץ) לחיצה אחת שמרחיבה/מכווצת את
@@ -625,6 +1034,17 @@
         .commentary-entry-group[data-subtab="links"] .commentary-entry-group-title { font-size: calc(var(--font-size-commentators) - 2px); }
         .commentary-entry-group[data-subtab="commentary"] .commentary-entry-group-content { margin-inline: -14px; }
         .commentary-entry-group[data-subtab="links"] .commentary-entry-group-content { padding: 20px 14px; }
+        .commentary-entry-group-content {
+            display: grid;
+            grid-template-rows: 1fr;
+            overflow: hidden;
+            transition: grid-template-rows 200ms ease, padding-block 200ms ease;
+        }
+        .commentary-entry-group-content.collapsed {
+            grid-template-rows: 0fr;
+            padding-block: 0 !important;
+        }
+        .commentary-entry-group-inner { min-height: 0; overflow: hidden; }
         .commentary-entry { margin: 0; }
         .commentary-entry-group[data-subtab="commentary"] .commentary-entry { padding: 8px 32px 8px 16px; }
         .commentary-entry-ref {
@@ -649,137 +1069,466 @@
             color: color-mix(in srgb, var(--color-on-surface) 59%, transparent);
         }
 
-        /* === לשונית "בחירת מפרשים" - מסך מלא בתוך גוף החלונית (לא עוד פופאובר צף), בדיוק כמו
-           בתמונה: שורת חזרה עם חץ בראש, תיבת סינון, שבבי קטגוריות לקפיצה מהירה, ורשימת קטגוריות
-           מתקפלות עם תיבת סימון "הצג את כל X" לכל קטגוריה ותיבת סימון לכל מפרש בנפרד. ===== */
-        .commentary-picker-screen { display: flex; flex-direction: column; height: 100%; }
-        .commentary-picker-back-row {
+        /* === לשונית בחירת המפרשים === */
+        /* בורר המפרשים — מקביל ל-CommentatorsFilterScreen ולעץ NavTree באוצריא. */
+        #commentary-panel-body[data-subtab="picker"] {
+            overflow: hidden;
+            padding-inline: 0;
+        }
+        .commentary-picker-screen {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+        }
+        .commentary-picker-screen-header {
+            position: relative;
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 0;
+            justify-content: flex-start;
+            height: 40px;
+            min-height: 40px;
+            margin: 8px;
             flex-shrink: 0;
         }
+        .commentary-picker-screen-title {
+            position: absolute;
+            inset-inline: 48px;
+            overflow: hidden;
+            color: var(--color-on-surface);
+            font-family: var(--font-ui);
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            pointer-events: none;
+        }
         .commentary-picker-back-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            min-width: 40px;
+            height: 40px;
+            padding: 0;
+            border: 0;
+            border-radius: 50%;
+            background: transparent;
+            color: var(--color-on-surface);
+            cursor: pointer;
+            z-index: 1;
+        }
+        .commentary-picker-back-btn:hover,
+        .commentary-picker-search-toggle:hover,
+        .commentary-picker-search-close:hover {
+            background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
+        }
+        .commentary-picker-back-btn .ui-icon { width: 24px; height: 24px; font-size: 24px; }
+        .commentary-picker-era-chips {
+            flex-shrink: 0;
+            padding: 4px 8px;
+        }
+        .commentary-picker-chip-axes {
+            display: flex;
+            align-items: stretch;
+            direction: rtl;
+            width: 100%;
+        }
+        .commentary-picker-chip-axis {
+            display: flex;
+            flex: 1 1 0;
+            flex-wrap: wrap;
+            align-content: center;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+            gap: 4px;
+            padding: 4px 0;
+        }
+        .commentary-picker-chip-axis.full-width {
+            flex-basis: 100%;
+        }
+        .commentary-picker-chip-divider {
+            flex: 0 0 17px;
+            width: 17px;
+            align-self: stretch;
+            position: relative;
+        }
+        .commentary-picker-chip-divider::after {
+            content: "";
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            left: 8px;
+            width: 1px;
+            background: var(--color-outline-variant, var(--color-border-subtle));
+        }
+        /* Material Chip של אוצריא (compactFilterChips): מסגרת outlineVariant, רקע שקוף, גובה 24
+           (VisualDensity.compact), ריפוד פנימי 6/2 - המסגרת נכללת בו ולכן 5/1 + 1px. */
+        /* Material Chip כמו compactFilterChips באוצריא: משטח אטום,
+           מסגרת outlineVariant, גובה קומפקטי וריפוד פנימי תואם. */
+        .commentary-picker-chip {
+            box-sizing: border-box;
+            min-height: 28px;
+            padding: 1px 5px;
+            border: 1px solid var(--color-outline-variant);
+            border-radius: 8px;
+            background: var(--color-surface);
+            color: var(--color-on-surface-variant);
+            font-family: var(--font-ui);
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 16px;
+            cursor: pointer;
+            white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .commentary-picker-chip:hover {
+            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-surface));
+        }
+        .commentary-picker-chip.selected {
+            background: var(--color-secondary-container);
+            color: var(--color-on-secondary-container);
+            font-weight: 600;
+        }
+        .commentary-picker-chip:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 1px;
+        }
+        .commentary-picker-era-chip,
+        .commentary-picker-type-chip {
+            min-width: 0;
+        }
+        .commentary-picker-search-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding-block: 8px 4px;
+            padding-inline-start: 14px;
+            padding-inline-end: 4px;
+            flex-shrink: 0;
+            max-height: 72px;
+            overflow: hidden;
+            opacity: 1;
+            visibility: visible;
+            transition:
+                max-height 150ms ease-out,
+                padding-block 150ms ease-out,
+                opacity 150ms ease-out,
+                visibility 0s;
+        }
+        /* Match NavPanelCollapsibleSearch's 150ms AnimatedSize. Keep the
+           element in layout long enough for its height to collapse smoothly. */
+        .commentary-picker-search-row[hidden] {
+            display: flex !important;
+            max-height: 0;
+            padding-block: 0;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition:
+                max-height 150ms ease-out,
+                padding-block 150ms ease-out,
+                opacity 150ms ease-out,
+                visibility 0s linear 150ms;
+        }
+        .commentary-picker-search-field {
+            position: relative;
+            display: flex;
+            align-items: center;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .commentary-picker-search-field input {
+            box-sizing: border-box;
+            width: 100%;
+            min-width: 0;
+            height: 48px;
+            padding: 0 44px 0 40px;
+            border: 0;
+            border-radius: var(--app-radius, 8px);
+            background: color-mix(in srgb, var(--color-on-surface) 7%, transparent);
+            color: var(--color-on-surface);
+            font-family: var(--font-ui);
+            font-size: 16px;
+            outline: none;
+            appearance: none;
+        }
+        body.app-compact-density .commentary-picker-search-field input {
+            height: 36px;
+            padding-right: 36px;
+            padding-left: 32px;
+            font-size: 13px;
+        }
+        .commentary-picker-search-field input:focus {
+            background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+        }
+        .commentary-picker-search-field input:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: -2px;
+        }
+        .commentary-picker-search-icon {
+            position: absolute;
+            inset-inline-start: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 30px;
-            height: 30px;
-            flex-shrink: 0;
+            width: 44px;
+            height: 100%;
+            color: var(--color-on-surface-variant);
+            pointer-events: none;
+        }
+        .commentary-picker-search-icon .ui-icon { width: 20px; height: 20px; font-size: 20px; }
+        body.app-compact-density .commentary-picker-search-icon { width: 36px; }
+        body.app-compact-density .commentary-picker-search-icon .ui-icon {
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
+        }
+        .commentary-picker-search-clear {
+            position: absolute;
+            inset-inline-end: 0;
+            top: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 100%;
+            padding: 0;
+            border: 0;
             background: transparent;
-            border: none;
+            color: var(--color-on-surface-variant);
+            transform: translateY(-50%);
+            cursor: pointer;
+        }
+        .commentary-picker-search-clear[hidden] { display: none !important; }
+        body.app-compact-density .commentary-picker-search-clear { width: 32px; }
+        .commentary-picker-search-clear .ui-icon { width: 16px; height: 16px; font-size: 16px; }
+
+        .commentary-picker-search-close,
+        .commentary-picker-search-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            min-width: 32px;
+            height: 32px;
+            padding: 0;
+            border: 0;
             border-radius: 50%;
-            color: var(--color-on-surface);
+            background: transparent;
+            color: var(--color-on-surface-variant);
             cursor: pointer;
         }
-        .commentary-picker-back-btn:hover { background: var(--color-secondary-subtle); }
-        .commentary-picker-back-btn .ui-icon { width: 20px; font-size: 20px; height: 20px; color: currentColor; }
-        .commentary-picker-title { font-weight: 700; font-size: 1rem; }
-        .commentary-picker-search-row { flex-shrink: 0; padding-bottom: 10px; }
-        .commentary-picker-search-row input {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 9px 14px;
-            border-radius: var(--radius-pill, 20px);
-            border: 1px solid var(--color-border-subtle);
-            background: var(--color-surface);
-            color: var(--color-on-surface);
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-        .commentary-picker-pills-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            flex-shrink: 0;
-            padding-bottom: 12px;
-        }
-        .commentary-picker-pill {
-            padding: 6px 14px;
-            border-radius: var(--radius-pill, 20px);
-            border: 1px solid var(--color-border-subtle);
-            background: var(--color-surface);
-            color: var(--color-on-surface);
-            font-family: inherit;
-            font-size: 0.82rem;
+        .commentary-picker-search-close .ui-icon,
+        .commentary-picker-search-toggle .ui-icon { width: 16px; height: 16px; font-size: 16px; }
+        .commentary-picker-search-toggle-floating {
+            position: absolute;
+            z-index: 5;
+            inset-inline-end: 26px;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--color-outline-variant);
+            border-radius: 50%;
+            background: var(--color-nav-panel-background);
+            color: var(--color-on-surface-variant);
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000) 22%, transparent);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: translateY(-4px) scale(0.92);
+            transition:
+                opacity 150ms ease,
+                transform 150ms ease,
+                visibility 0s linear 150ms,
+                background-color 150ms ease;
             cursor: pointer;
-            white-space: nowrap;
         }
-        .commentary-picker-pill:hover { background: var(--color-secondary-subtle); }
-        /* The picker has its own scrolling list; keep its scrollbar on the
-           same right-hand edge while preserving RTL for every list row. */
+        .commentary-picker-search-toggle-floating.is-visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: none;
+            transition:
+                opacity 150ms ease,
+                transform 150ms ease,
+                visibility 0s,
+                background-color 150ms ease;
+        }
+        .commentary-picker-search-toggle-floating.is-visible:hover {
+            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-nav-panel-background));
+        }
+        .commentary-picker-search-toggle-floating.is-visible:active {
+            background: color-mix(in srgb, var(--color-on-surface) 12%, var(--color-nav-panel-background));
+        }
+        .commentary-picker-search-toggle-floating:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+        .commentary-picker-search-toggle-floating .ui-icon { width: 16px; height: 16px; font-size: 16px; }
         .commentary-picker-list {
-            flex: 1;
+            flex: 1 1 auto;
+            min-height: 0;
             overflow-y: auto;
-            margin: 0 -14px;
-            padding: 0 14px;
+            padding: 6px 0;
             direction: ltr;
         }
         .commentary-picker-list > * { direction: rtl; }
-        .commentary-picker-master-row {
+        .commentary-picker-tree-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--color-border-subtle);
-            cursor: pointer;
+            justify-content: space-between;
+            gap: 8px;
+            min-height: 34px;
+            padding: 10px 26px 8px;
+            color: var(--color-primary);
+            font-family: var(--font-ui);
+            font-size: 14px;
             font-weight: 700;
-            font-size: 0.92rem;
         }
-        .commentary-picker-category { }
-        .commentary-picker-category-row {
+        .commentary-picker-tree-header > span {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .commentary-picker-search-toggle { flex-shrink: 0; }
+        .commentary-picker-tree-card {
+            margin: 2px 14px;
+            overflow: hidden;
+            border-radius: var(--app-radius, 8px);
+            background: var(--color-card-background, var(--color-surface));
+        }
+        .commentary-picker-tree-row {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 11px 0;
-            border-bottom: 1px solid var(--color-border-subtle);
+            width: 100%;
+            min-height: 42px;
+            box-sizing: border-box;
+            gap: 0;
+            padding: 8px 12px;
+            border: 0;
+            background: transparent;
+            color: var(--color-on-surface);
+            font-family: var(--font-ui);
+            font-size: 14px;
+            text-align: start;
             cursor: pointer;
-            font-weight: 600;
-            font-size: 0.88rem;
         }
-        .commentary-picker-category-row:hover,
-        .commentary-picker-master-row:hover,
-        .commentary-picker-item-row:hover { background: var(--color-secondary-subtle); }
-        .commentary-picker-folder-icon { display: flex; flex-shrink: 0; color: var(--color-on-surface-subtle); }
-        .commentary-picker-folder-icon .ui-icon { width: 18px; font-size: 18px; height: 18px; color: currentColor; }
-        .commentary-picker-item-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 0 10px 28px;
-            border-bottom: 1px solid var(--color-border-subtle);
-            cursor: pointer;
-            font-size: 0.97rem;
+        .commentary-picker-tree-row + .commentary-picker-tree-row {
+            border-top: 1.5px solid var(--commentary-panel-bg-color);
         }
-        .commentary-picker-item-label,
-        .commentary-picker-category-label,
-        .commentary-picker-master-label { flex: 1; min-width: 0; }
-        .commentary-picker-checkbox {
-            flex-shrink: 0;
-            width: 19px;
-            height: 19px;
-            border-radius: 4px;
-            border: 1.5px solid var(--color-outline);
-            display: flex;
+        .commentary-picker-tree-row:hover {
+            background: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
+        }
+        .commentary-picker-tree-row.selected {
+            background: var(--color-secondary-container);
+            font-weight: 700;
+        }
+        .commentary-picker-tree-row.selected:hover {
+            background: color-mix(in srgb, var(--color-on-surface) 8%, var(--color-secondary-container));
+        }
+        .commentary-picker-tree-row:active {
+            background: color-mix(in srgb, var(--color-on-surface) 12%, transparent);
+        }
+        .commentary-picker-tree-row.selected:active {
+            background: color-mix(in srgb, var(--color-on-surface) 12%, var(--color-secondary-container));
+        }
+        .commentary-picker-tree-row:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: -2px;
+        }
+        .commentary-picker-tree-row.category { font-weight: 700; }
+        .commentary-picker-tree-row.book { font-weight: 500; }
+        .commentary-picker-tree-row.book { padding-inline-start: 24px; }
+        .commentary-picker-icon-box {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: var(--color-surface);
-            transition: background 0.15s, border-color 0.15s;
+            width: 26px;
+            min-width: 26px;
+            height: 26px;
+            border-radius: var(--app-radius, 8px);
+            background: var(--color-secondary-container);
+            color: var(--color-on-secondary-container);
         }
-        .commentary-picker-checkbox .ui-icon { width: 13px; font-size: 13px; height: 13px; color: #fff; opacity: 0; transition: opacity 0.1s; }
-        .commentary-picker-checkbox.checked { background: var(--color-primary); border-color: var(--color-primary); }
+        .commentary-picker-icon-box .ui-icon { width: 14px; height: 14px; font-size: 14px; }
+        .commentary-picker-icon-box .ui-icon.otzaria-icon { font-size: 14px; }
+        .commentary-picker-row-label {
+            margin-inline-start: 9px;
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .commentary-picker-checkbox {
+            margin-inline-start: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 18px;
+            width: 18px;
+            height: 18px;
+            box-sizing: border-box;
+            border: 2px solid var(--color-outline);
+            border-radius: 2px;
+            background: transparent;
+            color: #fff;
+        }
+        .commentary-picker-checkbox .ui-icon {
+            width: 14px;
+            height: 14px;
+            font-size: 14px;
+            opacity: 0;
+        }
+        .commentary-picker-checkbox.checked {
+            border-color: var(--color-primary);
+            background: var(--color-primary);
+        }
         .commentary-picker-checkbox.checked .ui-icon { opacity: 1; }
-        .commentary-picker-checkbox.indeterminate { background: var(--color-secondary-container); border-color: var(--color-primary); }
-
-        /* פופאובר בחירת מפרשים - קלאס פנימי (popover-anchor) עדיין עוטף את כפתור בחירת המפרשים
-           בשורת הכלים (ראו commentary-toolbar-row), אך הבחירה עצמה עברה למסך מלא (ראו
-           renderCommentaryPickerScreen) - לכן נשאר כאן רק .commentary-picker-empty המשותף. */
+        .commentary-picker-era-heading {
+            padding: 10px 26px 8px;
+            color: var(--color-primary);
+            font-family: var(--font-ui);
+            font-size: 14px;
+            font-weight: 700;
+        }
         .commentary-picker-empty {
-            padding: 14px;
-            color: var(--color-outline);
-            font-size: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 16px;
+            color: var(--color-on-surface);
+            font-size: 14px;
+            font-weight: 600;
             text-align: center;
+        }
+        .commentary-picker-empty-icon {
+            width: 36px;
+            height: 36px;
+            color: var(--color-on-surface-variant);
+            font-size: 36px;
+        }
+        .commentary-picker-empty.search-empty { margin-top: 24px; }
+.commentary-picker-list.full-panel {
+            display: flex;
+            flex-direction: column;
+        }
+        .commentary-picker-empty.full-panel {
+            box-sizing: border-box;
+            flex: 1 1 0;
+            align-self: stretch;
+            width: 100%;
+            min-height: 0;
         }
 
         .font-size-buttons {
@@ -842,10 +1591,10 @@
             left: 0; 
             right: auto;
             width: 300px;
-            background: var(--color-surface-container-highest);
-            border-radius: var(--radius-md);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            border: 1px solid var(--color-border-subtle);
+            background: var(--color-surface-container-high);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000) 22%, transparent);
+            border: 1px solid var(--color-outline-variant);
             padding: 8px 0;
             z-index: 300;
             opacity: 0;
@@ -872,7 +1621,7 @@
             transition: background 0.15s;
         }
         
-        .popover-item:hover { background: var(--color-primary-subtle); }
+        .popover-item:hover { background: color-mix(in srgb, var(--color-on-surface) 8%, transparent); }
 
         .view-mode-menu {
             left: 0;
@@ -881,9 +1630,9 @@
             width: 168px;
             max-width: calc(100vw - 16px);
             background: var(--color-surface-container-high);
-            border: 0;
+            border: 1px solid var(--color-outline-variant);
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000) 22%, transparent);
             transform-origin: top left;
         }
         .view-mode-menu.opens-left { transform-origin: top right; }
@@ -1268,9 +2017,9 @@
             max-width: calc(100vw - 16px);
             padding: 8px 0;
             background: var(--color-surface-container-high);
-            border: 0;
+            border: 1px solid var(--color-outline-variant);
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000) 22%, transparent);
             transform-origin: top left;
         }
         .more-menu-item {
@@ -1915,7 +2664,9 @@
             inset-inline-end: 24px;
             background: var(--color-nav-panel-background);
             color: var(--color-on-surface-variant);
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+            border: 1px solid var(--color-outline-variant);
+            border-radius: 50%;
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--color-shadow, #000) 22%, transparent);
         }
 
         .drawer-search-toggle-floating.visible {
@@ -3161,9 +3912,12 @@
             100% { stroke-dasharray: 89, 200; stroke-dashoffset: -124px; }
         }
         @media (prefers-reduced-motion: reduce) {
-            /* בלי אנימציית ההתארכות/התקצרות של הקשת - קשת קבועה שמסתובבת לאט, כדי שעדיין יהיה ברור שמשהו נטען */
+            /* Keep progress legible while slowing non-essential loading motion. */
             .preview-loading-spinner { animation-duration: 3s; }
             .preview-loading-path { animation: none; stroke-dasharray: 60, 200; }
+            /* השימר של שלד הטעינה הוא תנועה לא חיונית: בלי תנועה נשאר שלד סטטי. */
+            .commentary-loading-skeleton-title::after,
+            .commentary-loading-skeleton-line::after { animation: none; }
         }
         @media print { #preview-loading { display: none !important; } }
 
@@ -3464,7 +4218,8 @@
            when the scrollable content actually overflows. */
         #toc-scroll-area.drawer-content,
         #search-results-list.drawer-content,
-        #page-nav-list.drawer-content {
+        #page-nav-list.drawer-content,
+        #commentary-picker-list {
             box-sizing: border-box;
             padding-right: 0;
             scrollbar-width: none;
@@ -3473,13 +4228,15 @@
 
         #toc-scroll-area.drawer-content.has-scrollbar-gutter,
         #search-results-list.drawer-content.has-scrollbar-gutter,
-        #page-nav-list.drawer-content.has-scrollbar-gutter {
+        #page-nav-list.drawer-content.has-scrollbar-gutter,
+        #commentary-picker-list.has-scrollbar-gutter {
             padding-right: 12px;
         }
 
         #toc-scroll-area.drawer-content::-webkit-scrollbar,
         #search-results-list.drawer-content::-webkit-scrollbar,
-        #page-nav-list.drawer-content::-webkit-scrollbar {
+        #page-nav-list.drawer-content::-webkit-scrollbar,
+        #commentary-picker-list::-webkit-scrollbar {
             display: none !important;
             width: 0 !important;
             height: 0 !important;
@@ -3587,6 +4344,29 @@
                 scrollbar-color: var(--scrollbar-reader-idle) transparent;
             }
         }
+
+/* Respect Otzaria's AppMotion policy when the operating system requests
+   reduced motion. The loading spinner remains animated because it conveys progress. */
+@media (prefers-reduced-motion: reduce) {
+    #commentary-panel,
+    .commentary-panel-header .icon-btn,
+    .commentary-tab-btn,
+    .commentary-toolbar-row .icon-btn,
+    .commentary-picker-search-row,
+    .commentary-picker-search-toggle-floating,
+    .commentary-picker-back-btn,
+    .commentary-picker-search-close,
+    .commentary-picker-search-toggle,
+    .commentary-picker-chip,
+    .commentary-picker-tree-row,
+    .commentary-entry-group-content,
+    .commentary-entry-group-chevron,
+    .custom-tooltip,
+    .nav-panel-scrollbar-thumb {
+        transition-duration: 0.01ms !important;
+        transition-delay: 0ms !important;
+    }
+}
 
 /* --- הגדרות למדפסת האמיתית --- */
         @media print {
@@ -4094,7 +4874,7 @@
             align-items: center;
             gap: 10px;
             padding: 22px 12px;
-            border: 2px solid var(--color-outline);
+            border: 1.5px solid var(--color-outline);
             border-radius: var(--radius-md);
             color: var(--color-on-surface-subtle);
             margin-bottom: 14px;
@@ -4476,7 +5256,7 @@ body.app-compact-density .toolbar-main .nav-heading-btn .ui-icon {
 
 /* אין מקום לארבעת החיצים: הם עוברים לתפריט, והכותרת מקבלת את כל המרכז (ReaderNavCenter) */
 .toolbar-nav-center.nav-center-no-arrows .nav-heading-btn { display: none; }
-/* מרכז צר מ-240: כפתורי החיצים מצטמצמים ל-36 (כמו ReaderNavCenter באוצריא) */
+/* מרכז צר מ-240: כפתורי החיצים מצטמצמים ל-36, כמו ReaderNavCenter באוצריא. */
 .toolbar-nav-center.nav-center-tight .nav-heading-btn { width: 36px; height: 36px; padding: 8px; }
 .toolbar-nav-center.nav-center-tight .nav-heading-btn .ui-icon { width: 18px; height: 18px; font-size: 18px; }
 
@@ -4514,9 +5294,6 @@ html[dir="rtl"] .more-menu-nav-btn .ui-icon { transform: scaleX(-1); }
 .more-menu-item[role="menuitemradio"] .view-mode-check { opacity: 0; }
 .more-menu-item[role="menuitemradio"][aria-checked="true"] .view-mode-check { opacity: 1; }
 
-/* חלונית המפרשים: רוחב מזערי כמו באוצריא (280), בלי תקרה של 45vw - הרוחב נקבע ב-JS */
-#commentary-panel { min-width: 280px; max-width: none; }
-
 /* הצללה מאחורי חלונית מפרשים מרחפת */
 .commentary-scrim {
     display: none;
@@ -4537,18 +5314,9 @@ body.commentary-overlay #commentary-panel {
     margin: 0;
     z-index: 160;
     max-width: calc(100% - 20px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+    box-shadow: var(--shadow-elevation-2);
 }
-body.commentary-overlay #commentary-panel.open {
-    animation: commentary-overlay-in 0.18s ease-out;
-}
-@keyframes commentary-overlay-in {
-    from { opacity: 0; transform: translateX(-24px); }
-    to { opacity: 1; transform: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-    body.commentary-overlay #commentary-panel.open { animation: none; }
-}
+/* Overlay mode uses the same lightweight opacity/transform transition as the docked pane. */
 
 /* מעטפת חיתוך לתוכן חלונית שהשורש שלה overflow:visible (כדי שידית הגרירה תחרוג החוצה): התוכן נחתך
    בפינות המעוגלות, והידית נשארת מחוץ לחיתוך */
