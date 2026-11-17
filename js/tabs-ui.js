@@ -942,6 +942,7 @@ const previewArea = document.getElementById('preview-area');
             }
             scrim.classList.add('settings-open'); // הגדרות — עם scrim
             panel.classList.add('open');
+            syncSettingsRangeFill();
             updateNavigationPanelLayout();
         }
 
@@ -979,6 +980,50 @@ const previewArea = document.getElementById('preview-area');
                 closeSettings();
             }
         }
+
+        // המסלול הפעיל של מחווני ההגדרות (Slider של M3): אחוז הערך בין המינימום למקסימום
+        function syncSettingsRangeFill(root) {
+            (root || document.querySelector('.settings-panel')).querySelectorAll('input[type="range"]').forEach(input => {
+                const min = parseFloat(input.min) || 0;
+                const max = parseFloat(input.max) || 100;
+                const pct = max > min ? ((parseFloat(input.value) - min) / (max - min)) * 100 : 0;
+                input.style.setProperty('--range-progress', pct + '%');
+            });
+        }
+
+        // שינוי תוכנתי של input.value (איפוס, מעבר בין טאבים, טעינת הגדרות) לא יורה אירוע input,
+        // ולכן ממלאים את ה-range גם בכל השמה: ה-setter של הערך מעודכן פר-אלמנט.
+        (function trackSettingsRangeValue() {
+            const desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+            if (!desc || !desc.set) return;
+            document.querySelectorAll('.settings-panel input[type="range"]').forEach(input => {
+                Object.defineProperty(input, 'value', {
+                    configurable: true,
+                    get() { return desc.get.call(this); },
+                    set(v) { desc.set.call(this, v); syncSettingsRangeFill(this.parentElement); }
+                });
+            });
+            syncSettingsRangeFill();
+        })();
+
+        document.addEventListener('input', (e) => {
+            const input = e.target;
+            if (input.matches && input.matches('.settings-panel input[type="range"]')) syncSettingsRangeFill(input.parentElement);
+        });
+
+        // סגירה ב-Esc (ContextOverlayPanel), אלא אם Esc שייך לשדה טקסט, לבחירה או לפעולה אחרת
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape' || e.defaultPrevented) return;
+            const panel = document.querySelector('.settings-panel');
+            if (!panel || !panel.classList.contains('open')) return;
+            // Esc בתוך דיאלוג הקיצורים (או בהקלטה) שייך לדיאלוג - הוא סוגר/מבטל רק אותו, לא את ההגדרות
+            const shortcutModal = document.getElementById('shortcut-modal-overlay');
+            if ((shortcutModal && shortcutModal.classList.contains('open')) ||
+                (typeof isRecordingShortcut !== 'undefined' && isRecordingShortcut)) return;
+            const ae = document.activeElement;
+            if (ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || (ae.tagName === 'INPUT' && !/^(range|checkbox)$/.test(ae.type)))) return;
+            closeSettings();
+        });
 
         // === שינוי רוחב חלונית ההגדרות ע"י גרירה (#settings-panel-resize-handle) ===
         // החלונית יושבת בצד שמאל; הידית על הקצה הימני שלה. הרוחב נשמר ב-localStorage (כמו רוחב חלונית
