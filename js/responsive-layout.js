@@ -490,14 +490,23 @@
     window.scheduleResponsiveLayout = scheduleResponsiveLayout;
 
     let fitTimer = null;
+    let lastFlushedFit = null; // { at, width } של ההתאמה המיידית האחרונה (פתיחה/סגירת חלונית)
     function scheduleFitEvaluation() {
+        // ה-ResizeObserver של אזור התצוגה נורה אחרי ההתאמה המיידית עם אותו רוחב: אין צורך להתאים שוב.
+        const pa = $('preview-area');
+        if (lastFlushedFit && pa && performance.now() - lastFlushedFit.at < 600 &&
+            pa.clientWidth === lastFlushedFit.width) return;
         clearTimeout(fitTimer);
         fitTimer = setTimeout(() => raf(evaluatePageFit), 120);
     }
 
     function flushFitEvaluation() {
         clearTimeout(fitTimer);
-        raf(evaluatePageFit);
+        raf(() => {
+            const pa = $('preview-area');
+            lastFlushedFit = { at: performance.now(), width: pa ? pa.clientWidth : 0 };
+            evaluatePageFit();
+        });
     }
 
     window.addEventListener('resize', () => { scheduleResponsiveLayout(); scheduleFitEvaluation(); });

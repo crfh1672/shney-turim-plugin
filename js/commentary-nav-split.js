@@ -1357,7 +1357,7 @@
         return 'OTHER';
     }
 
-    async function ensureLinkTargetEras(tab, entries) {
+    async function ensureLinkTargetEras(tab, entries, isStale) {
         if (!tab.linkEraCache) tab.linkEraCache = {};
         if (!tab.linkEraPending) tab.linkEraPending = {};
         const targets = new Map();
@@ -1369,6 +1369,7 @@
         let nextIndex = 0;
         const worker = async () => {
             while (nextIndex < keys.length) {
+                if (isStale && isStale()) return; // טווח שהוחלף באמצע: לא מתחילים בקשות חדשות
                 const key = keys[nextIndex++];
                 if (Object.prototype.hasOwnProperty.call(tab.linkEraCache, key)) continue;
                 if (!tab.linkEraPending[key]) {
@@ -2104,7 +2105,7 @@
         loadNonCommentaryLinksForRange(tab, range.start, range.end, isStale).then(async entries => {
             // טווח שהוחלף (גלילה) לא שולח בקשות getBookDetails עבור קישורים שכבר לא יוצגו
             if (isStale()) return [];
-            await ensureLinkTargetEras(tab, entries);
+            await ensureLinkTargetEras(tab, entries, isStale);
             return sortCommentaryLinkEntries(tab, dedupeCommentaryLinkEntries(entries));
         }).then(entries => finish(entries, false), () => finish([], true));
     }
